@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calendar-sync-api
+  labels:
+    app: calendar-sync-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: calendar-sync-api
+  template:
+    metadata:
+      labels:
+        app: calendar-sync-api
+    spec:
+      containers:
+        - name: api
+          image: calendar-sync-api:latest
+          ports:
+            - containerPort: 4200
+          envFrom:
+            - secretRef:
+                name: calendar-sync-secrets
+            - configMapRef:
+                name: calendar-sync-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4200
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4200
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calendar-sync-api
+spec:
+  selector:
+    app: calendar-sync-api
+  ports:
+    - port: 4200
+      targetPort: 4200
+  type: ClusterIP

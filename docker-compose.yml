@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    ports:
+      - "4202:5432"
+    environment:
+      POSTGRES_USER: calendar_sync
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: calendar_sync
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calendar_sync"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "4203:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    ports:
+      - "4200:4200"
+    environment:
+      DATABASE_URL: postgresql://calendar_sync:password@postgres:5432/calendar_sync
+      REDIS_URL: redis://redis:6379
+      NEXTAUTH_SECRET: dev-secret-change-in-production
+      ENCRYPTION_SECRET: dev-encryption-key-change-me-32b
+      API_PORT: "4200"
+      API_HOST: "0.0.0.0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  sync-worker:
+    build:
+      context: .
+      dockerfile: packages/sync-worker/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://calendar_sync:password@postgres:5432/calendar_sync
+      REDIS_URL: redis://redis:6379
+      ENCRYPTION_SECRET: dev-encryption-key-change-me-32b
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+    ports:
+      - "4201:3000"
+    environment:
+      NEXTAUTH_URL: http://localhost:4201
+      NEXTAUTH_SECRET: dev-secret-change-in-production
+      NEXT_PUBLIC_API_URL: http://localhost:4200
+      API_URL: http://api:4200
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:

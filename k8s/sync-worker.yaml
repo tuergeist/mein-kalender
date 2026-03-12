@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calendar-sync-worker
+  labels:
+    app: calendar-sync-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: calendar-sync-worker
+  template:
+    metadata:
+      labels:
+        app: calendar-sync-worker
+    spec:
+      containers:
+        - name: sync-worker
+          image: calendar-sync-worker:latest
+          envFrom:
+            - secretRef:
+                name: calendar-sync-secrets
+            - configMapRef:
+                name: calendar-sync-config
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

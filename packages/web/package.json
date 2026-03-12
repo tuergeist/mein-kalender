@@ -1,0 +1,36 @@
+{
+  "name": "@calendar-sync/web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev -p 4201",
+    "lint": "next lint",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@calendar-sync/shared": "*",
+    "next": "^15.3.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@heroui/react": "^2.7.0",
+    "@fullcalendar/core": "^6.1.0",
+    "@fullcalendar/react": "^6.1.0",
+    "@fullcalendar/daygrid": "^6.1.0",
+    "@fullcalendar/timegrid": "^6.1.0",
+    "@fullcalendar/interaction": "^6.1.0",
+    "@fullcalendar/list": "^6.1.0",
+    "next-auth": "^4.24.0",
+    "framer-motion": "^12.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.5.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^9.24.0",
+    "eslint-config-next": "^15.3.0"
+  }
+}

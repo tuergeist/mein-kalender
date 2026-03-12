@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calendar-sync-web
+  labels:
+    app: calendar-sync-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: calendar-sync-web
+  template:
+    metadata:
+      labels:
+        app: calendar-sync-web
+    spec:
+      containers:
+        - name: web
+          image: calendar-sync-web:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXTAUTH_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: calendar-sync-config
+                  key: NEXTAUTH_URL
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: calendar-sync-secrets
+                  key: NEXTAUTH_SECRET
+            - name: NEXT_PUBLIC_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: calendar-sync-config
+                  key: API_INTERNAL_URL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calendar-sync-web
+spec:
+  selector:
+    app: calendar-sync-web
+  ports:
+    - port: 80
+      targetPort: 3000
+  type: ClusterIP
