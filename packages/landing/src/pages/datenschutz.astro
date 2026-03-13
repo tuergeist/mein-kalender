@@ -1,0 +1,164 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Datenschutzerklärung — mein-kalender.link" description="Datenschutzerklärung von mein-kalender.link, betrieben von Expert Sieve UG (haftungsbeschränkt).">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="navbar-brand" aria-label="mein-kalender.link Startseite">
+        <img src="/logo-horizontal.svg" alt="mein-kalender.link" class="navbar-logo" width="240" height="40" />
+      </a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <div class="container content">
+      <h1>Datenschutzerklärung</h1>
+
+      <h2>1. Verantwortlicher</h2>
+      <p>
+        Verantwortlich für die Datenverarbeitung auf dieser Website ist:
+      </p>
+      <p>
+        Expert Sieve UG (haftungsbeschränkt)<br />
+        Wilhelm-Raabe-Str. 6<br />
+        04416 Markkleeberg<br />
+        E-Mail: <a href="mailto:info@fyltura.de">info@fyltura.de</a><br />
+        Telefon: +49 341-39 29 48 04
+      </p>
+
+      <h2>2. Erhebung und Speicherung personenbezogener Daten</h2>
+      <p>
+        Beim Besuch dieser Website werden automatisch Informationen durch den Server-Provider erfasst
+        (sogenannte Server-Logfiles). Diese umfassen unter anderem den Browsertyp, das Betriebssystem,
+        die Referrer-URL, die IP-Adresse sowie Datum und Uhrzeit des Zugriffs.
+      </p>
+      <p>
+        Diese Daten sind nicht bestimmten Personen zuordenbar. Eine Zusammenführung dieser Daten mit
+        anderen Datenquellen wird nicht vorgenommen.
+      </p>
+
+      <h2>3. Nutzung der Anwendung</h2>
+      <p>
+        Bei der Nutzung der Anwendung unter app.mein-kalender.link werden personenbezogene Daten
+        verarbeitet, die für die Erbringung des Dienstes erforderlich sind. Dazu gehören insbesondere
+        E-Mail-Adresse, Kalenderdaten und Verbindungsinformationen zu Drittdiensten (Google, Microsoft).
+      </p>
+      <p>
+        Die detaillierte Datenschutzerklärung für die Anwendung wird in Kürze hier veröffentlicht.
+      </p>
+
+      <h2>4. Hosting</h2>
+      <p>
+        Diese Website und die zugehörige Anwendung werden ausschließlich auf Servern innerhalb der
+        Europäischen Union betrieben. Deine Daten verlassen die EU nicht.
+      </p>
+
+      <h2>5. Deine Rechte</h2>
+      <p>
+        Du hast das Recht auf Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung
+        deiner personenbezogenen Daten. Du hast zudem das Recht auf Datenübertragbarkeit und das
+        Recht, Beschwerde bei einer Aufsichtsbehörde einzulegen.
+      </p>
+      <p>
+        Zur Ausübung deiner Rechte wende dich an: <a href="mailto:info@fyltura.de">info@fyltura.de</a>
+      </p>
+
+      <h2>6. Änderungen</h2>
+      <p>
+        Diese Datenschutzerklärung wird laufend aktualisiert. Die vollständige Fassung wird in Kürze
+        veröffentlicht.
+      </p>
+
+      <p class="last-updated">Stand: März 2026</p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <nav class="footer-links" aria-label="Footer">
+        <a href="/">Startseite</a>
+        <a href="/impressum">Impressum</a>
+        <a href="/datenschutz">Datenschutz</a>
+      </nav>
+      <p class="footer-copy">&copy; {new Date().getFullYear()} Expert Sieve UG (haftungsbeschränkt). Alle Rechte vorbehalten.</p>
+    </div>
+  </footer>
+
+  <style>
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .navbar-inner {
+      display: flex;
+      align-items: center;
+      height: 64px;
+    }
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+    }
+    .navbar-logo {
+      height: 36px;
+      width: auto;
+    }
+
+    .page {
+      padding: 64px 0;
+    }
+    .content {
+      max-width: 720px;
+    }
+    .content h1 {
+      margin-bottom: var(--space-10);
+    }
+    .content h2 {
+      margin-top: var(--space-8);
+      margin-bottom: var(--space-3);
+    }
+    .content p {
+      color: var(--text-secondary);
+      margin-bottom: var(--space-4);
+    }
+    .last-updated {
+      margin-top: var(--space-10);
+      font-size: 14px;
+      color: var(--text-tertiary);
+      font-style: italic;
+    }
+
+    .footer {
+      padding: var(--space-10) 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .footer-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-4);
+      text-align: center;
+    }
+    .footer-links {
+      display: flex;
+      gap: var(--space-6);
+    }
+    .footer-links a {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .footer-links a:hover {
+      color: var(--interactive-primary);
+    }
+    .footer-copy {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+  </style>
+</Base>

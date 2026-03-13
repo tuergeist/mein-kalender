@@ -14,6 +14,7 @@ import {
   Chip,
 } from "@heroui/react";
 import { apiAuthFetch } from "@/lib/api";
+import { LocationMap } from "./LocationMap";
 
 interface CalendarEvent {
   id: string;
@@ -146,10 +147,7 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
               </div>
 
               {event.extendedProps.location && (
-                <p className="text-sm">
-                  <span className="text-default-400">Location: </span>
-                  {event.extendedProps.location}
-                </p>
+                <LocationMap location={event.extendedProps.location} />
               )}
 
               {event.extendedProps.description && (

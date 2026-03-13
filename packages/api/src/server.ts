@@ -8,6 +8,7 @@ import { syncRoutes } from "./routes/sync";
 import { targetCalendarRoutes } from "./routes/target-calendar";
 import { icsRoutes } from "./routes/ics";
 import { authRoutes } from "./routes/auth";
+import { oauthRoutes } from "./routes/oauth";
 
 validateEnv();
 
@@ -21,6 +22,7 @@ server.register(syncRoutes);
 server.register(targetCalendarRoutes);
 server.register(icsRoutes);
 server.register(authRoutes);
+server.register(oauthRoutes);
 
 const start = async () => {
   const port = parseInt(process.env.API_PORT || "4200", 10);

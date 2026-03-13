@@ -1,0 +1,141 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Impressum — mein-kalender.link" description="Impressum von mein-kalender.link, betrieben von Expert Sieve UG (haftungsbeschränkt).">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="navbar-brand" aria-label="mein-kalender.link Startseite">
+        <img src="/logo-horizontal.svg" alt="mein-kalender.link" class="navbar-logo" width="240" height="40" />
+      </a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <div class="container content">
+      <h1>Impressum</h1>
+
+      <h2>Angaben gemäß § 5 TMG</h2>
+      <p>
+        Expert Sieve UG (haftungsbeschränkt)<br />
+        Wilhelm-Raabe-Str. 6<br />
+        04416 Markkleeberg
+      </p>
+
+      <h2>Vertreten durch</h2>
+      <p>
+        Geschäftsführer: Christoph Becker, Anne-Cathrin Becker
+      </p>
+
+      <h2>Kontakt</h2>
+      <p>
+        Telefon: +49 341-39 29 48 04<br />
+        E-Mail: <a href="mailto:info@fyltura.de">info@fyltura.de</a>
+      </p>
+
+      <h2>Registereintrag</h2>
+      <p>
+        Eintragung im Handelsregister.<br />
+        Registergericht: Amtsgericht Leipzig<br />
+        Registernummer: HRB 34745
+      </p>
+
+      <h2>Umsatzsteuer-ID</h2>
+      <p>
+        Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz:<br />
+        DE317222299
+      </p>
+
+      <h2>Streitschlichtung</h2>
+      <p>
+        Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:
+        <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer">https://ec.europa.eu/consumers/odr/</a>.
+      </p>
+      <p>
+        Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
+      </p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <nav class="footer-links" aria-label="Footer">
+        <a href="/">Startseite</a>
+        <a href="/impressum">Impressum</a>
+        <a href="/datenschutz">Datenschutz</a>
+      </nav>
+      <p class="footer-copy">&copy; {new Date().getFullYear()} Expert Sieve UG (haftungsbeschränkt). Alle Rechte vorbehalten.</p>
+    </div>
+  </footer>
+
+  <style>
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .navbar-inner {
+      display: flex;
+      align-items: center;
+      height: 64px;
+    }
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+    }
+    .navbar-logo {
+      height: 36px;
+      width: auto;
+    }
+
+    .page {
+      padding: 64px 0;
+    }
+    .content {
+      max-width: 720px;
+    }
+    .content h1 {
+      margin-bottom: var(--space-10);
+    }
+    .content h2 {
+      margin-top: var(--space-8);
+      margin-bottom: var(--space-3);
+    }
+    .content p {
+      color: var(--text-secondary);
+      margin-bottom: var(--space-4);
+    }
+
+    .footer {
+      padding: var(--space-10) 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .footer-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-4);
+      text-align: center;
+    }
+    .footer-links {
+      display: flex;
+      gap: var(--space-6);
+    }
+    .footer-links a {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .footer-links a:hover {
+      color: var(--interactive-primary);
+    }
+    .footer-copy {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+  </style>
+</Base>

@@ -44,6 +44,11 @@ export default function SettingsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState<string | null>(null);
   const [targetCalendarId, setTargetCalendarId] = useState<string>("");
+  const [mapProvider, setMapProvider] = useState<string>("google");
+
+  useEffect(() => {
+    setMapProvider(localStorage.getItem("mapProvider") || "google");
+  }, []);
 
   useEffect(() => {
     if (session) loadData();
@@ -87,13 +92,10 @@ export default function SettingsPage() {
   }
 
   function handleAddProvider(provider: string) {
-    const redirectUri = `${window.location.origin}/api/auth/callback/${provider}`;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4200";
+    const redirectUri = `${apiUrl}/api/oauth/${provider}/callback`;
 
-    if (provider === "google") {
-      window.location.href = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4200"}/api/oauth/google/start?redirect=${encodeURIComponent(redirectUri)}`;
-    } else if (provider === "outlook") {
-      window.location.href = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4200"}/api/oauth/outlook/start?redirect=${encodeURIComponent(redirectUri)}`;
-    }
+    window.location.href = `${apiUrl}/api/oauth/${provider}/start?redirect=${encodeURIComponent(redirectUri)}`;
     setShowAddModal(false);
   }
 
@@ -191,6 +193,34 @@ export default function SettingsPage() {
                 ))}
               </Select>
             )}
+          </CardBody>
+        </Card>
+
+        {/* Map Provider */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold">Map Provider</h2>
+          </CardHeader>
+          <CardBody>
+            <p className="mb-4 text-sm text-default-500">
+              Choose which map service to use for event locations.
+            </p>
+            <Select
+              label="Map Provider"
+              selectedKeys={[mapProvider]}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0] as string;
+                if (selected) {
+                  setMapProvider(selected);
+                  localStorage.setItem("mapProvider", selected);
+                }
+              }}
+            >
+              <SelectItem key="google">Google Maps</SelectItem>
+              <SelectItem key="osm">OpenStreetMap</SelectItem>
+              <SelectItem key="apple">Apple Maps</SelectItem>
+              <SelectItem key="none">No map</SelectItem>
+            </Select>
           </CardBody>
         </Card>
 

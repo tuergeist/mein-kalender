@@ -39,6 +39,10 @@ services:
       NEXTAUTH_SECRET: dev-secret-change-in-production
       ENCRYPTION_SECRET: dev-encryption-key-change-me-32b
       SKIP_EMAIL_VERIFICATION: "true"
+      MICROSOFT_CALENDAR_CLIENT_ID: ${MICROSOFT_CALENDAR_CLIENT_ID}
+      MICROSOFT_CALENDAR_CLIENT_SECRET: ${MICROSOFT_CALENDAR_CLIENT_SECRET}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID}
+      WEB_URL: ${WEB_URL:-http://localhost:4201}
       API_PORT: "4200"
       API_HOST: "0.0.0.0"
     depends_on:
