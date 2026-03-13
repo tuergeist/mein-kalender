@@ -26,12 +26,14 @@ export async function authRoutes(app: FastifyInstance) {
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
+    const skipVerification = process.env.SKIP_EMAIL_VERIFICATION === "true";
+
     const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
         displayName: displayName || null,
-        emailVerified: false,
+        emailVerified: skipVerification,
       },
     });
 

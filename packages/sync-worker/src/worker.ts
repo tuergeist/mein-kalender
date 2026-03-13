@@ -25,7 +25,6 @@ const worker = new Worker(
     limiter: {
       max: 1,
       duration: 1000,
-      groupKey: "sourceId", // one job per source at a time
     },
   }
 );

@@ -17,9 +17,23 @@ interface VEvent {
   allDay: boolean;
 }
 
+function unfoldICS(icsData: string): string {
+  // ICS line folding: lines starting with space/tab are continuations
+  return icsData.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "");
+}
+
+function unescapeICS(value: string): string {
+  return value
+    .replace(/\\n/gi, "\n")
+    .replace(/\\,/g, ",")
+    .replace(/\\;/g, ";")
+    .replace(/\\\\/g, "\\");
+}
+
 function parseICS(icsData: string): VEvent[] {
   const events: VEvent[] = [];
-  const eventBlocks = icsData.split("BEGIN:VEVENT");
+  const unfolded = unfoldICS(icsData);
+  const eventBlocks = unfolded.split("BEGIN:VEVENT");
 
   for (let i = 1; i < eventBlocks.length; i++) {
     const block = eventBlocks[i].split("END:VEVENT")[0];
@@ -38,9 +52,9 @@ function parseICS(icsData: string): VEvent[] {
 
     events.push({
       uid,
-      summary: summary || "(No title)",
-      description: description || null,
-      location: location || null,
+      summary: unescapeICS(summary || "(No title)"),
+      description: description ? unescapeICS(description) : null,
+      location: location ? unescapeICS(location) : null,
       dtStart,
       dtEnd,
       allDay,
@@ -99,10 +113,24 @@ export async function icsRoutes(app: FastifyInstance) {
 
       // Insert events
       for (const ev of events) {
-        await prisma.event.create({
-          data: {
+        await prisma.event.upsert({
+          where: {
+            calendarEntryId_sourceEventId: {
+              calendarEntryId: entry.id,
+              sourceEventId: ev.uid,
+            },
+          },
+          create: {
             calendarEntryId: entry.id,
             sourceEventId: ev.uid,
+            title: ev.summary,
+            description: ev.description,
+            location: ev.location,
+            startTime: ev.dtStart,
+            endTime: ev.dtEnd,
+            allDay: ev.allDay,
+          },
+          update: {
             title: ev.summary,
             description: ev.description,
             location: ev.location,
@@ -210,10 +238,24 @@ export async function icsRoutes(app: FastifyInstance) {
       });
 
       for (const ev of events) {
-        await prisma.event.create({
-          data: {
+        await prisma.event.upsert({
+          where: {
+            calendarEntryId_sourceEventId: {
+              calendarEntryId: entry.id,
+              sourceEventId: ev.uid,
+            },
+          },
+          create: {
             calendarEntryId: entry.id,
             sourceEventId: ev.uid,
+            title: ev.summary,
+            description: ev.description,
+            location: ev.location,
+            startTime: ev.dtStart,
+            endTime: ev.dtEnd,
+            allDay: ev.allDay,
+          },
+          update: {
             title: ev.summary,
             description: ev.description,
             location: ev.location,

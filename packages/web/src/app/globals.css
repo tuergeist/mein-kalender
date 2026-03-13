@@ -1,3 +1,110 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+}
+
+/* FullCalendar overrides */
+.fc {
+  --fc-border-color: #d1d5db;
+  --fc-today-bg-color: #eff6ff;
+  --fc-neutral-bg-color: #f9fafb;
+  --fc-page-bg-color: #ffffff;
+  --fc-event-border-color: transparent;
+  font-family: inherit;
+}
+
+.fc .fc-toolbar-title {
+  @apply text-lg font-semibold text-gray-800;
+}
+
+.fc .fc-col-header-cell {
+  @apply bg-gray-50 py-2 text-xs font-medium uppercase tracking-wider text-gray-500;
+}
+
+.fc .fc-col-header-cell-cushion {
+  @apply no-underline;
+}
+
+.fc .fc-daygrid-day-number {
+  @apply px-2 py-1 text-sm text-gray-600 no-underline;
+}
+
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  @apply font-bold text-blue-600;
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+  background-color: var(--fc-today-bg-color) !important;
+}
+
+.fc .fc-event {
+  @apply cursor-pointer rounded-md border-0 px-1.5 py-0.5 text-xs font-medium shadow-sm;
+}
+
+.fc .fc-daygrid-event {
+  @apply mx-1 mb-0.5;
+}
+
+.fc .fc-daygrid-dot-event {
+  @apply px-1;
+}
+
+.fc .fc-daygrid-dot-event .fc-event-title {
+  @apply font-medium;
+}
+
+.fc .fc-list-event:hover td {
+  @apply bg-blue-50;
+}
+
+.fc .fc-list-day-cushion {
+  @apply bg-gray-100 font-semibold text-gray-700;
+}
+
+.fc .fc-timegrid-slot {
+  @apply border-gray-200;
+  height: 3rem;
+}
+
+.fc .fc-timegrid-slot-label-cushion {
+  @apply text-xs text-gray-400;
+}
+
+.fc .fc-scrollgrid {
+  @apply overflow-hidden rounded-lg border border-gray-200;
+}
+
+.fc .fc-scrollgrid-section > * {
+  @apply border-gray-200;
+}
+
+.fc th {
+  @apply border-gray-200;
+}
+
+.fc td {
+  @apply border-gray-200;
+}
+
+.fc .fc-daygrid-more-link {
+  @apply text-xs font-medium text-blue-600 no-underline hover:text-blue-800;
+}
+
+/* Weekend columns */
+.fc .fc-day-sat,
+.fc .fc-day-sun {
+  background-color: #f1f5f9 !important;
+}
+
+.fc .fc-day-sat.fc-day-today,
+.fc .fc-day-sun.fc-day-today {
+  background-color: #dbeafe !important;
+}
+
+.fc .fc-col-header-cell.fc-day-sat,
+.fc .fc-col-header-cell.fc-day-sun {
+  @apply bg-gray-200;
+}

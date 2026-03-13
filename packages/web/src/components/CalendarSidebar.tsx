@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Checkbox, Spinner, Badge, Button } from "@heroui/react";
+import { Checkbox, Spinner, Button } from "@heroui/react";
 import { apiAuthFetch } from "@/lib/api";
 
 interface CalendarEntry {
@@ -42,7 +42,6 @@ export function CalendarSidebar() {
       const data = await res.json();
       setSources(data);
 
-      // Initialize all calendars as visible
       const allIds = new Set<string>();
       data.forEach((s: CalendarSource) =>
         s.calendarEntries.forEach((e: CalendarEntry) => allIds.add(e.id))
@@ -61,7 +60,6 @@ export function CalendarSidebar() {
       }
       return next;
     });
-    // Dispatch custom event for the calendar view to listen to
     window.dispatchEvent(
       new CustomEvent("calendar-visibility-change", {
         detail: { visibleCalendars: Array.from(visibleCalendars) },
@@ -75,38 +73,52 @@ export function CalendarSidebar() {
 
     setSyncing(true);
     await apiAuthFetch("/api/sync-all", token, { method: "POST" });
-    // Poll for completion
     setTimeout(() => {
       loadSources();
       setSyncing(false);
     }, 3000);
   }
 
-  const providerLabel: Record<string, string> = {
-    google: "Google",
-    outlook: "Outlook",
-    proton: "Proton",
-    ics: "ICS Import",
+  const providerIcon: Record<string, string> = {
+    google: "G",
+    outlook: "O",
+    proton: "P",
+    ics: "I",
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase text-default-500">Calendars</h2>
-        <Button size="sm" variant="light" isLoading={syncing} onPress={handleSyncNow}>
-          Sync Now
+    <div className="flex flex-col gap-1 p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          Calendars
+        </h2>
+        <Button
+          size="sm"
+          variant="light"
+          isLoading={syncing}
+          onPress={handleSyncNow}
+          className="h-7 min-w-0 px-2 text-xs text-gray-500"
+        >
+          {syncing ? "" : "Sync"}
         </Button>
       </div>
 
+      {sources.length === 0 && (
+        <p className="text-xs text-gray-400">No calendars connected</p>
+      )}
+
       {sources.map((source) => (
-        <div key={source.id} className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-default-400">
-              {source.label || providerLabel[source.provider] || source.provider}
+        <div key={source.id} className="mb-3">
+          <div className="mb-1 flex items-center gap-1.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
+              {providerIcon[source.provider] || "?"}
+            </span>
+            <span className="text-xs font-medium text-gray-500">
+              {source.label || source.provider}
             </span>
             {source.syncStatus === "syncing" && <Spinner size="sm" />}
             {source.syncStatus === "error" && (
-              <Badge color="danger" size="sm" content="!" />
+              <span className="text-xs text-red-500" title={source.syncError || ""}>!</span>
             )}
           </div>
 
@@ -116,18 +128,19 @@ export function CalendarSidebar() {
               isSelected={visibleCalendars.has(entry.id)}
               onValueChange={() => toggleCalendar(entry.id)}
               size="sm"
+              className="ml-1"
               classNames={{
-                label: "text-sm",
+                label: "text-sm text-gray-700",
               }}
             >
               <span className="flex items-center gap-2">
                 <span
-                  className="inline-block h-3 w-3 rounded-full"
-                  style={{ backgroundColor: entry.color }}
+                  className="inline-block h-2.5 w-2.5 rounded-sm"
+                  style={{ backgroundColor: entry.color || "#3b82f6" }}
                 />
-                {entry.name}
+                <span className="truncate">{entry.name}</span>
                 {entry.readOnly && (
-                  <span className="text-xs text-default-400">(read-only)</span>
+                  <span className="text-[10px] text-gray-400">(read-only)</span>
                 )}
               </span>
             </Checkbox>

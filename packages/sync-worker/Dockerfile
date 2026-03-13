@@ -24,11 +24,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/packages/sync-worker/dist ./dist
 COPY --from=builder /app/packages/shared/dist ./node_modules/@calendar-sync/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./node_modules/@calendar-sync/shared/
 COPY --from=builder /app/packages/api/dist ./node_modules/@calendar-sync/api/dist
 COPY --from=builder /app/packages/api/package.json ./node_modules/@calendar-sync/api/
-COPY --from=builder /app/packages/api/prisma ./prisma
 
 CMD ["node", "dist/worker.js"]

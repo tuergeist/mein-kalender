@@ -49,7 +49,7 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    const data = await res.json();
+    const data = await res.json() as any;
     return {
       accessToken: data.access_token,
       refreshToken: data.refresh_token ?? null,
@@ -77,7 +77,7 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    const data = await res.json();
+    const data = await res.json() as any;
     return {
       accessToken: data.access_token,
       refreshToken: token.refreshToken,
@@ -125,7 +125,7 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    const data = await res.json();
+    const data = await res.json() as any;
     return (data.items || []).map((cal: Record<string, unknown>) => ({
       id: cal.id as string,
       providerCalendarId: cal.id as string,
@@ -169,7 +169,7 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    const data = await res.json();
+    const data = await res.json() as any;
     const created: NormalizedEvent[] = [];
     const updated: NormalizedEvent[] = [];
     const deleted: string[] = [];
@@ -218,7 +218,7 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    return this.mapEvent(await res.json(), calendarId);
+    return this.mapEvent(await res.json() as any, calendarId);
   }
 
   async updateEvent(
@@ -243,7 +243,7 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    return this.mapEvent(await res.json(), calendarId);
+    return this.mapEvent(await res.json() as any, calendarId);
   }
 
   async deleteEvent(

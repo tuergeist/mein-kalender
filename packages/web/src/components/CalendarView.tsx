@@ -7,6 +7,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
+import deLocale from "@fullcalendar/core/locales/de";
 import { Button, ButtonGroup } from "@heroui/react";
 import { apiAuthFetch } from "@/lib/api";
 import { EventDetailModal } from "./EventDetailModal";
@@ -36,6 +37,7 @@ export function CalendarView() {
   const [currentView, setCurrentView] = useState("dayGridMonth");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -102,13 +104,19 @@ export function CalendarView() {
     [session]
   );
 
+  useEffect(() => {
+    if (session && dateRange) {
+      fetchEvents(dateRange.start, dateRange.end);
+    }
+  }, [session, dateRange, fetchEvents]);
+
   function handleViewChange(view: string) {
     setCurrentView(view);
     calendarRef.current?.getApi().changeView(view);
   }
 
-  async function handleEventDrop(info: { event: { id: string; start: Date | null; end: Date | null; extendedProps: { readOnly: boolean } }; revert: () => void }) {
-    if (info.event.extendedProps.readOnly) {
+  async function handleEventDrop(info: any) {
+    if (info.event.extendedProps?.readOnly) {
       info.revert();
       return;
     }
@@ -129,47 +137,55 @@ export function CalendarView() {
     }
   }
 
+  const title = calendarRef.current?.getApi()?.view?.title || "";
+
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center justify-between">
-        <ButtonGroup size="sm">
-          <Button
-            variant={currentView === "dayGridMonth" ? "solid" : "bordered"}
-            onPress={() => handleViewChange("dayGridMonth")}
-          >
-            Month
-          </Button>
-          <Button
-            variant={currentView === "timeGridWeek" ? "solid" : "bordered"}
-            onPress={() => handleViewChange("timeGridWeek")}
-          >
-            Week
-          </Button>
-          <Button
-            variant={currentView === "timeGridDay" ? "solid" : "bordered"}
-            onPress={() => handleViewChange("timeGridDay")}
-          >
-            Day
-          </Button>
-          <Button
-            variant={currentView === "listWeek" ? "solid" : "bordered"}
-            onPress={() => handleViewChange("listWeek")}
-          >
-            List
-          </Button>
-        </ButtonGroup>
+        <div className="flex items-center gap-3">
+          <ButtonGroup size="sm" variant="flat">
+            <Button
+              className={currentView === "dayGridMonth" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+              onPress={() => handleViewChange("dayGridMonth")}
+            >
+              Month
+            </Button>
+            <Button
+              className={currentView === "timeGridWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+              onPress={() => handleViewChange("timeGridWeek")}
+            >
+              Week
+            </Button>
+            <Button
+              className={currentView === "timeGridDay" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+              onPress={() => handleViewChange("timeGridDay")}
+            >
+              Day
+            </Button>
+            <Button
+              className={currentView === "listWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+              onPress={() => handleViewChange("listWeek")}
+            >
+              List
+            </Button>
+          </ButtonGroup>
+          <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+        </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-1">
           <Button
             size="sm"
             variant="light"
+            isIconOnly
+            className="text-gray-500"
             onPress={() => calendarRef.current?.getApi().prev()}
           >
-            &larr; Prev
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </Button>
           <Button
             size="sm"
-            variant="light"
+            variant="flat"
+            className="h-8 min-w-0 px-3 text-xs font-medium text-gray-600"
             onPress={() => calendarRef.current?.getApi().today()}
           >
             Today
@@ -177,9 +193,11 @@ export function CalendarView() {
           <Button
             size="sm"
             variant="light"
+            isIconOnly
+            className="text-gray-500"
             onPress={() => calendarRef.current?.getApi().next()}
           >
-            Next &rarr;
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </Button>
         </div>
       </div>
@@ -189,6 +207,10 @@ export function CalendarView() {
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
           initialView={isMobile ? "listWeek" : "dayGridMonth"}
+          locale={deLocale}
+          firstDay={1}
+          eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+          dayMaxEvents={true}
           events={events}
           editable={true}
           droppable={true}
@@ -197,7 +219,7 @@ export function CalendarView() {
             setSelectedEvent(info.event.toPlainObject() as unknown as CalendarEvent);
           }}
           datesSet={(dateInfo) => {
-            fetchEvents(dateInfo.start, dateInfo.end);
+            setDateRange({ start: dateInfo.start, end: dateInfo.end });
           }}
           headerToolbar={false}
           height="100%"

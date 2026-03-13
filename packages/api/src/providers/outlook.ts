@@ -49,7 +49,7 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    const data = await res.json();
+    const data = await res.json() as any;
     return {
       accessToken: data.access_token,
       refreshToken: data.refresh_token ?? null,
@@ -78,7 +78,7 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    const data = await res.json();
+    const data = await res.json() as any;
     return {
       accessToken: data.access_token,
       refreshToken: data.refresh_token ?? token.refreshToken,
@@ -126,7 +126,7 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    const data = await res.json();
+    const data = await res.json() as any;
     return (data.value || []).map((cal: Record<string, unknown>) => ({
       id: cal.id as string,
       providerCalendarId: cal.id as string,
@@ -166,7 +166,7 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
         throw this.mapError(res.status, await res.text());
       }
 
-      const data = await res.json();
+      const data = await res.json() as any;
 
       for (const item of data.value || []) {
         if (item["@removed"]) {
@@ -212,7 +212,7 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    return this.mapEvent(await res.json(), calendarId);
+    return this.mapEvent(await res.json() as any, calendarId);
   }
 
   async updateEvent(
@@ -237,7 +237,7 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       throw this.mapError(res.status, await res.text());
     }
 
-    return this.mapEvent(await res.json(), calendarId);
+    return this.mapEvent(await res.json() as any, calendarId);
   }
 
   async deleteEvent(

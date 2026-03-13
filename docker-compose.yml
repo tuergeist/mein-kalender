@@ -38,6 +38,7 @@ services:
       REDIS_URL: redis://redis:6379
       NEXTAUTH_SECRET: dev-secret-change-in-production
       ENCRYPTION_SECRET: dev-encryption-key-change-me-32b
+      SKIP_EMAIL_VERIFICATION: "true"
       API_PORT: "4200"
       API_HOST: "0.0.0.0"
     depends_on:

@@ -21,6 +21,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/packages/api/dist ./dist
 COPY --from=builder /app/packages/api/prisma ./prisma
 COPY --from=builder /app/packages/shared/dist ./node_modules/@calendar-sync/shared/dist
@@ -29,4 +30,4 @@ COPY --from=builder /app/packages/shared/package.json ./node_modules/@calendar-s
 EXPOSE 4200
 ENV PORT=4200
 
-CMD ["node", "dist/server.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/server.js"]

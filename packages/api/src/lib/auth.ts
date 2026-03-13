@@ -27,10 +27,10 @@ export async function authenticate(
 
   try {
     const token = authHeader.slice(7);
-    const payload = getVerifier()(token);
+    const payload = await getVerifier()(token);
     (request as FastifyRequest & { user: AuthUser }).user = {
-      id: payload.sub,
-      email: payload.email,
+      id: (payload as any).sub,
+      email: (payload as any).email,
     };
   } catch {
     reply.code(401).send({ error: "Unauthorized" });

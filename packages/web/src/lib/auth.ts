@@ -2,6 +2,7 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import MicrosoftProvider from "next-auth/providers/azure-ad";
+import { createSigner } from "fast-jwt";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -74,6 +75,11 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as { id: string }).id = token.sub!;
       }
+      const sign = createSigner({ key: process.env.NEXTAUTH_SECRET! });
+      (session as { accessToken: string }).accessToken = sign({
+        sub: token.sub,
+        email: token.email,
+      });
       return session;
     },
   },

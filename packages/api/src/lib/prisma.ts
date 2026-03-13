@@ -21,7 +21,9 @@ export function scopedPrisma(userId: string) {
     query: {
       calendarSource: {
         async $allOperations({ args, query }) {
-          args.where = { ...args.where, userId };
+          if ("where" in args) {
+            (args as any).where = { ...(args as any).where, userId };
+          }
           return query(args);
         },
       },
