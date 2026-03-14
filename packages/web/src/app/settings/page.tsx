@@ -92,10 +92,10 @@ export default function SettingsPage() {
   }
 
   function handleAddProvider(provider: string) {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4200";
-    const redirectUri = `${apiUrl}/api/oauth/${provider}/callback`;
+    const origin = window.location.origin;
+    const redirectUri = `${origin}/api/oauth/${provider}/callback`;
 
-    window.location.href = `${apiUrl}/api/oauth/${provider}/start?redirect=${encodeURIComponent(redirectUri)}`;
+    window.location.href = `${origin}/api/oauth/${provider}/start?redirect=${encodeURIComponent(redirectUri)}`;
     setShowAddModal(false);
   }
 
