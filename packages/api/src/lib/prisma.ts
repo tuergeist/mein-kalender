@@ -20,7 +20,7 @@ export function scopedPrisma(userId: string) {
   return prisma.$extends({
     query: {
       calendarSource: {
-        async $allOperations({ args, query }) {
+        async $allOperations({ args, query }: { args: any; query: any }) {
           if ("where" in args) {
             (args as any).where = { ...(args as any).where, userId };
           }

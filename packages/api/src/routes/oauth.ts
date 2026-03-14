@@ -27,7 +27,7 @@ export async function oauthRoutes(app: FastifyInstance) {
         JSON.stringify({ provider, redirect: callbackUrl })
       ).toString("base64url");
 
-      const consentUrl = p.getConsentUrl(callbackUrl, state);
+      const consentUrl = p.getConsentUrl!(callbackUrl, state);
       return reply.redirect(consentUrl);
     }
   );

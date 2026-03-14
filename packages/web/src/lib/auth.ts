@@ -76,7 +76,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as { id: string }).id = token.sub!;
       }
       const sign = createSigner({ key: process.env.NEXTAUTH_SECRET! });
-      (session as { accessToken: string }).accessToken = sign({
+      (session as unknown as { accessToken: string }).accessToken = sign({
         sub: token.sub,
         email: token.email,
       });

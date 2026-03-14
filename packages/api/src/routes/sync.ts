@@ -55,7 +55,7 @@ export async function syncRoutes(app: FastifyInstance) {
 
     const queue = getSyncQueue();
     await Promise.all(
-      sources.map((s) =>
+      sources.map((s: { id: string }) =>
         queue.add("sync-source", { sourceId: s.id, userId: user.id })
       )
     );

@@ -18,7 +18,7 @@ export async function sourcesRoutes(app: FastifyInstance) {
       include: { calendarEntries: true },
     });
 
-    return sources.map((s) => ({
+    return sources.map((s: any) => ({
       ...s,
       credentials: undefined, // never expose credentials
     }));

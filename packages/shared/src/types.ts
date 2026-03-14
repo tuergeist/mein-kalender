@@ -47,6 +47,7 @@ export interface TokenSet {
 }
 
 export interface CalendarProviderInterface {
+  getConsentUrl?(redirectUri: string, state: string): string;
   authenticate(credentials: Record<string, string>): Promise<TokenSet>;
   listCalendars(token: TokenSet): Promise<NormalizedCalendar[]>;
   getEvents(

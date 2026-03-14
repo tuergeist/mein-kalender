@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Spinner } from "@heroui/react";
 import { apiAuthFetch } from "@/lib/api";
 
-export default function OAuthCallbackPage() {
+function OAuthCallbackContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();
@@ -29,7 +29,7 @@ export default function OAuthCallbackPage() {
       return;
     }
 
-    const token = (session as { accessToken?: string })?.accessToken;
+    const token = (session as unknown as { accessToken?: string })?.accessToken;
     if (!token) return; // Wait for session
 
     apiAuthFetch("/api/oauth/complete", token, {
@@ -70,5 +70,19 @@ export default function OAuthCallbackPage() {
         <p className="mt-4 text-default-500">Connecting your calendar...</p>
       </div>
     </div>
+  );
+}
+
+export default function OAuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <Spinner size="lg" />
+        </div>
+      }
+    >
+      <OAuthCallbackContent />
+    </Suspense>
   );
 }
