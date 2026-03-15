@@ -4,10 +4,9 @@ import {
   NormalizedEvent,
   EventDelta,
   TokenSet,
-  ProviderError,
-  ProviderErrorCode,
   Provider,
-} from "@calendar-sync/shared";
+} from "../types";
+import { ProviderError, ProviderErrorCode } from "../errors";
 
 const GRAPH_API_BASE = "https://graph.microsoft.com/v1.0";
 const MS_TOKEN_URL = "https://login.microsoftonline.com";

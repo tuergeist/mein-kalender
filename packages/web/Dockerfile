@@ -3,17 +3,14 @@ FROM node:22-alpine AS base
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-COPY packages/shared/package.json ./packages/shared/
 COPY packages/web/package.json ./packages/web/
-RUN npm install --workspace=packages/web --workspace=packages/shared
+RUN npm install --workspace=packages/web
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY packages/shared ./packages/shared
 COPY packages/web ./packages/web
-COPY package.json turbo.json ./
-RUN npx turbo build --filter=@calendar-sync/shared
+COPY package.json ./
 RUN cd packages/web && npx next build
 
 FROM base AS runner

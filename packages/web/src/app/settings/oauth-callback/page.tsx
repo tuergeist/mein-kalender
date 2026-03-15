@@ -23,7 +23,9 @@ function OAuthCallbackContent() {
 
     let tokens: { accessToken: string; refreshToken: string | null; expiresAt: string | null };
     try {
-      tokens = JSON.parse(Buffer.from(tokensParam, "base64url").toString("utf-8"));
+      // base64url → base64 → decode
+      const base64 = tokensParam.replace(/-/g, "+").replace(/_/g, "/");
+      tokens = JSON.parse(atob(base64));
     } catch {
       setError("Invalid token data.");
       return;

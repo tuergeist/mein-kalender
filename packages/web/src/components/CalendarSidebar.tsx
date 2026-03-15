@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Checkbox, Spinner, Button } from "@heroui/react";
+import { Spinner, Button } from "@heroui/react";
 import { apiAuthFetch } from "@/lib/api";
 
 interface CalendarEntry {
@@ -47,7 +47,16 @@ export function CalendarSidebar() {
         s.calendarEntries.forEach((e: CalendarEntry) => allIds.add(e.id))
       );
       setVisibleCalendars(allIds);
+      dispatchVisibility(allIds);
     }
+  }
+
+  function dispatchVisibility(ids: Set<string>) {
+    window.dispatchEvent(
+      new CustomEvent("calendar-visibility-change", {
+        detail: { visibleCalendars: Array.from(ids) },
+      })
+    );
   }
 
   function toggleCalendar(calendarId: string) {
@@ -58,13 +67,9 @@ export function CalendarSidebar() {
       } else {
         next.add(calendarId);
       }
+      dispatchVisibility(next);
       return next;
     });
-    window.dispatchEvent(
-      new CustomEvent("calendar-visibility-change", {
-        detail: { visibleCalendars: Array.from(visibleCalendars) },
-      })
-    );
   }
 
   async function handleSyncNow() {
@@ -87,7 +92,7 @@ export function CalendarSidebar() {
   };
 
   return (
-    <div className="flex flex-col gap-1 p-4">
+    <div className="flex flex-col gap-1 overflow-hidden p-3">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
           Calendars
@@ -122,29 +127,34 @@ export function CalendarSidebar() {
             )}
           </div>
 
-          {source.calendarEntries.map((entry) => (
-            <Checkbox
-              key={entry.id}
-              isSelected={visibleCalendars.has(entry.id)}
-              onValueChange={() => toggleCalendar(entry.id)}
-              size="sm"
-              className="ml-1"
-              classNames={{
-                label: "text-sm text-gray-700",
-              }}
-            >
-              <span className="flex items-center gap-2">
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-sm"
-                  style={{ backgroundColor: entry.color || "#3b82f6" }}
-                />
-                <span className="truncate">{entry.name}</span>
-                {entry.readOnly && (
-                  <span className="text-[10px] text-gray-400">(read-only)</span>
-                )}
-              </span>
-            </Checkbox>
-          ))}
+          <div className="flex flex-col">
+            {source.calendarEntries.map((entry) => {
+              const active = visibleCalendars.has(entry.id);
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => toggleCalendar(entry.id)}
+                  className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-left hover:bg-gray-50"
+                >
+                  <span
+                    className="inline-block h-3 w-3 shrink-0 rounded-full border-2"
+                    style={
+                      active
+                        ? { backgroundColor: entry.color || "#3b82f6", borderColor: entry.color || "#3b82f6" }
+                        : { backgroundColor: "white", borderColor: "#d1d5db" }
+                    }
+                  />
+                  <span className={`truncate text-xs ${active ? "text-gray-700" : "text-gray-400"}`}>
+                    {entry.name}
+                  </span>
+                  {entry.readOnly && (
+                    <span className="shrink-0 text-[10px] text-gray-400">RO</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>

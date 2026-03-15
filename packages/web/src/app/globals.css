@@ -63,7 +63,7 @@
   --status-error-bg:    #FCEBEB;
 
   /* Font stacks */
-  --font-sans:  'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-sans:  var(--font-inter), 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 
   /* Spacing */

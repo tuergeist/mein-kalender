@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
-import { encrypt, decrypt } from "@calendar-sync/shared";
+import { encrypt, decrypt } from "../encryption";
 
 interface AuthenticatedRequest {
   user: AuthUser;

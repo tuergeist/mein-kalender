@@ -23,17 +23,20 @@ interface CalendarEvent {
   extendedProps: {
     description: string | null;
     location: string | null;
+    calendarEntryId: string;
     calendarName: string;
     calendarColor: string;
     readOnly: boolean;
     sourceEventId: string;
+    providerMetadata: Record<string, unknown> | null;
   };
 }
 
 export function CalendarView() {
   const { data: session } = useSession();
   const calendarRef = useRef<FullCalendar>(null);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
+  const [visibleCalendarIds, setVisibleCalendarIds] = useState<Set<string> | null>(null);
   const [currentView, setCurrentView] = useState("dayGridMonth");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -44,6 +47,15 @@ export function CalendarView() {
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
+    function handleVisibilityChange(e: Event) {
+      const ids = (e as CustomEvent).detail.visibleCalendars as string[];
+      setVisibleCalendarIds(new Set(ids));
+    }
+    window.addEventListener("calendar-visibility-change", handleVisibilityChange);
+    return () => window.removeEventListener("calendar-visibility-change", handleVisibilityChange);
   }, []);
 
   useEffect(() => {
@@ -75,7 +87,9 @@ export function CalendarView() {
             description: string | null;
             location: string | null;
             sourceEventId: string;
+            providerMetadata: Record<string, unknown> | null;
             calendarEntry: {
+              id: string;
               name: string;
               color: string;
               readOnly: boolean;
@@ -91,14 +105,16 @@ export function CalendarView() {
             extendedProps: {
               description: e.description,
               location: e.location,
+              calendarEntryId: e.calendarEntry.id,
               calendarName: e.calendarEntry.name,
               calendarColor: e.calendarEntry.color,
               readOnly: e.calendarEntry.readOnly,
               sourceEventId: e.sourceEventId,
+              providerMetadata: e.providerMetadata,
             },
           })
         );
-        setEvents(mapped);
+        setAllEvents(mapped);
       }
     },
     [session]
@@ -109,6 +125,10 @@ export function CalendarView() {
       fetchEvents(dateRange.start, dateRange.end);
     }
   }, [session, dateRange, fetchEvents]);
+
+  const events = visibleCalendarIds
+    ? allEvents.filter((e) => visibleCalendarIds.has(e.extendedProps.calendarEntryId))
+    : allEvents;
 
   function handleViewChange(view: string) {
     setCurrentView(view);
@@ -141,65 +161,92 @@ export function CalendarView() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ButtonGroup size="sm" variant="flat">
+      <div className="mb-2 flex flex-col gap-2 md:mb-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 md:gap-2">
             <Button
-              className={currentView === "dayGridMonth" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+              size="sm"
+              variant="light"
+              isIconOnly
+              className="text-gray-500"
+              onPress={() => calendarRef.current?.getApi().prev()}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </Button>
+            <Button
+              size="sm"
+              variant="flat"
+              className="h-8 min-w-0 px-2 text-xs font-medium text-gray-600 md:px-3"
+              onPress={() => calendarRef.current?.getApi().today()}
+            >
+              Today
+            </Button>
+            <Button
+              size="sm"
+              variant="light"
+              isIconOnly
+              className="text-gray-500"
+              onPress={() => calendarRef.current?.getApi().next()}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </Button>
+            <h2 className="ml-1 text-sm font-semibold text-gray-800 md:ml-2 md:text-lg">{title}</h2>
+          </div>
+
+          <ButtonGroup size="sm" variant="flat" className="md:hidden">
+            <Button
+              className={`min-w-0 px-2 ${currentView === "dayGridMonth" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}`}
               onPress={() => handleViewChange("dayGridMonth")}
             >
-              Month
+              M
             </Button>
             <Button
-              className={currentView === "timeGridWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+              className={`min-w-0 px-2 ${currentView === "timeGridWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}`}
               onPress={() => handleViewChange("timeGridWeek")}
             >
-              Week
+              W
             </Button>
             <Button
-              className={currentView === "timeGridDay" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+              className={`min-w-0 px-2 ${currentView === "timeGridDay" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}`}
               onPress={() => handleViewChange("timeGridDay")}
             >
-              Day
+              D
             </Button>
             <Button
-              className={currentView === "listWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+              className={`min-w-0 px-2 ${currentView === "listWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}`}
               onPress={() => handleViewChange("listWeek")}
             >
-              List
+              L
             </Button>
           </ButtonGroup>
-          <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
         </div>
 
-        <div className="flex items-center gap-1">
+        <ButtonGroup size="sm" variant="flat" className="hidden md:flex">
           <Button
-            size="sm"
-            variant="light"
-            isIconOnly
-            className="text-gray-500"
-            onPress={() => calendarRef.current?.getApi().prev()}
+            className={currentView === "dayGridMonth" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+            onPress={() => handleViewChange("dayGridMonth")}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Month
           </Button>
           <Button
-            size="sm"
-            variant="flat"
-            className="h-8 min-w-0 px-3 text-xs font-medium text-gray-600"
-            onPress={() => calendarRef.current?.getApi().today()}
+            className={currentView === "timeGridWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+            onPress={() => handleViewChange("timeGridWeek")}
           >
-            Today
+            Week
           </Button>
           <Button
-            size="sm"
-            variant="light"
-            isIconOnly
-            className="text-gray-500"
-            onPress={() => calendarRef.current?.getApi().next()}
+            className={currentView === "timeGridDay" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+            onPress={() => handleViewChange("timeGridDay")}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Day
           </Button>
-        </div>
+          <Button
+            className={currentView === "listWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+            onPress={() => handleViewChange("listWeek")}
+          >
+            List
+          </Button>
+        </ButtonGroup>
       </div>
 
       <div className="flex-1">
@@ -217,6 +264,48 @@ export function CalendarView() {
           eventDrop={handleEventDrop}
           eventClick={(info) => {
             setSelectedEvent(info.event.toPlainObject() as unknown as CalendarEvent);
+          }}
+          eventContent={(arg) => {
+            const meta = arg.event.extendedProps?.providerMetadata;
+            const eventType = meta?.eventType as string | undefined;
+            const transparency = meta?.transparency as string | undefined;
+            const wl = meta?.workingLocation as { type?: string } | undefined;
+            const rawTitle = arg.event.title;
+
+            // Detect working location from API metadata or title pattern
+            const isWorkingLocation = eventType === "workingLocation"
+              || /^(Arbeitsort:|Working location:)/i.test(rawTitle)
+              || /^Home\s*office$/i.test(rawTitle)
+              || /^Büro$/i.test(rawTitle);
+            const isFree = transparency === "transparent";
+            const isOutOfOffice = eventType === "outOfOffice";
+            const isFocusTime = eventType === "focusTime";
+
+            let icon = "";
+            if (isWorkingLocation) {
+              const isHome = wl?.type === "homeOffice"
+                || /Zuhause|Home|Homeoffice/i.test(rawTitle);
+              const isOffice = wl?.type === "officeLocation"
+                || /Büro|Office/i.test(rawTitle);
+              icon = isHome ? "\u{1F3E0}" : isOffice ? "\u{1F3E2}" : "\u{1F4CD}";
+            } else if (isOutOfOffice) {
+              icon = "\u{1F334}";
+            } else if (isFocusTime) {
+              icon = "\u{1F3AF}";
+            }
+
+            const title = isWorkingLocation
+              ? rawTitle.replace(/^Arbeitsort:\s*|^Working location:\s*/i, "")
+              : rawTitle;
+
+            return {
+              html: `<div class="fc-event-main-frame" style="${isFree ? "opacity:0.6;" : ""}">
+                ${arg.timeText ? `<div class="fc-event-time">${arg.timeText}</div>` : ""}
+                <div class="fc-event-title-container">
+                  <div class="fc-event-title fc-sticky">${isWorkingLocation ? icon : (icon ? icon + " " : "") + title}</div>
+                </div>
+              </div>`,
+            };
           }}
           datesSet={(dateInfo) => {
             setDateRange({ start: dateInfo.start, end: dateInfo.end });

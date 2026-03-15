@@ -4,10 +4,9 @@ import {
   NormalizedEvent,
   EventDelta,
   TokenSet,
-  ProviderError,
-  ProviderErrorCode,
   Provider,
-} from "@calendar-sync/shared";
+} from "../types";
+import { ProviderError, ProviderErrorCode } from "../errors";
 
 const GOOGLE_API_BASE = "https://www.googleapis.com/calendar/v3";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -145,6 +144,10 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
       maxResults: "2500",
       singleEvents: "true",
     });
+    params.append("eventTypes", "default");
+    params.append("eventTypes", "focusTime");
+    params.append("eventTypes", "outOfOffice");
+    params.append("eventTypes", "workingLocation");
 
     if (syncToken) {
       params.set("syncToken", syncToken);
@@ -267,6 +270,11 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
     const end = item.end as Record<string, string>;
     const allDay = !!start.date;
 
+    const metadata: Record<string, unknown> = {};
+    if (item.eventType) metadata.eventType = item.eventType;
+    if (item.workingLocationProperties) metadata.workingLocation = item.workingLocationProperties;
+    if (item.transparency) metadata.transparency = item.transparency; // "transparent" = free, "opaque" = busy
+
     return {
       id: "",
       sourceEventId: item.id as string,
@@ -277,6 +285,7 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
       startTime: new Date(start.dateTime || start.date),
       endTime: new Date(end.dateTime || end.date),
       allDay,
+      providerMetadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     };
   }
 

@@ -9,7 +9,6 @@
     "start": "next start"
   },
   "dependencies": {
-    "@calendar-sync/shared": "*",
     "@fullcalendar/core": "^6.1.0",
     "@fullcalendar/daygrid": "^6.1.0",
     "@fullcalendar/interaction": "^6.1.0",

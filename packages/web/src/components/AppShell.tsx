@@ -15,18 +15,17 @@ import { CalendarSidebar } from "./CalendarSidebar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">
       {/* Navbar */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 shadow-sm">
+      <header className="relative z-40 flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 shadow-sm">
         <div className="flex items-center gap-3">
           <Button
             isIconOnly
             variant="light"
             size="sm"
-            className="md:hidden"
             onPress={() => setSidebarOpen(!sidebarOpen)}
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -40,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="flex items-center gap-2">
           <Link href="/settings">
-            <Button variant="light" size="sm" className="text-gray-600">
+            <Button variant="light" size="sm" className="hidden text-gray-600 sm:flex">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M6.5 1.5h3l.3 1.7a5 5 0 011.2.7l1.6-.6 1.5 2.6-1.3 1.1a5 5 0 010 1.4l1.3 1.1-1.5 2.6-1.6-.6a5 5 0 01-1.2.7l-.3 1.7h-3l-.3-1.7a5 5 0 01-1.2-.7l-1.6.6-1.5-2.6 1.3-1.1a5 5 0 010-1.4L2.9 5.9l1.5-2.6 1.6.6a5 5 0 011.2-.7l.3-1.7z" stroke="currentColor" strokeWidth="1.2" />
                 <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2" />
@@ -77,18 +76,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Sidebar — overlay on mobile, inline on desktop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-20 bg-black/30 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
         <aside
-          className={`${
-            sidebarOpen ? "w-60" : "w-0"
-          } shrink-0 overflow-y-auto border-r border-gray-200 bg-white transition-all duration-200 md:w-60`}
+          className={`
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+            fixed z-30 h-[calc(100vh-3.5rem)] w-60 border-r border-gray-200 bg-white transition-transform duration-200
+            md:relative md:z-auto md:h-auto
+          `}
         >
           <CalendarSidebar />
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-5">{children}</main>
+        <main className="flex-1 overflow-y-auto p-3 md:p-5">{children}</main>
       </div>
     </div>
   );

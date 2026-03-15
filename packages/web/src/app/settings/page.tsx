@@ -18,6 +18,7 @@ import {
   ModalFooter,
   Chip,
 } from "@heroui/react";
+import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { apiAuthFetch } from "@/lib/api";
 
@@ -111,7 +112,14 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-2xl font-bold">Settings</h1>
+        <div className="flex items-center gap-3">
+          <Link href="/calendar">
+            <Button variant="light" size="sm" isIconOnly className="text-gray-500">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold">Settings</h1>
+        </div>
 
         {/* Connected Sources */}
         <Card>

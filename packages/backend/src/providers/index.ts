@@ -2,7 +2,7 @@ export { GoogleCalendarProvider } from "./google";
 export { OutlookCalendarProvider } from "./outlook";
 export { ProtonCalendarProvider } from "./proton";
 
-import { CalendarProviderInterface, Provider } from "@calendar-sync/shared";
+import { CalendarProviderInterface, Provider } from "../types";
 import { GoogleCalendarProvider } from "./google";
 import { OutlookCalendarProvider } from "./outlook";
 import { ProtonCalendarProvider } from "./proton";

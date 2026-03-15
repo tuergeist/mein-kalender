@@ -2,10 +2,16 @@ import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
 import { getProvider } from "../providers";
-import { encrypt } from "@calendar-sync/shared";
+import { encrypt } from "../encryption";
 
 interface AuthenticatedRequest {
   user: AuthUser;
+}
+
+function getOrigin(request: { headers: Record<string, string | string[] | undefined> }): string {
+  const proto = (request.headers["x-forwarded-proto"] as string) || "http";
+  const host = request.headers["host"] || "localhost:4201";
+  return `${proto}://${host}`;
 }
 
 export async function oauthRoutes(app: FastifyInstance) {
@@ -43,8 +49,8 @@ export async function oauthRoutes(app: FastifyInstance) {
       const { code, state, error } = request.query;
 
       if (error) {
-        const webUrl = process.env.WEB_URL || "http://localhost:4201";
-        return reply.redirect(`${webUrl}/settings?error=${encodeURIComponent(error)}`);
+        const origin = getOrigin(request);
+        return reply.redirect(`${origin}/settings?error=${encodeURIComponent(error)}`);
       }
 
       if (!code || !state) {
@@ -62,8 +68,8 @@ export async function oauthRoutes(app: FastifyInstance) {
       const tokenSet = await p.authenticate({ code, redirectUri: stateData.redirect });
 
       // Redirect back to web app with tokens encoded in URL
-      const webUrl = process.env.WEB_URL || "http://localhost:4201";
-      const settingsUrl = new URL(`${webUrl}/settings/oauth-callback`);
+      const origin = getOrigin(request);
+      const settingsUrl = new URL(`${origin}/settings/oauth-callback`);
       settingsUrl.searchParams.set("provider", provider);
       settingsUrl.searchParams.set(
         "tokens",

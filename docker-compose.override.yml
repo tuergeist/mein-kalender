@@ -3,11 +3,11 @@ services:
     build:
       context: .
       dockerfile: dev.Dockerfile
+      target: ""
     volumes:
-      - ./packages/api/src:/app/packages/api/src
-      - ./packages/api/prisma:/app/packages/api/prisma
-      - ./packages/shared/src:/app/packages/shared/src
-    command: sh -c "cd packages/api && npx prisma db push --skip-generate && npx tsx watch src/server.ts"
+      - ./packages/backend/src:/app/packages/backend/src
+      - ./packages/backend/prisma:/app/packages/backend/prisma
+    command: sh -c "cd /app/packages/backend && npx prisma db push --skip-generate && npx tsx watch src/server.ts"
     environment:
       NODE_ENV: development
 
@@ -15,12 +15,11 @@ services:
     build:
       context: .
       dockerfile: dev.Dockerfile
+      target: ""
     volumes:
-      - ./packages/sync-worker/src:/app/packages/sync-worker/src
-      - ./packages/api/src:/app/packages/api/src
-      - ./packages/api/prisma:/app/packages/api/prisma
-      - ./packages/shared/src:/app/packages/shared/src
-    command: sh -c "cd packages/sync-worker && npx tsx watch src/worker.ts"
+      - ./packages/backend/src:/app/packages/backend/src
+      - ./packages/backend/prisma:/app/packages/backend/prisma
+    command: sh -c "cd /app/packages/backend && npx tsx watch src/worker.ts"
     environment:
       NODE_ENV: development
 
@@ -31,7 +30,6 @@ services:
     volumes:
       - ./packages/web/src:/app/packages/web/src
       - ./packages/web/public:/app/packages/web/public
-      - ./packages/shared/src:/app/packages/shared/src
-    command: sh -c "cd packages/web && npx next dev -p 3000"
+    command: sh -c "cd /app/packages/web && npx next dev -p 3000"
     environment:
       NODE_ENV: development

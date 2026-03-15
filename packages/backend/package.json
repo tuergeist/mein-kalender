@@ -1,17 +1,16 @@
 {
-  "name": "@calendar-sync/api",
+  "name": "@calendar-sync/backend",
   "version": "0.0.1",
   "private": true,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/server.ts",
+    "dev:api": "tsx watch src/server.ts",
+    "dev:worker": "tsx watch src/worker.ts",
     "lint": "eslint .",
-    "start": "node dist/server.js"
+    "start:api": "node dist/server.js",
+    "start:worker": "node dist/worker.js"
   },
   "dependencies": {
-    "@calendar-sync/shared": "*",
     "fastify": "^5.3.0",
     "@fastify/cors": "^11.0.0",
     "@prisma/client": "^6.6.0",
@@ -24,6 +23,7 @@
     "tsx": "^4.19.0",
     "prisma": "^6.6.0",
     "eslint": "^9.24.0",
-    "@types/bcrypt": "^5.0.0"
+    "@types/bcrypt": "^5.0.0",
+    "@types/node": "^22.15.0"
   }
 }

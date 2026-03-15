@@ -4,10 +4,9 @@ import {
   NormalizedEvent,
   EventDelta,
   TokenSet,
-  ProviderError,
-  ProviderErrorCode,
   Provider,
-} from "@calendar-sync/shared";
+} from "../types";
+import { ProviderError, ProviderErrorCode } from "../errors";
 
 /**
  * Proton Calendar adapter using CalDAV via proton-mail-bridge.

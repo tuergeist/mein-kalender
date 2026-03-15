@@ -47,6 +47,67 @@ export async function authRoutes(app: FastifyInstance) {
     };
   });
 
+  // OAuth user lookup/creation (used by NextAuth OAuth flow)
+  app.post<{
+    Body: {
+      email: string;
+      name?: string;
+      provider: string;
+      providerAccountId: string;
+    };
+  }>("/api/auth/oauth-user", async (request, reply) => {
+    const { email, name, provider, providerAccountId } = request.body;
+
+    if (!email || !provider || !providerAccountId) {
+      return reply.code(400).send({ error: "Missing required fields" });
+    }
+
+    // Check if this OAuth account already exists
+    const existingAccount = await prisma.account.findUnique({
+      where: {
+        provider_providerAccountId: { provider, providerAccountId },
+      },
+      include: { user: true },
+    });
+
+    if (existingAccount) {
+      return {
+        id: existingAccount.user.id,
+        email: existingAccount.user.email,
+        displayName: existingAccount.user.displayName,
+      };
+    }
+
+    // Check if a user with this email exists (link account)
+    let user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email,
+          displayName: name || null,
+          emailVerified: true, // OAuth emails are pre-verified
+        },
+      });
+    }
+
+    // Create the account link
+    await prisma.account.create({
+      data: {
+        userId: user.id,
+        type: "oauth",
+        provider,
+        providerAccountId,
+      },
+    });
+
+    return {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+    };
+  });
+
   // Login (used by NextAuth credentials provider)
   app.post<{
     Body: { email: string; password: string };

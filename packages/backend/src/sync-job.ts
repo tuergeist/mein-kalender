@@ -1,15 +1,14 @@
 import { PrismaClient } from "@prisma/client";
+import { decrypt } from "./encryption";
 import {
-  decrypt,
   Provider,
   CalendarProviderInterface,
   EventDelta,
   TokenSet,
-  ProviderError,
-  ProviderErrorCode,
   NormalizedEvent,
-} from "@calendar-sync/shared";
-import { getProvider } from "@calendar-sync/api";
+} from "./types";
+import { ProviderError, ProviderErrorCode } from "./errors";
+import { getProvider } from "./providers";
 
 export async function processSyncJob(
   prisma: PrismaClient,
@@ -94,7 +93,7 @@ async function syncCalendarEntry(
   prisma: PrismaClient,
   provider: CalendarProviderInterface,
   token: TokenSet,
-  entry: { id: string; providerCalendarId: string },
+  entry: { id: string; sourceId: string; providerCalendarId: string },
   syncToken: string | null
 ): Promise<void> {
   const delta: EventDelta = await provider.getEvents(
@@ -171,7 +170,7 @@ async function syncCalendarEntry(
   // Update sync token if provider returned one
   if (delta.nextSyncToken) {
     await prisma.calendarSource.update({
-      where: { id: entry.id },
+      where: { id: entry.sourceId },
       data: { syncToken: delta.nextSyncToken },
     });
   }
