@@ -75,6 +75,7 @@ export async function authRoutes(app: FastifyInstance) {
         id: existingAccount.user.id,
         email: existingAccount.user.email,
         displayName: existingAccount.user.displayName,
+        role: existingAccount.user.role,
       };
     }
 
@@ -105,6 +106,7 @@ export async function authRoutes(app: FastifyInstance) {
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+      role: user.role,
     };
   });
 
@@ -137,6 +139,7 @@ export async function authRoutes(app: FastifyInstance) {
       email: user.email,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
+      role: user.role,
     };
   });
 }

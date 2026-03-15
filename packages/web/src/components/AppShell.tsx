@@ -38,6 +38,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {(session as any)?.role === "admin" && (
+            <Link href="/admin">
+              <Button variant="light" size="sm" className="hidden text-gray-600 sm:flex">
+                Admin
+              </Button>
+            </Link>
+          )}
           <Link href="/settings">
             <Button variant="light" size="sm" className="hidden text-gray-600 sm:flex">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

@@ -13,6 +13,19 @@ function getVerifier() {
 export interface AuthUser {
   id: string;
   email: string;
+  role: string;
+}
+
+export async function requireAdmin(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  await authenticate(request, reply);
+  if (reply.sent) return;
+  const user = (request as FastifyRequest & { user: AuthUser }).user;
+  if (user.role !== "admin") {
+    reply.code(403).send({ error: "Forbidden" });
+  }
 }
 
 export async function authenticate(
@@ -31,6 +44,7 @@ export async function authenticate(
     (request as FastifyRequest & { user: AuthUser }).user = {
       id: (payload as any).sub,
       email: (payload as any).email,
+      role: (payload as any).role || "user",
     };
   } catch {
     reply.code(401).send({ error: "Unauthorized" });

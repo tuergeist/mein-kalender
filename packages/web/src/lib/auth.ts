@@ -59,6 +59,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.displayName,
           image: user.avatarUrl,
+          role: user.role,
         };
       },
     }),
@@ -91,8 +92,9 @@ export const authOptions: NextAuthOptions = {
           providerAccountId: account.providerAccountId,
         });
         if (!dbUser) return false;
-        // Store our DB user ID so jwt callback can use it
+        // Store our DB user ID and role so jwt callback can use it
         user.id = dbUser.id;
+        (user as any).role = dbUser.role;
       }
       return true;
     },
@@ -100,10 +102,11 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id;
         token.email = user.email;
+        token.role = (user as any).role || "user";
       }
       // Sign API access token once and cache in JWT (persists across reads)
       if (!token.accessToken) {
-        token.accessToken = apiTokenSigner({ sub: token.sub, email: token.email });
+        token.accessToken = apiTokenSigner({ sub: token.sub, email: token.email, role: token.role });
       }
       return token;
     },
@@ -113,6 +116,8 @@ export const authOptions: NextAuthOptions = {
       }
       (session as unknown as { accessToken: string }).accessToken =
         token.accessToken as string;
+      (session as unknown as { role: string }).role =
+        (token.role as string) || "user";
       return session;
     },
   },
