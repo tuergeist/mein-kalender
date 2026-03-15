@@ -99,6 +99,32 @@ export async function sourcesRoutes(app: FastifyInstance) {
     return { ...updated, credentials: undefined };
   });
 
+  // Toggle calendar entry enabled state
+  app.patch<{
+    Params: { id: string };
+    Body: { enabled: boolean };
+  }>("/api/calendar-entries/:id", async (request, reply) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+
+    const entry = await prisma.calendarEntry.findFirst({
+      where: {
+        id: request.params.id,
+        source: { userId: user.id },
+      },
+    });
+
+    if (!entry) {
+      return reply.code(404).send({ error: "Not found" });
+    }
+
+    const updated = await prisma.calendarEntry.update({
+      where: { id: request.params.id },
+      data: { enabled: request.body.enabled },
+    });
+
+    return updated;
+  });
+
   // Delete a source
   app.delete<{ Params: { id: string } }>("/api/sources/:id", async (request, reply) => {
     const { user } = request as unknown as AuthenticatedRequest;

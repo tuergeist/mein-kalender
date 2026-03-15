@@ -5,6 +5,7 @@ import AzureADProvider from "next-auth/providers/azure-ad";
 import { createSigner } from "fast-jwt";
 
 const API_URL = process.env.API_URL || "http://localhost:4200";
+const apiTokenSigner = createSigner({ key: process.env.NEXTAUTH_SECRET! });
 
 async function findOrCreateOAuthUser(profile: {
   email: string;
@@ -99,12 +100,10 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id;
         token.email = user.email;
-        // Sign the API access token once at login, not on every session read
-        const sign = createSigner({ key: process.env.NEXTAUTH_SECRET! });
-        token.accessToken = sign({
-          sub: user.id,
-          email: user.email,
-        });
+      }
+      // Sign API access token once and cache in JWT (persists across reads)
+      if (!token.accessToken) {
+        token.accessToken = apiTokenSigner({ sub: token.sub, email: token.email });
       }
       return token;
     },

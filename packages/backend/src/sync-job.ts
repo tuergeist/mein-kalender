@@ -1,11 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, CalendarSource, CalendarEntry } from "@prisma/client";
 import { decrypt } from "./encryption";
 import {
-  Provider,
   CalendarProviderInterface,
   EventDelta,
   TokenSet,
-  NormalizedEvent,
 } from "./types";
 import { ProviderError, ProviderErrorCode } from "./errors";
 import { getProvider } from "./providers";
@@ -31,6 +29,19 @@ export async function processSyncJob(
     data: { syncStatus: "syncing", syncError: null },
   });
 
+  // ICS sources are synced via URL fetch, not through the provider interface
+  if (source.provider === "ics") {
+    // Re-fetch ICS URL if configured
+    if (source.icsUrl) {
+      await syncIcsSource(prisma, source);
+    }
+    await prisma.calendarSource.update({
+      where: { id: sourceId },
+      data: { syncStatus: "ok", lastSyncAt: new Date(), syncError: null },
+    });
+    return;
+  }
+
   try {
     const credentials = JSON.parse(
       decrypt(source.credentials, process.env.ENCRYPTION_SECRET!)
@@ -46,7 +57,7 @@ export async function processSyncJob(
     // Sync each enabled calendar entry
     for (const entry of source.calendarEntries) {
       try {
-        await syncCalendarEntry(prisma, provider, token, entry, source.syncToken);
+        await syncCalendarEntry(prisma, provider, token, entry, source.syncToken, userId);
       } catch (err) {
         if (
           err instanceof ProviderError &&
@@ -54,7 +65,7 @@ export async function processSyncJob(
         ) {
           // Full sync fallback
           console.log(`[sync] Sync token expired for ${entry.id}, doing full sync`);
-          await syncCalendarEntry(prisma, provider, token, entry, null);
+          await syncCalendarEntry(prisma, provider, token, entry, null, userId);
         } else {
           throw err;
         }
@@ -62,7 +73,8 @@ export async function processSyncJob(
     }
 
     // Clone to target calendar if configured
-    await cloneToTarget(prisma, provider, token, userId);
+    // TODO: Re-enable after cleanup — disabled to stop duplicate creation
+    // await cloneToTarget(prisma, provider, token, userId);
 
     // Mark sync success
     await prisma.calendarSource.update({
@@ -94,7 +106,8 @@ async function syncCalendarEntry(
   provider: CalendarProviderInterface,
   token: TokenSet,
   entry: { id: string; sourceId: string; providerCalendarId: string },
-  syncToken: string | null
+  syncToken: string | null,
+  userId: string
 ): Promise<void> {
   const delta: EventDelta = await provider.getEvents(
     token,
@@ -156,7 +169,7 @@ async function syncCalendarEntry(
     });
   }
 
-  // Process deletions in batch
+  // Process deletions in batch — propagate to target calendar
   if (delta.deleted.length > 0) {
     const localEvents = await prisma.event.findMany({
       where: {
@@ -169,6 +182,33 @@ async function syncCalendarEntry(
     const localEventIds = localEvents.map((e: { id: string }) => e.id);
 
     if (localEventIds.length > 0) {
+      // Delete cloned events from target calendar before removing local data
+      const targetMappings = await prisma.targetEventMapping.findMany({
+        where: { sourceEventId: { in: localEventIds } },
+        include: { targetCalendar: { include: { source: true } } },
+      });
+
+      for (const mapping of targetMappings) {
+        try {
+          const targetProvider = getProvider(mapping.targetCalendar.source.provider);
+          const targetCreds = JSON.parse(
+            decrypt(mapping.targetCalendar.source.credentials, process.env.ENCRYPTION_SECRET!)
+          );
+          const targetToken: TokenSet = {
+            accessToken: targetCreds.accessToken || "",
+            refreshToken: targetCreds.refreshToken || null,
+            expiresAt: targetCreds.expiresAt ? new Date(targetCreds.expiresAt) : null,
+          };
+          await targetProvider.deleteEvent(
+            targetToken,
+            mapping.targetCalendar.providerCalendarId,
+            mapping.targetEventId
+          );
+        } catch (err) {
+          console.error(`[sync] Failed to delete target event ${mapping.targetEventId}:`, err);
+        }
+      }
+
       await prisma.targetEventMapping.deleteMany({
         where: { sourceEventId: { in: localEventIds } },
       });
@@ -204,6 +244,52 @@ async function cloneToTarget(
 
   if (!targetEntry) return; // No target configured, skip
 
+  const targetProvider = getProvider(targetEntry.source.provider);
+  const targetCredentials = JSON.parse(
+    decrypt(targetEntry.source.credentials, process.env.ENCRYPTION_SECRET!)
+  );
+  const targetToken: TokenSet = {
+    accessToken: targetCredentials.accessToken || "",
+    refreshToken: targetCredentials.refreshToken || null,
+    expiresAt: targetCredentials.expiresAt ? new Date(targetCredentials.expiresAt) : null,
+  };
+
+  // Orphan cleanup: remove mappings whose source events no longer exist
+  const allMappings = await prisma.targetEventMapping.findMany({
+    where: { targetCalendarEntryId: targetEntry.id },
+    select: { id: true, sourceEventId: true, targetEventId: true },
+  });
+
+  const existingEventIds = new Set(
+    (await prisma.event.findMany({
+      where: { id: { in: allMappings.map((m: { sourceEventId: string }) => m.sourceEventId) } },
+      select: { id: true },
+    })).map((e: { id: string }) => e.id)
+  );
+
+  const orphans = allMappings.filter(
+    (m: { sourceEventId: string }) => !existingEventIds.has(m.sourceEventId)
+  );
+
+  for (const orphan of orphans) {
+    try {
+      await targetProvider.deleteEvent(
+        targetToken,
+        targetEntry.providerCalendarId,
+        orphan.targetEventId
+      );
+    } catch (err) {
+      console.error(`[sync] Failed to delete orphaned target event ${orphan.targetEventId}:`, err);
+    }
+  }
+
+  if (orphans.length > 0) {
+    await prisma.targetEventMapping.deleteMany({
+      where: { id: { in: orphans.map((o: { id: string }) => o.id) } },
+    });
+    console.log(`[sync] Cleaned up ${orphans.length} orphaned target mappings`);
+  }
+
   // Find all local events that don't have a target mapping yet
   const unmappedEvents = await prisma.event.findMany({
     where: {
@@ -217,16 +303,6 @@ async function cloneToTarget(
       },
     },
   });
-
-  const targetProvider = getProvider(targetEntry.source.provider);
-  const targetCredentials = JSON.parse(
-    decrypt(targetEntry.source.credentials, process.env.ENCRYPTION_SECRET!)
-  );
-  const targetToken: TokenSet = {
-    accessToken: targetCredentials.accessToken || "",
-    refreshToken: targetCredentials.refreshToken || null,
-    expiresAt: targetCredentials.expiresAt ? new Date(targetCredentials.expiresAt) : null,
-  };
 
   for (const event of unmappedEvents) {
     try {
@@ -243,31 +319,39 @@ async function cloneToTarget(
         }
       );
 
-      await prisma.targetEventMapping.create({
-        data: {
-          sourceEventId: event.id,
-          targetEventId: cloned.sourceEventId,
-          targetCalendarEntryId: targetEntry.id,
-        },
-      });
+      try {
+        await prisma.targetEventMapping.create({
+          data: {
+            sourceEventId: event.id,
+            targetEventId: cloned.sourceEventId,
+            targetCalendarEntryId: targetEntry.id,
+          },
+        });
+      } catch (dupErr) {
+        console.log(`[sync] Duplicate mapping for event ${event.id}, skipping`);
+      }
     } catch (err) {
       console.error(`[sync] Failed to clone event ${event.id} to target:`, err);
       // Continue with other events
     }
   }
 
-  // Handle updates: find events that have mappings and have been updated
+  // Handle updates: only push to target if source event changed since last sync
   const mappedEvents = await prisma.targetEventMapping.findMany({
     where: { targetCalendarEntryId: targetEntry.id },
     include: { sourceEvent: true },
   });
 
-  // Update target events with concurrency limit of 5
+  const staleEntries = mappedEvents.filter(
+    (m: { lastSyncedAt: Date | null; sourceEvent: { updatedAt: Date } }) =>
+      !m.lastSyncedAt || m.sourceEvent.updatedAt > m.lastSyncedAt
+  );
+
   const CHUNK_SIZE = 5;
-  for (let i = 0; i < mappedEvents.length; i += CHUNK_SIZE) {
-    const chunk = mappedEvents.slice(i, i + CHUNK_SIZE);
+  for (let i = 0; i < staleEntries.length; i += CHUNK_SIZE) {
+    const chunk = staleEntries.slice(i, i + CHUNK_SIZE);
     await Promise.all(
-      chunk.map(async (mapping: { targetEventId: string; sourceEvent: { title: string; description: string | null; location: string | null; startTime: Date; endTime: Date; allDay: boolean } }) => {
+      chunk.map(async (mapping: { id: string; targetEventId: string; sourceEvent: { title: string; description: string | null; location: string | null; startTime: Date; endTime: Date; allDay: boolean } }) => {
         try {
           await targetProvider.updateEvent(
             targetToken,
@@ -282,11 +366,101 @@ async function cloneToTarget(
               allDay: mapping.sourceEvent.allDay,
             }
           );
+          await prisma.targetEventMapping.update({
+            where: { id: mapping.id },
+            data: { lastSyncedAt: new Date() },
+          });
         } catch (err) {
           console.error(`[sync] Failed to update target event ${mapping.targetEventId}:`, err);
         }
       })
     );
   }
+}
+
+async function syncIcsSource(
+  prisma: PrismaClient,
+  source: CalendarSource & { calendarEntries: CalendarEntry[] }
+): Promise<void> {
+  if (!source.icsUrl) return;
+
+  const res = await fetch(source.icsUrl);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ICS URL: ${res.status}`);
+  }
+
+  const icsData = await res.text();
+  if (!icsData.includes("BEGIN:VCALENDAR")) {
+    throw new Error("URL does not return valid iCalendar data");
+  }
+
+  // Simple ICS parser (same logic as ics.ts route)
+  const unfolded = icsData.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "");
+  const eventBlocks = unfolded.split("BEGIN:VEVENT");
+  const events: { uid: string; title: string; description: string | null; location: string | null; startTime: Date; endTime: Date; allDay: boolean }[] = [];
+
+  for (let i = 1; i < eventBlocks.length; i++) {
+    const block = eventBlocks[i].split("END:VEVENT")[0];
+    const uid = block.match(/UID:(.*)/)?.[1]?.trim();
+    const summary = block.match(/SUMMARY:(.*)/)?.[1]?.trim();
+    const dtStartRaw = block.match(/DTSTART[^:]*:(.*)/)?.[1]?.trim();
+    const dtEndRaw = block.match(/DTEND[^:]*:(.*)/)?.[1]?.trim();
+    const description = block.match(/DESCRIPTION:(.*)/)?.[1]?.trim();
+    const location = block.match(/LOCATION:(.*)/)?.[1]?.trim();
+
+    if (!uid || !dtStartRaw) continue;
+
+    const allDay = dtStartRaw.length === 8;
+    events.push({
+      uid,
+      title: summary || "(No title)",
+      description: description || null,
+      location: location || null,
+      startTime: parseIcsDate(dtStartRaw),
+      endTime: dtEndRaw ? parseIcsDate(dtEndRaw) : parseIcsDate(dtStartRaw),
+      allDay,
+    });
+  }
+
+  for (const entry of source.calendarEntries) {
+    for (const ev of events) {
+      await prisma.event.upsert({
+        where: {
+          calendarEntryId_sourceEventId: {
+            calendarEntryId: entry.id,
+            sourceEventId: ev.uid,
+          },
+        },
+        create: {
+          calendarEntryId: entry.id,
+          sourceEventId: ev.uid,
+          title: ev.title,
+          description: ev.description,
+          location: ev.location,
+          startTime: ev.startTime,
+          endTime: ev.endTime,
+          allDay: ev.allDay,
+        },
+        update: {
+          title: ev.title,
+          description: ev.description,
+          location: ev.location,
+          startTime: ev.startTime,
+          endTime: ev.endTime,
+          allDay: ev.allDay,
+        },
+      });
+    }
+  }
+
+  console.log(`[sync] ICS source ${source.id}: synced ${events.length} events`);
+}
+
+function parseIcsDate(dateStr: string): Date {
+  if (dateStr.length === 8) {
+    return new Date(`${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`);
+  }
+  const formatted = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}T${dateStr.slice(9, 11)}:${dateStr.slice(11, 13)}:${dateStr.slice(13, 15)}Z`;
+  return new Date(formatted);
 }
 

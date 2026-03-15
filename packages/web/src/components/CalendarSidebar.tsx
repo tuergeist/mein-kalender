@@ -25,7 +25,6 @@ interface CalendarSource {
 export function CalendarSidebar() {
   const { data: session } = useSession();
   const [sources, setSources] = useState<CalendarSource[]>([]);
-  const [visibleCalendars, setVisibleCalendars] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
@@ -39,15 +38,16 @@ export function CalendarSidebar() {
 
     const res = await apiAuthFetch("/api/sources", accessToken);
     if (res.ok) {
-      const data = await res.json();
+      const data: CalendarSource[] = await res.json();
       setSources(data);
 
-      const allIds = new Set<string>();
-      data.forEach((s: CalendarSource) =>
-        s.calendarEntries.forEach((e: CalendarEntry) => allIds.add(e.id))
+      const enabledIds = new Set<string>();
+      data.forEach((s) =>
+        s.calendarEntries.forEach((e) => {
+          if (e.enabled) enabledIds.add(e.id);
+        })
       );
-      setVisibleCalendars(allIds);
-      dispatchVisibility(allIds);
+      dispatchVisibility(enabledIds);
     }
   }
 
@@ -59,16 +59,38 @@ export function CalendarSidebar() {
     );
   }
 
-  function toggleCalendar(calendarId: string) {
-    setVisibleCalendars((prev) => {
-      const next = new Set(prev);
-      if (next.has(calendarId)) {
-        next.delete(calendarId);
-      } else {
-        next.add(calendarId);
-      }
-      dispatchVisibility(next);
-      return next;
+  async function toggleCalendar(calendarId: string) {
+    if (!accessToken) return;
+
+    const entry = sources
+      .flatMap((s) => s.calendarEntries)
+      .find((e) => e.id === calendarId);
+    if (!entry) return;
+
+    const newEnabled = !entry.enabled;
+
+    // Optimistic update
+    setSources((prev) =>
+      prev.map((s) => ({
+        ...s,
+        calendarEntries: s.calendarEntries.map((e) =>
+          e.id === calendarId ? { ...e, enabled: newEnabled } : e
+        ),
+      }))
+    );
+
+    const enabledIds = new Set<string>();
+    sources.forEach((s) =>
+      s.calendarEntries.forEach((e) => {
+        if (e.id === calendarId ? newEnabled : e.enabled) enabledIds.add(e.id);
+      })
+    );
+    dispatchVisibility(enabledIds);
+
+    // Persist to API
+    await apiAuthFetch(`/api/calendar-entries/${calendarId}`, accessToken, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled: newEnabled }),
     });
   }
 
@@ -127,32 +149,29 @@ export function CalendarSidebar() {
           </div>
 
           <div className="flex flex-col">
-            {source.calendarEntries.map((entry) => {
-              const active = visibleCalendars.has(entry.id);
-              return (
-                <button
-                  key={entry.id}
-                  type="button"
-                  onClick={() => toggleCalendar(entry.id)}
-                  className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-left hover:bg-gray-50"
-                >
-                  <span
-                    className="inline-block h-3 w-3 shrink-0 rounded-full border-2"
-                    style={
-                      active
-                        ? { backgroundColor: entry.color || "#3b82f6", borderColor: entry.color || "#3b82f6" }
-                        : { backgroundColor: "white", borderColor: "#d1d5db" }
-                    }
-                  />
-                  <span className={`truncate text-xs ${active ? "text-gray-700" : "text-gray-400"}`}>
-                    {entry.name}
-                  </span>
-                  {entry.readOnly && (
-                    <span className="shrink-0 text-[10px] text-gray-400">RO</span>
-                  )}
-                </button>
-              );
-            })}
+            {source.calendarEntries.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={() => toggleCalendar(entry.id)}
+                className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-left hover:bg-gray-50"
+              >
+                <span
+                  className="inline-block h-3 w-3 shrink-0 rounded-full border-2"
+                  style={
+                    entry.enabled
+                      ? { backgroundColor: entry.color || "#3b82f6", borderColor: entry.color || "#3b82f6" }
+                      : { backgroundColor: "white", borderColor: "#d1d5db" }
+                  }
+                />
+                <span className={`truncate text-xs ${entry.enabled ? "text-gray-700" : "text-gray-400"}`}>
+                  {entry.name}
+                </span>
+                {entry.readOnly && (
+                  <span className="shrink-0 text-[10px] text-gray-400">RO</span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
       ))}

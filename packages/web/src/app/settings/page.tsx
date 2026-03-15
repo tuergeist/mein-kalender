@@ -44,6 +44,12 @@ export default function SettingsPage() {
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState<string | null>(null);
+  const [showUnsetTargetModal, setShowUnsetTargetModal] = useState(false);
+  const [unsetLoading, setUnsetLoading] = useState(false);
+  const [unsetStatus, setUnsetStatus] = useState("");
+  const [cleanupLoading, setCleanupLoading] = useState(false);
+  const [cleanupStatus, setCleanupStatus] = useState("");
+  const [cleanupCalendarId, setCleanupCalendarId] = useState("");
   const [targetCalendarId, setTargetCalendarId] = useState<string>("");
   const [mapProvider, setMapProvider] = useState<string>("google");
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
@@ -80,14 +86,81 @@ export default function SettingsPage() {
   }
 
   async function handleSetTarget(calendarEntryId: string) {
-    if (!accessToken) return;
+    if (!accessToken || calendarEntryId === targetCalendarId) return;
 
     await apiAuthFetch("/api/target-calendar", accessToken, {
       method: "PUT",
       body: JSON.stringify({ calendarEntryId }),
     });
     setTargetCalendarId(calendarEntryId);
-    loadData();
+  }
+
+  async function handleUnsetTarget(deleteSyncedEvents: boolean) {
+    if (!accessToken) return;
+
+    setUnsetLoading(true);
+    setUnsetStatus(
+      deleteSyncedEvents
+        ? "Deleting synced events from target calendar — this may take a few minutes..."
+        : "Unsetting target calendar..."
+    );
+
+    const res = await apiAuthFetch(
+      `/api/target-calendar?deleteSyncedEvents=${deleteSyncedEvents}`,
+      accessToken,
+      { method: "DELETE" }
+    );
+
+    if (res.ok) {
+      const data = await res.json();
+      if (deleteSyncedEvents && data.deletedEvents > 0) {
+        setUnsetStatus(`Done — deleted ${data.deletedEvents} synced event(s).`);
+      } else if (deleteSyncedEvents) {
+        setUnsetStatus("Done — target unset. Some events may not have been deleted due to rate limits.");
+      } else {
+        setUnsetStatus("Done — target calendar unset.");
+      }
+    } else {
+      setUnsetStatus("Done — target unset. Some provider deletions may have failed.");
+    }
+
+    setTargetCalendarId("");
+    setTimeout(() => {
+      setShowUnsetTargetModal(false);
+      setUnsetStatus("");
+      setUnsetLoading(false);
+      loadData();
+    }, 2000);
+  }
+
+  async function handleCleanupSyncEvents() {
+    if (!accessToken) return;
+
+    const calendarEntryId = cleanupCalendarId;
+    if (!calendarEntryId) {
+      setCleanupStatus("Please select a calendar to clean up.");
+      return;
+    }
+
+    setCleanupLoading(true);
+    setCleanupStatus("Scanning calendar for [Sync] events — this may take a few minutes...");
+
+    const res = await apiAuthFetch("/api/target-calendar/cleanup", accessToken, {
+      method: "POST",
+      body: JSON.stringify({ calendarEntryId }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setCleanupStatus(
+        `Done — deleted ${data.deleted} of ${data.found} [Sync] event(s).` +
+          (data.failed > 0 ? ` ${data.failed} failed (rate limited).` : "")
+      );
+    } else {
+      setCleanupStatus("Cleanup failed — check if target calendar is set.");
+    }
+
+    setCleanupLoading(false);
   }
 
   function handleAddProvider(provider: string) {
@@ -184,20 +257,74 @@ export default function SettingsPage() {
                 Connect a calendar with write access to set a target.
               </p>
             ) : (
+              <div className="flex items-end gap-2">
+                <Select
+                  label="Target Calendar"
+                  placeholder="Select a calendar"
+                  selectedKeys={targetCalendarId ? new Set([targetCalendarId]) : new Set()}
+                  onSelectionChange={(keys) => {
+                    const selected = Array.from(keys)[0] as string;
+                    if (selected) handleSetTarget(selected);
+                  }}
+                  className="flex-1"
+                >
+                  {allCalendarEntries.map((entry) => (
+                    <SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>
+                      {entry.name} ({entry.sourceName})
+                    </SelectItem>
+                  ))}
+                </Select>
+                {targetCalendarId && (
+                  <Button
+                    size="sm"
+                    color="danger"
+                    variant="light"
+                    onPress={() => setShowUnsetTargetModal(true)}
+                    className="shrink-0"
+                  >
+                    Unset
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <Divider className="my-4" />
+            <p className="mb-2 text-sm font-medium">Clean up [Sync] events</p>
+            <p className="mb-3 text-xs text-default-400">
+              Select a calendar and delete all events prefixed with &quot;[Sync]&quot;.
+            </p>
+            <div className="flex items-end gap-2">
               <Select
-                label="Target Calendar"
-                selectedKeys={targetCalendarId ? [targetCalendarId] : []}
+                label="Calendar to clean"
+                placeholder="Select a calendar"
+                selectedKeys={cleanupCalendarId ? new Set([cleanupCalendarId]) : new Set()}
                 onSelectionChange={(keys) => {
                   const selected = Array.from(keys)[0] as string;
-                  if (selected) handleSetTarget(selected);
+                  if (selected) setCleanupCalendarId(selected);
                 }}
+                className="flex-1"
+                size="sm"
               >
                 {allCalendarEntries.map((entry) => (
-                  <SelectItem key={entry.id}>
+                  <SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>
                     {entry.name} ({entry.sourceName})
                   </SelectItem>
                 ))}
               </Select>
+              <Button
+                size="sm"
+                variant="flat"
+                color="warning"
+                isLoading={cleanupLoading}
+                isDisabled={!cleanupCalendarId}
+                onPress={handleCleanupSyncEvents}
+                className="shrink-0"
+              >
+                Clean up
+              </Button>
+            </div>
+            {cleanupStatus && (
+              <p className="mt-2 text-sm text-primary">{cleanupStatus}</p>
             )}
           </CardBody>
         </Card>
@@ -299,6 +426,50 @@ export default function SettingsPage() {
                 onPress={() => handleDisconnect(showDisconnectModal!)}
               >
                 Disconnect
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Unset Target Calendar Modal */}
+        <Modal
+          isOpen={showUnsetTargetModal}
+          onClose={() => setShowUnsetTargetModal(false)}
+        >
+          <ModalContent>
+            <ModalHeader>Unset Target Calendar</ModalHeader>
+            <ModalBody>
+              <p>
+                Do you want to delete all synced events (prefixed with &quot;[Sync]&quot;) from the
+                target calendar?
+              </p>
+              <p className="text-sm text-default-400">
+                If you choose &quot;Keep events&quot;, the cloned events will remain on the target
+                calendar but will no longer be managed by this app.
+              </p>
+            </ModalBody>
+            {unsetStatus && (
+              <ModalBody>
+                <p className="text-sm font-medium text-primary">{unsetStatus}</p>
+              </ModalBody>
+            )}
+            <ModalFooter>
+              <Button variant="light" onPress={() => setShowUnsetTargetModal(false)} isDisabled={unsetLoading}>
+                Cancel
+              </Button>
+              <Button
+                variant="flat"
+                isLoading={unsetLoading}
+                onPress={() => handleUnsetTarget(false)}
+              >
+                Keep events
+              </Button>
+              <Button
+                color="danger"
+                isLoading={unsetLoading}
+                onPress={() => handleUnsetTarget(true)}
+              >
+                Delete synced events
               </Button>
             </ModalFooter>
           </ModalContent>

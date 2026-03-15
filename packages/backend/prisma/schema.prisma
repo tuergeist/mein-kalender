@@ -108,10 +108,11 @@ model Event {
 }
 
 model TargetEventMapping {
-  id                    String @id @default(cuid())
+  id                    String    @id @default(cuid())
   sourceEventId         String
-  targetEventId         String // event ID on the target provider
+  targetEventId         String    // event ID on the target provider
   targetCalendarEntryId String
+  lastSyncedAt          DateTime?
 
   sourceEvent    Event         @relation("sourceEvent", fields: [sourceEventId], references: [id], onDelete: Cascade)
   targetCalendar CalendarEntry @relation("targetCalendar", fields: [targetCalendarEntryId], references: [id], onDelete: Cascade)
