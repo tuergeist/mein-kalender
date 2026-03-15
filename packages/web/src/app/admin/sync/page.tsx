@@ -15,6 +15,11 @@ import {
   Chip,
   Button,
   Spinner,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  useDisclosure,
 } from "@heroui/react";
 import { AppShell } from "@/components/AppShell";
 import { apiAuthFetch } from "@/lib/api";
@@ -24,6 +29,9 @@ interface SyncJob {
   name: string;
   state: string;
   data: { sourceId?: string; userId?: string };
+  userEmail: string | null;
+  sourceLabel: string | null;
+  sourceProvider: string | null;
   timestamp: number;
   processedOn: number | null;
   finishedOn: number | null;
@@ -57,6 +65,8 @@ export default function AdminSyncPage() {
   const [jobs, setJobs] = useState<SyncJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedError, setSelectedError] = useState<{ job: SyncJob } | null>(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const role = (session as any)?.role;
 
@@ -152,7 +162,8 @@ export default function AdminSyncPage() {
             ) : (
               <Table aria-label="Sync jobs" removeWrapper>
                 <TableHeader>
-                  <TableColumn>Source ID</TableColumn>
+                  <TableColumn>User</TableColumn>
+                  <TableColumn>Source</TableColumn>
                   <TableColumn>State</TableColumn>
                   <TableColumn>Started</TableColumn>
                   <TableColumn>Finished</TableColumn>
@@ -163,9 +174,21 @@ export default function AdminSyncPage() {
                   {jobs.map((j) => (
                     <TableRow key={j.id}>
                       <TableCell>
-                        <span className="font-mono text-xs">
-                          {j.data?.sourceId?.slice(0, 8) || "—"}
+                        <span className="text-xs">
+                          {j.userEmail || "—"}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-xs">
+                            {j.sourceLabel || j.data?.sourceId?.slice(0, 8) || "—"}
+                          </span>
+                          {j.sourceProvider && (
+                            <span className="text-xs text-default-400">
+                              {j.sourceProvider}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -184,9 +207,15 @@ export default function AdminSyncPage() {
                       </TableCell>
                       <TableCell>
                         {j.failedReason ? (
-                          <span className="text-xs text-danger">
-                            {j.failedReason.slice(0, 80)}
-                          </span>
+                          <button
+                            className="max-w-[200px] cursor-pointer truncate text-left text-xs text-danger hover:underline"
+                            onClick={() => {
+                              setSelectedError({ job: j });
+                              onOpen();
+                            }}
+                          >
+                            {j.failedReason.slice(0, 60)}...
+                          </button>
                         ) : (
                           "—"
                         )}
@@ -200,6 +229,26 @@ export default function AdminSyncPage() {
           </CardBody>
         </Card>
       </div>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+        <ModalContent>
+          {selectedError && (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <span>Error Details</span>
+                <span className="text-sm font-normal text-default-500">
+                  {selectedError.job.userEmail || "Unknown user"} — {selectedError.job.sourceLabel || selectedError.job.data?.sourceId || "Unknown source"}
+                </span>
+              </ModalHeader>
+              <ModalBody className="pb-6">
+                <pre className="whitespace-pre-wrap break-all rounded-lg bg-default-100 p-4 font-mono text-xs">
+                  {selectedError.job.failedReason}
+                </pre>
+              </ModalBody>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </AppShell>
   );
 }

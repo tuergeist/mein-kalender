@@ -95,6 +95,28 @@ export async function adminRoutes(app: FastifyInstance) {
     // Sort by timestamp descending
     jobs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
+    // Resolve user emails and source labels for job data
+    const userIds = [...new Set(jobs.map((j) => j.data?.userId).filter(Boolean))];
+    const sourceIds = [...new Set(jobs.map((j) => j.data?.sourceId).filter(Boolean))];
+    const [users, sources] = await Promise.all([
+      userIds.length
+        ? prisma.user.findMany({
+            where: { id: { in: userIds as string[] } },
+            select: { id: true, email: true },
+          })
+        : [],
+      sourceIds.length
+        ? prisma.calendarSource.findMany({
+            where: { id: { in: sourceIds as string[] } },
+            select: { id: true, label: true, provider: true },
+          })
+        : [],
+    ]);
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u.email]));
+    const sourceMap = Object.fromEntries(
+      sources.map((s) => [s.id, { label: s.label, provider: s.provider }])
+    );
+
     return {
       counts,
       jobs: jobs.map((j) => ({
@@ -108,6 +130,9 @@ export async function adminRoutes(app: FastifyInstance) {
             ? "active"
             : "waiting",
         data: j.data,
+        userEmail: j.data?.userId ? userMap[j.data.userId] || null : null,
+        sourceLabel: j.data?.sourceId ? sourceMap[j.data.sourceId]?.label || null : null,
+        sourceProvider: j.data?.sourceId ? sourceMap[j.data.sourceId]?.provider || null : null,
         timestamp: j.timestamp,
         processedOn: j.processedOn,
         finishedOn: j.finishedOn,
