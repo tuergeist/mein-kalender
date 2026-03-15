@@ -30,11 +30,16 @@ export async function targetCalendarRoutes(app: FastifyInstance) {
   });
 
   // Set the target calendar
-  app.put<{ Body: { calendarEntryId: string } }>(
+  app.put<{ Body: { calendarEntryId: string; syncDaysInAdvance?: number } }>(
     "/api/target-calendar",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
-      const { calendarEntryId } = request.body;
+      const { calendarEntryId, syncDaysInAdvance } = request.body;
+
+      const VALID_SYNC_DAYS = [30, 60, 90];
+      if (syncDaysInAdvance !== undefined && !VALID_SYNC_DAYS.includes(syncDaysInAdvance)) {
+        return reply.code(400).send({ error: "syncDaysInAdvance must be 30, 60, or 90" });
+      }
 
       // Verify the calendar entry belongs to the user and is writable
       const entry = await prisma.calendarEntry.findFirst({
@@ -64,7 +69,10 @@ export async function targetCalendarRoutes(app: FastifyInstance) {
       // Set the new target
       const updated = await prisma.calendarEntry.update({
         where: { id: calendarEntryId },
-        data: { isTarget: true },
+        data: {
+          isTarget: true,
+          syncDaysInAdvance: syncDaysInAdvance ?? 30,
+        },
       });
 
       return { targetCalendar: updated };

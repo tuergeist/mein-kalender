@@ -72,6 +72,7 @@ model CalendarEntry {
   color              String  @default("#3b82f6")
   providerCalendarId String
   isTarget           Boolean @default(false)
+  syncDaysInAdvance  Int     @default(30)
   readOnly           Boolean @default(false)
   enabled            Boolean @default(true)
 

@@ -290,7 +290,11 @@ async function cloneToTarget(
     console.log(`[sync] Cleaned up ${orphans.length} orphaned target mappings`);
   }
 
-  // Find all local events that don't have a target mapping yet
+  // Find all local events that don't have a target mapping yet,
+  // filtered by the configured sync window
+  const syncCutoff = new Date();
+  syncCutoff.setDate(syncCutoff.getDate() + targetEntry.syncDaysInAdvance);
+
   const unmappedEvents = await prisma.event.findMany({
     where: {
       calendarEntry: {
@@ -298,6 +302,7 @@ async function cloneToTarget(
         isTarget: false,
         enabled: true,
       },
+      startTime: { lte: syncCutoff },
       sourceMappings: {
         none: { targetCalendarEntryId: targetEntry.id },
       },

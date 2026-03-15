@@ -51,6 +51,7 @@ export default function SettingsPage() {
   const [cleanupStatus, setCleanupStatus] = useState("");
   const [cleanupCalendarId, setCleanupCalendarId] = useState("");
   const [targetCalendarId, setTargetCalendarId] = useState<string>("");
+  const [syncDaysInAdvance, setSyncDaysInAdvance] = useState<number>(30);
   const [mapProvider, setMapProvider] = useState<string>("google");
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
@@ -74,6 +75,7 @@ export default function SettingsPage() {
     if (targetRes.ok) {
       const data = await targetRes.json();
       setTargetCalendarId(data.targetCalendar?.id || "");
+      setSyncDaysInAdvance(data.targetCalendar?.syncDaysInAdvance ?? 30);
     }
   }
 
@@ -85,14 +87,18 @@ export default function SettingsPage() {
     loadData();
   }
 
-  async function handleSetTarget(calendarEntryId: string) {
-    if (!accessToken || calendarEntryId === targetCalendarId) return;
+  async function handleSetTarget(calendarEntryId: string, days?: number) {
+    if (!accessToken) return;
+
+    const body: { calendarEntryId: string; syncDaysInAdvance?: number } = { calendarEntryId };
+    if (days !== undefined) body.syncDaysInAdvance = days;
 
     await apiAuthFetch("/api/target-calendar", accessToken, {
       method: "PUT",
-      body: JSON.stringify({ calendarEntryId }),
+      body: JSON.stringify(body),
     });
     setTargetCalendarId(calendarEntryId);
+    if (days !== undefined) setSyncDaysInAdvance(days);
   }
 
   async function handleUnsetTarget(deleteSyncedEvents: boolean) {
@@ -285,6 +291,25 @@ export default function SettingsPage() {
                     Unset
                   </Button>
                 )}
+              </div>
+            )}
+
+            {targetCalendarId && (
+              <div className="mt-4">
+                <Select
+                  label="Sync period"
+                  selectedKeys={new Set([String(syncDaysInAdvance)])}
+                  onSelectionChange={(keys) => {
+                    const days = Number(Array.from(keys)[0]);
+                    if (days) handleSetTarget(targetCalendarId, days);
+                  }}
+                  size="sm"
+                  className="max-w-xs"
+                >
+                  <SelectItem key="30">30 days in advance</SelectItem>
+                  <SelectItem key="60">60 days in advance</SelectItem>
+                  <SelectItem key="90">90 days in advance</SelectItem>
+                </Select>
               </div>
             )}
 
