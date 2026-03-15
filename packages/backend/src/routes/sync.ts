@@ -36,10 +36,11 @@ export async function syncRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Not found" });
     }
 
-    await getSyncQueue().add("sync-source", {
-      sourceId: source.id,
-      userId: user.id,
-    });
+    await getSyncQueue().add(
+      "sync-source",
+      { sourceId: source.id, userId: user.id },
+      { jobId: `sync-${source.id}` }
+    );
 
     return { status: "queued", sourceId: source.id };
   });
@@ -56,7 +57,11 @@ export async function syncRoutes(app: FastifyInstance) {
     const queue = getSyncQueue();
     await Promise.all(
       sources.map((s: { id: string }) =>
-        queue.add("sync-source", { sourceId: s.id, userId: user.id })
+        queue.add(
+          "sync-source",
+          { sourceId: s.id, userId: user.id },
+          { jobId: `sync-${s.id}` }
+        )
       )
     );
 

@@ -11,13 +11,25 @@ const connection = parseRedisUrl(process.env.REDIS_URL || "redis://localhost:637
 
 const prisma = new PrismaClient();
 
+const activeSyncs = new Set<string>();
+
 const worker = new Worker(
   "calendar-sync",
   async (job) => {
     const { sourceId, userId } = job.data;
-    console.log(`[sync] Processing job ${job.id} for source ${sourceId}`);
 
-    await processSyncJob(prisma, sourceId, userId);
+    if (activeSyncs.has(sourceId)) {
+      console.log(`[sync] Skipping job ${job.id} — source ${sourceId} already syncing`);
+      return;
+    }
+
+    activeSyncs.add(sourceId);
+    try {
+      console.log(`[sync] Processing job ${job.id} for source ${sourceId}`);
+      await processSyncJob(prisma, sourceId, userId);
+    } finally {
+      activeSyncs.delete(sourceId);
+    }
   },
   {
     connection,
