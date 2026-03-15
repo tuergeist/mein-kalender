@@ -11,6 +11,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY packages/web ./packages/web
 COPY package.json ./
+ARG NEXTAUTH_SECRET=build-time-dummy
+ENV NEXTAUTH_SECRET=$NEXTAUTH_SECRET
 RUN cd packages/web && npx next build
 
 FROM base AS runner
