@@ -1,7 +1,6 @@
 export enum Provider {
   GOOGLE = "google",
   OUTLOOK = "outlook",
-  PROTON = "proton",
   ICS = "ics",
 }
 
