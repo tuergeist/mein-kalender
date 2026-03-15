@@ -31,14 +31,17 @@ server.register(oauthRoutes);
 server.register(adminRoutes);
 
 async function seedAdminUser() {
-  const email = "admin";
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (!existing) {
-    const passwordHash = await bcrypt.hash("adminpass123", 12);
-    await prisma.user.create({
-      data: { email, passwordHash, role: "admin", emailVerified: true },
-    });
-    console.log("Admin user created (admin / adminpass123)");
+  const email = "admin@admin.local";
+  const passwordHash = await bcrypt.hash("adminpass123", 12);
+  await prisma.user.upsert({
+    where: { email },
+    update: {},
+    create: { email, passwordHash, role: "admin", emailVerified: true },
+  });
+  // Clean up old admin user without valid email
+  const oldAdmin = await prisma.user.findUnique({ where: { email: "admin" } });
+  if (oldAdmin) {
+    await prisma.user.delete({ where: { email: "admin" } });
   }
 }
 
