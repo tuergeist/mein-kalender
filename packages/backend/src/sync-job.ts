@@ -166,7 +166,7 @@ async function syncCalendarEntry(
       select: { id: true },
     });
 
-    const localEventIds = localEvents.map((e) => e.id);
+    const localEventIds = localEvents.map((e: { id: string }) => e.id);
 
     if (localEventIds.length > 0) {
       await prisma.targetEventMapping.deleteMany({
@@ -267,7 +267,7 @@ async function cloneToTarget(
   for (let i = 0; i < mappedEvents.length; i += CHUNK_SIZE) {
     const chunk = mappedEvents.slice(i, i + CHUNK_SIZE);
     await Promise.all(
-      chunk.map(async (mapping) => {
+      chunk.map(async (mapping: { targetEventId: string; sourceEvent: { title: string; description: string | null; location: string | null; startTime: Date; endTime: Date; allDay: boolean } }) => {
         try {
           await targetProvider.updateEvent(
             targetToken,
