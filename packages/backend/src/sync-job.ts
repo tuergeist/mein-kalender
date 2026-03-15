@@ -73,8 +73,7 @@ export async function processSyncJob(
     }
 
     // Clone to target calendar if configured
-    // TODO: Re-enable after cleanup — disabled to stop duplicate creation
-    // await cloneToTarget(prisma, provider, token, userId);
+    await cloneToTarget(prisma, provider, token, userId);
 
     // Mark sync success
     await prisma.calendarSource.update({
@@ -309,7 +308,20 @@ async function cloneToTarget(
     },
   });
 
-  for (const event of unmappedEvents) {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const filteredEvents = unmappedEvents.filter((event) => {
+    if (targetEntry.skipWorkLocation) {
+      const meta = event.providerMetadata as Record<string, unknown> | null;
+      if (meta?.eventType === "workingLocation") return false;
+    }
+    if (targetEntry.skipSingleDayAllDay && event.allDay) {
+      const duration = new Date(event.endTime).getTime() - new Date(event.startTime).getTime();
+      if (duration <= DAY_MS) return false;
+    }
+    return true;
+  });
+
+  for (const event of filteredEvents) {
     try {
       const cloned = await targetProvider.createEvent(
         targetToken,

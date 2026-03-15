@@ -17,6 +17,7 @@ import {
   ModalBody,
   ModalFooter,
   Chip,
+  Switch,
 } from "@heroui/react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
@@ -52,6 +53,8 @@ export default function SettingsPage() {
   const [cleanupCalendarId, setCleanupCalendarId] = useState("");
   const [targetCalendarId, setTargetCalendarId] = useState<string>("");
   const [syncDaysInAdvance, setSyncDaysInAdvance] = useState<number>(30);
+  const [skipWorkLocation, setSkipWorkLocation] = useState(true);
+  const [skipSingleDayAllDay, setSkipSingleDayAllDay] = useState(false);
   const [mapProvider, setMapProvider] = useState<string>("google");
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
@@ -76,6 +79,8 @@ export default function SettingsPage() {
       const data = await targetRes.json();
       setTargetCalendarId(data.targetCalendar?.id || "");
       setSyncDaysInAdvance(data.targetCalendar?.syncDaysInAdvance ?? 30);
+      setSkipWorkLocation(data.targetCalendar?.skipWorkLocation ?? true);
+      setSkipSingleDayAllDay(data.targetCalendar?.skipSingleDayAllDay ?? false);
     }
   }
 
@@ -87,18 +92,19 @@ export default function SettingsPage() {
     loadData();
   }
 
-  async function handleSetTarget(calendarEntryId: string, days?: number) {
+  async function handleSetTarget(calendarEntryId: string, overrides?: { syncDaysInAdvance?: number; skipWorkLocation?: boolean; skipSingleDayAllDay?: boolean }) {
     if (!accessToken) return;
 
-    const body: { calendarEntryId: string; syncDaysInAdvance?: number } = { calendarEntryId };
-    if (days !== undefined) body.syncDaysInAdvance = days;
+    const body: Record<string, unknown> = { calendarEntryId, ...overrides };
 
     await apiAuthFetch("/api/target-calendar", accessToken, {
       method: "PUT",
       body: JSON.stringify(body),
     });
     setTargetCalendarId(calendarEntryId);
-    if (days !== undefined) setSyncDaysInAdvance(days);
+    if (overrides?.syncDaysInAdvance !== undefined) setSyncDaysInAdvance(overrides.syncDaysInAdvance);
+    if (overrides?.skipWorkLocation !== undefined) setSkipWorkLocation(overrides.skipWorkLocation);
+    if (overrides?.skipSingleDayAllDay !== undefined) setSkipSingleDayAllDay(overrides.skipSingleDayAllDay);
   }
 
   async function handleUnsetTarget(deleteSyncedEvents: boolean) {
@@ -295,13 +301,13 @@ export default function SettingsPage() {
             )}
 
             {targetCalendarId && (
-              <div className="mt-4">
+              <div className="mt-4 space-y-4">
                 <Select
                   label="Sync period"
                   selectedKeys={new Set([String(syncDaysInAdvance)])}
                   onSelectionChange={(keys) => {
                     const days = Number(Array.from(keys)[0]);
-                    if (days) handleSetTarget(targetCalendarId, days);
+                    if (days) handleSetTarget(targetCalendarId, { syncDaysInAdvance: days });
                   }}
                   size="sm"
                   className="max-w-xs"
@@ -310,6 +316,28 @@ export default function SettingsPage() {
                   <SelectItem key="60">60 days in advance</SelectItem>
                   <SelectItem key="90">90 days in advance</SelectItem>
                 </Select>
+                <div className="space-y-2">
+                  <Switch
+                    size="sm"
+                    isSelected={skipWorkLocation}
+                    onValueChange={(v) => {
+                      setSkipWorkLocation(v);
+                      handleSetTarget(targetCalendarId, { skipWorkLocation: v });
+                    }}
+                  >
+                    <span className="text-sm">Skip work location events</span>
+                  </Switch>
+                  <Switch
+                    size="sm"
+                    isSelected={skipSingleDayAllDay}
+                    onValueChange={(v) => {
+                      setSkipSingleDayAllDay(v);
+                      handleSetTarget(targetCalendarId, { skipSingleDayAllDay: v });
+                    }}
+                  >
+                    <span className="text-sm">Skip single-day all-day events (birthdays, holidays)</span>
+                  </Switch>
+                </div>
               </div>
             )}
 

@@ -30,11 +30,11 @@ export async function targetCalendarRoutes(app: FastifyInstance) {
   });
 
   // Set the target calendar
-  app.put<{ Body: { calendarEntryId: string; syncDaysInAdvance?: number } }>(
+  app.put<{ Body: { calendarEntryId: string; syncDaysInAdvance?: number; skipWorkLocation?: boolean; skipSingleDayAllDay?: boolean } }>(
     "/api/target-calendar",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
-      const { calendarEntryId, syncDaysInAdvance } = request.body;
+      const { calendarEntryId, syncDaysInAdvance, skipWorkLocation, skipSingleDayAllDay } = request.body;
 
       const VALID_SYNC_DAYS = [30, 60, 90];
       if (syncDaysInAdvance !== undefined && !VALID_SYNC_DAYS.includes(syncDaysInAdvance)) {
@@ -72,6 +72,8 @@ export async function targetCalendarRoutes(app: FastifyInstance) {
         data: {
           isTarget: true,
           syncDaysInAdvance: syncDaysInAdvance ?? 30,
+          ...(skipWorkLocation !== undefined && { skipWorkLocation }),
+          ...(skipSingleDayAllDay !== undefined && { skipSingleDayAllDay }),
         },
       });
 

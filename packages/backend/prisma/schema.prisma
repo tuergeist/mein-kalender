@@ -73,6 +73,8 @@ model CalendarEntry {
   providerCalendarId String
   isTarget           Boolean @default(false)
   syncDaysInAdvance  Int     @default(30)
+  skipWorkLocation       Boolean @default(true)
+  skipSingleDayAllDay   Boolean @default(false)
   readOnly           Boolean @default(false)
   enabled            Boolean @default(true)
 
