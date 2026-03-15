@@ -107,7 +107,7 @@ jobs:
       - name: Trigger k8s-infra deploy
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.K8S_INFRA_DEPLOY_TOKEN }}
-          repository: tuergeist/k8s-infra
+          token: ${{ secrets.K8S_INFRA_PAT }}
+          repository: expert-sieve/k8s-infra
           event-type: deploy
           client-payload: '{"app": "mein-kalender", "image_tag": "${{ steps.sha.outputs.short }}"}'
