@@ -76,7 +76,13 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   // Sync queue status and recent jobs
-  app.get("/api/admin/sync", async () => {
+  app.get<{
+    Querystring: { search?: string; page?: string; limit?: string };
+  }>("/api/admin/sync", async (request) => {
+    const search = (request.query.search || "").toLowerCase();
+    const page = Math.max(1, parseInt(request.query.page || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || "20", 10)));
+
     const queue = getSyncQueue();
 
     const counts = await queue.getJobCounts(
@@ -86,18 +92,19 @@ export async function adminRoutes(app: FastifyInstance) {
       "failed"
     );
 
-    const jobs = await queue.getJobs(
+    // Fetch a larger window for search/filter
+    const allJobs = await queue.getJobs(
       ["active", "waiting", "completed", "failed"],
       0,
-      49
+      199
     );
 
     // Sort by timestamp descending
-    jobs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    allJobs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
     // Resolve user emails and source labels for job data
-    const userIds = [...new Set(jobs.map((j) => j.data?.userId).filter(Boolean))];
-    const sourceIds = [...new Set(jobs.map((j) => j.data?.sourceId).filter(Boolean))];
+    const userIds = [...new Set(allJobs.map((j) => j.data?.userId).filter(Boolean))];
+    const sourceIds = [...new Set(allJobs.map((j) => j.data?.sourceId).filter(Boolean))];
     const [users, sources] = await Promise.all([
       userIds.length
         ? prisma.user.findMany({
@@ -117,28 +124,50 @@ export async function adminRoutes(app: FastifyInstance) {
       sources.map((s) => [s.id, { label: s.label, provider: s.provider }])
     );
 
+    // Enrich jobs
+    const enriched = allJobs.map((j) => ({
+      id: j.id,
+      name: j.name,
+      state: j.finishedOn
+        ? j.failedReason
+          ? "failed"
+          : "completed"
+        : j.processedOn
+          ? "active"
+          : "waiting",
+      data: j.data,
+      userEmail: j.data?.userId ? userMap[j.data.userId] || null : null,
+      sourceLabel: j.data?.sourceId ? sourceMap[j.data.sourceId]?.label || null : null,
+      sourceProvider: j.data?.sourceId ? sourceMap[j.data.sourceId]?.provider || null : null,
+      timestamp: j.timestamp,
+      processedOn: j.processedOn,
+      finishedOn: j.finishedOn,
+      failedReason: j.failedReason,
+      attemptsMade: j.attemptsMade,
+    }));
+
+    // Filter by search term
+    const filtered = search
+      ? enriched.filter(
+          (j) =>
+            (j.userEmail && j.userEmail.toLowerCase().includes(search)) ||
+            (j.sourceLabel && j.sourceLabel.toLowerCase().includes(search)) ||
+            (j.sourceProvider && j.sourceProvider.toLowerCase().includes(search)) ||
+            j.state.includes(search) ||
+            (j.failedReason && j.failedReason.toLowerCase().includes(search))
+        )
+      : enriched;
+
+    const total = filtered.length;
+    const skip = (page - 1) * limit;
+    const paged = filtered.slice(skip, skip + limit);
+
     return {
       counts,
-      jobs: jobs.map((j) => ({
-        id: j.id,
-        name: j.name,
-        state: j.finishedOn
-          ? j.failedReason
-            ? "failed"
-            : "completed"
-          : j.processedOn
-            ? "active"
-            : "waiting",
-        data: j.data,
-        userEmail: j.data?.userId ? userMap[j.data.userId] || null : null,
-        sourceLabel: j.data?.sourceId ? sourceMap[j.data.sourceId]?.label || null : null,
-        sourceProvider: j.data?.sourceId ? sourceMap[j.data.sourceId]?.provider || null : null,
-        timestamp: j.timestamp,
-        processedOn: j.processedOn,
-        finishedOn: j.finishedOn,
-        failedReason: j.failedReason,
-        attemptsMade: j.attemptsMade,
-      })),
+      jobs: paged,
+      total,
+      page,
+      limit,
     };
   });
 }

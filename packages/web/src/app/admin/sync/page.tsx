@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Card,
   CardBody,
+  Input,
   Table,
   TableHeader,
   TableColumn,
@@ -22,6 +23,7 @@ import {
   useDisclosure,
 } from "@heroui/react";
 import { AppShell } from "@/components/AppShell";
+import { AdminSidebar } from "@/components/AdminSidebar";
 import { apiAuthFetch } from "@/lib/api";
 
 interface SyncJob {
@@ -63,6 +65,9 @@ export default function AdminSyncPage() {
   const router = useRouter();
   const [counts, setCounts] = useState<JobCounts | null>(null);
   const [jobs, setJobs] = useState<SyncJob[]>([]);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedError, setSelectedError] = useState<{ job: SyncJob } | null>(null);
@@ -83,7 +88,9 @@ export default function AdminSyncPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await apiAuthFetch("/api/admin/sync", token);
+      const params = new URLSearchParams({ page: String(page), limit: "20" });
+      if (search) params.set("search", search);
+      const res = await apiAuthFetch(`/api/admin/sync?${params}`, token);
       if (!res.ok) {
         setError("Failed to load sync data");
         return;
@@ -91,12 +98,13 @@ export default function AdminSyncPage() {
       const data = await res.json();
       setCounts(data.counts);
       setJobs(data.jobs);
+      setTotal(data.total);
     } catch {
       setError("Failed to connect to server");
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [session, page, search]);
 
   useEffect(() => {
     if (status === "authenticated" && role === "admin") {
@@ -109,23 +117,28 @@ export default function AdminSyncPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell sidebar={<AdminSidebar />}>
       <div className="mx-auto max-w-5xl space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="light"
-              size="sm"
-              onPress={() => router.push("/admin")}
-            >
-              &larr; Users
-            </Button>
-            <h1 className="text-2xl font-bold">Admin: Sync Queue</h1>
-          </div>
+          <h1 className="text-2xl font-bold">Sync Queue</h1>
           <Button size="sm" variant="flat" onPress={fetchSync} isLoading={loading}>
             Refresh
           </Button>
         </div>
+
+        <Input
+          placeholder="Search by user, source, state, or error..."
+          value={search}
+          onValueChange={(v) => {
+            setSearch(v);
+            setPage(1);
+          }}
+          isClearable
+          onClear={() => {
+            setSearch("");
+            setPage(1);
+          }}
+        />
 
         {error && <p className="text-sm text-danger">{error}</p>}
 
@@ -228,6 +241,34 @@ export default function AdminSyncPage() {
             )}
           </CardBody>
         </Card>
+        {(() => {
+          const totalPages = Math.ceil(total / 20);
+          return totalPages > 1 ? (
+            <div className="flex items-center justify-between text-sm text-default-500">
+              <span>
+                {total} jobs — page {page} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  isDisabled={page <= 1}
+                  onPress={() => setPage(page - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  isDisabled={page >= totalPages}
+                  onPress={() => setPage(page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          ) : null;
+        })()}
       </div>
 
       <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">

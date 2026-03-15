@@ -18,6 +18,7 @@ import {
   Spinner,
 } from "@heroui/react";
 import { AppShell } from "@/components/AppShell";
+import { AdminSidebar } from "@/components/AdminSidebar";
 import { apiAuthFetch } from "@/lib/api";
 
 interface AdminUser {
@@ -85,18 +86,9 @@ export default function AdminUsersPage() {
   const totalPages = Math.ceil(total / 20);
 
   return (
-    <AppShell>
+    <AppShell sidebar={<AdminSidebar />}>
       <div className="mx-auto max-w-5xl space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Admin: Users</h1>
-          <Button
-            variant="light"
-            size="sm"
-            onPress={() => router.push("/admin/sync")}
-          >
-            Sync Queue
-          </Button>
-        </div>
+        <h1 className="text-2xl font-bold">Users</h1>
 
         <Input
           placeholder="Search by email or name..."

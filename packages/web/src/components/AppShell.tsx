@@ -13,7 +13,7 @@ import {
 import Link from "next/link";
 import { CalendarSidebar } from "./CalendarSidebar";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, sidebar }: { children: React.ReactNode; sidebar?: React.ReactNode }) {
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -98,7 +98,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             md:relative md:z-auto md:h-auto
           `}
         >
-          <CalendarSidebar />
+          {sidebar || <CalendarSidebar />}
         </aside>
 
         {/* Main content */}
