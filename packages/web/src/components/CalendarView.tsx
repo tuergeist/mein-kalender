@@ -197,7 +197,7 @@ export function CalendarView() {
       html: `<div class="fc-event-main-frame" style="${isFree ? "opacity:0.6;" : ""}">
         ${arg.timeText ? `<div class="fc-event-time">${arg.timeText}</div>` : ""}
         <div class="fc-event-title-container">
-          <div class="fc-event-title fc-sticky">${isWorkingLocation ? icon : (icon ? icon + " " : "") + title}</div>
+          <div class="fc-event-title fc-sticky">${(icon ? icon + " " : "") + title}</div>
         </div>
       </div>`,
     };
