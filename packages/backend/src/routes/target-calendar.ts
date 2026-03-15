@@ -108,7 +108,7 @@ export async function targetCalendarRoutes(app: FastifyInstance) {
           for (let i = 0; i < mappings.length; i += BATCH_SIZE) {
             const batch = mappings.slice(i, i + BATCH_SIZE);
             await Promise.all(
-              batch.map(async (mapping) => {
+              batch.map(async (mapping: any) => {
                 try {
                   await targetProvider.deleteEvent(
                     targetToken,

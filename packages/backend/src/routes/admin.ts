@@ -60,7 +60,7 @@ export async function adminRoutes(app: FastifyInstance) {
     ]);
 
     return {
-      users: users.map((u) => ({
+      users: users.map((u: any) => ({
         id: u.id,
         email: u.email,
         displayName: u.displayName,
@@ -119,9 +119,9 @@ export async function adminRoutes(app: FastifyInstance) {
           })
         : [],
     ]);
-    const userMap = Object.fromEntries(users.map((u) => [u.id, u.email]));
+    const userMap = Object.fromEntries(users.map((u: any) => [u.id, u.email]));
     const sourceMap = Object.fromEntries(
-      sources.map((s) => [s.id, { label: s.label, provider: s.provider }])
+      sources.map((s: any) => [s.id, { label: s.label, provider: s.provider }])
     );
 
     // Enrich jobs
@@ -211,7 +211,7 @@ export async function adminRoutes(app: FastifyInstance) {
     ]);
 
     return {
-      sources: sources.map((s) => ({
+      sources: sources.map((s: any) => ({
         id: s.id,
         label: s.label,
         provider: s.provider,
