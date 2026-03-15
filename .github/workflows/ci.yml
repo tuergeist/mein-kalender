@@ -40,6 +40,9 @@ jobs:
 
       - name: Typecheck
         run: npx turbo build --filter=!@calendar-sync/landing
+        env:
+          NEXTAUTH_SECRET: ci-build-dummy-secret
+          NEXTAUTH_URL: http://localhost:3000
 
   build-and-push:
     name: Build ${{ matrix.package }}
