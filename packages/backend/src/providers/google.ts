@@ -275,6 +275,14 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
     if (item.workingLocationProperties) metadata.workingLocation = item.workingLocationProperties;
     if (item.transparency) metadata.transparency = item.transparency; // "transparent" = free, "opaque" = busy
 
+    // Normalize responseStatus from self attendee
+    const attendees = item.attendees as Array<{ self?: boolean; responseStatus?: string }> | undefined;
+    const selfAttendee = attendees?.find((a) => a.self);
+    metadata.responseStatus = selfAttendee?.responseStatus ?? "accepted";
+
+    // Normalize showAs from transparency
+    metadata.showAs = item.transparency === "transparent" ? "free" : "busy";
+
     return {
       id: "",
       sourceEventId: item.id as string,

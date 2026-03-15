@@ -310,13 +310,19 @@ async function cloneToTarget(
 
   const DAY_MS = 24 * 60 * 60 * 1000;
   const filteredEvents = unmappedEvents.filter((event) => {
+    const meta = event.providerMetadata as Record<string, unknown> | null;
     if (targetEntry.skipWorkLocation) {
-      const meta = event.providerMetadata as Record<string, unknown> | null;
       if (meta?.eventType === "workingLocation") return false;
     }
     if (targetEntry.skipSingleDayAllDay && event.allDay) {
       const duration = new Date(event.endTime).getTime() - new Date(event.startTime).getTime();
       if (duration <= DAY_MS) return false;
+    }
+    if (targetEntry.skipDeclined) {
+      if (meta?.responseStatus === "declined") return false;
+    }
+    if (targetEntry.skipFree) {
+      if (meta?.showAs === "free" || meta?.showAs === "tentative" || meta?.transparency === "transparent") return false;
     }
     return true;
   });

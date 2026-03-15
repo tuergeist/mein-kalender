@@ -260,6 +260,32 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
     const end = item.end as Record<string, string>;
     const allDay = item.isAllDay as boolean;
 
+    // Normalize responseStatus
+    const responseMap: Record<string, string> = {
+      organizer: "accepted",
+      accepted: "accepted",
+      declined: "declined",
+      tentativelyAccepted: "tentative",
+      none: "needsAction",
+      notResponded: "needsAction",
+    };
+    const rawResponse = (item.responseStatus as Record<string, string>)?.response ?? "none";
+    const responseStatus = responseMap[rawResponse] ?? "needsAction";
+
+    // Normalize showAs
+    const showAsMap: Record<string, string> = {
+      free: "free",
+      tentative: "tentative",
+      busy: "busy",
+      oof: "busy",
+      workingElsewhere: "busy",
+      unknown: "busy",
+    };
+    const rawShowAs = item.showAs as string | undefined;
+    const showAs = showAsMap[rawShowAs ?? "busy"] ?? "busy";
+
+    const metadata: Record<string, unknown> = { responseStatus, showAs };
+
     return {
       id: "",
       sourceEventId: item.id as string,
@@ -270,6 +296,7 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       startTime: new Date(start.dateTime + (start.timeZone === "UTC" ? "Z" : "")),
       endTime: new Date(end.dateTime + (end.timeZone === "UTC" ? "Z" : "")),
       allDay,
+      providerMetadata: metadata,
     };
   }
 

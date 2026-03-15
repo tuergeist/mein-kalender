@@ -55,6 +55,8 @@ export default function SettingsPage() {
   const [syncDaysInAdvance, setSyncDaysInAdvance] = useState<number>(30);
   const [skipWorkLocation, setSkipWorkLocation] = useState(true);
   const [skipSingleDayAllDay, setSkipSingleDayAllDay] = useState(false);
+  const [skipDeclined, setSkipDeclined] = useState(true);
+  const [skipFree, setSkipFree] = useState(false);
   const [mapProvider, setMapProvider] = useState<string>("google");
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
@@ -81,6 +83,8 @@ export default function SettingsPage() {
       setSyncDaysInAdvance(data.targetCalendar?.syncDaysInAdvance ?? 30);
       setSkipWorkLocation(data.targetCalendar?.skipWorkLocation ?? true);
       setSkipSingleDayAllDay(data.targetCalendar?.skipSingleDayAllDay ?? false);
+      setSkipDeclined(data.targetCalendar?.skipDeclined ?? true);
+      setSkipFree(data.targetCalendar?.skipFree ?? false);
     }
   }
 
@@ -92,7 +96,7 @@ export default function SettingsPage() {
     loadData();
   }
 
-  async function handleSetTarget(calendarEntryId: string, overrides?: { syncDaysInAdvance?: number; skipWorkLocation?: boolean; skipSingleDayAllDay?: boolean }) {
+  async function handleSetTarget(calendarEntryId: string, overrides?: { syncDaysInAdvance?: number; skipWorkLocation?: boolean; skipSingleDayAllDay?: boolean; skipDeclined?: boolean; skipFree?: boolean }) {
     if (!accessToken) return;
 
     const body: Record<string, unknown> = { calendarEntryId, ...overrides };
@@ -105,6 +109,8 @@ export default function SettingsPage() {
     if (overrides?.syncDaysInAdvance !== undefined) setSyncDaysInAdvance(overrides.syncDaysInAdvance);
     if (overrides?.skipWorkLocation !== undefined) setSkipWorkLocation(overrides.skipWorkLocation);
     if (overrides?.skipSingleDayAllDay !== undefined) setSkipSingleDayAllDay(overrides.skipSingleDayAllDay);
+    if (overrides?.skipDeclined !== undefined) setSkipDeclined(overrides.skipDeclined);
+    if (overrides?.skipFree !== undefined) setSkipFree(overrides.skipFree);
   }
 
   async function handleUnsetTarget(deleteSyncedEvents: boolean) {
@@ -337,6 +343,26 @@ export default function SettingsPage() {
                   >
                     <span className="text-sm">Skip single-day all-day events (birthdays, holidays)</span>
                   </Switch>
+                  <Switch
+                    size="sm"
+                    isSelected={skipDeclined}
+                    onValueChange={(v) => {
+                      setSkipDeclined(v);
+                      handleSetTarget(targetCalendarId, { skipDeclined: v });
+                    }}
+                  >
+                    <span className="text-sm">Skip declined events</span>
+                  </Switch>
+                  <Switch
+                    size="sm"
+                    isSelected={skipFree}
+                    onValueChange={(v) => {
+                      setSkipFree(v);
+                      handleSetTarget(targetCalendarId, { skipFree: v });
+                    }}
+                  >
+                    <span className="text-sm">Skip free/tentative events</span>
+                  </Switch>
                 </div>
               </div>
             )}
@@ -379,6 +405,21 @@ export default function SettingsPage() {
             {cleanupStatus && (
               <p className="mt-2 text-sm text-primary">{cleanupStatus}</p>
             )}
+          </CardBody>
+        </Card>
+
+        {/* Booking Settings */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold">Booking Page</h2>
+          </CardHeader>
+          <CardBody>
+            <p className="mb-3 text-sm text-default-500">
+              Set up event types, working hours, and your public booking URL.
+            </p>
+            <Link href="/settings/booking">
+              <Button size="sm" color="primary">Configure Booking</Button>
+            </Link>
           </CardBody>
         </Card>
 
