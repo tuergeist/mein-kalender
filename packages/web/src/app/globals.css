@@ -215,6 +215,21 @@ select:focus {
   @apply bg-gray-100 font-semibold text-gray-700;
 }
 
+.fc .fc-timegrid-event .fc-event-main {
+  overflow: hidden;
+}
+
+.fc .fc-timegrid-event .fc-event-main-frame {
+  overflow: hidden;
+}
+
+.fc .fc-timegrid-event .fc-event-time,
+.fc .fc-timegrid-event .fc-event-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .fc .fc-timegrid-slot {
   @apply border-gray-200;
   height: 3rem;
