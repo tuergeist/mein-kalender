@@ -170,4 +170,97 @@ export async function adminRoutes(app: FastifyInstance) {
       limit,
     };
   });
+
+  // List all calendar sources with user info
+  app.get<{
+    Querystring: { search?: string; page?: string; limit?: string };
+  }>("/api/admin/sources", async (request) => {
+    const search = request.query.search || "";
+    const page = Math.max(1, parseInt(request.query.page || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || "20", 10)));
+    const skip = (page - 1) * limit;
+
+    const where = search
+      ? {
+          OR: [
+            { label: { contains: search, mode: "insensitive" as const } },
+            { provider: { contains: search, mode: "insensitive" as const } },
+            { user: { email: { contains: search, mode: "insensitive" as const } } },
+          ],
+        }
+      : {};
+
+    const [sources, total] = await Promise.all([
+      prisma.calendarSource.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { lastSyncAt: { sort: "desc", nulls: "last" } },
+        select: {
+          id: true,
+          label: true,
+          provider: true,
+          syncInterval: true,
+          syncStatus: true,
+          syncError: true,
+          lastSyncAt: true,
+          user: { select: { email: true } },
+        },
+      }),
+      prisma.calendarSource.count({ where }),
+    ]);
+
+    return {
+      sources: sources.map((s) => ({
+        id: s.id,
+        label: s.label,
+        provider: s.provider,
+        syncInterval: s.syncInterval,
+        syncStatus: s.syncStatus,
+        syncError: s.syncError,
+        lastSyncAt: s.lastSyncAt,
+        userEmail: s.user.email,
+      })),
+      total,
+      page,
+      limit,
+    };
+  });
+
+  // Update source sync interval
+  app.patch<{
+    Params: { id: string };
+    Body: { syncInterval: number };
+  }>("/api/admin/sources/:id", async (request, reply) => {
+    const { syncInterval } = request.body;
+
+    if (!syncInterval || syncInterval < 60) {
+      return reply.code(400).send({ error: "syncInterval must be at least 60 seconds" });
+    }
+
+    const source = await prisma.calendarSource.update({
+      where: { id: request.params.id },
+      data: { syncInterval },
+      select: { id: true, syncInterval: true },
+    });
+
+    // Update the scheduled job with new interval
+    const queue = getSyncQueue();
+    const fullSource = await prisma.calendarSource.findUnique({
+      where: { id: request.params.id },
+      select: { id: true, userId: true },
+    });
+    if (fullSource) {
+      await queue.upsertJobScheduler(
+        `sync-${source.id}`,
+        { every: syncInterval * 1000 },
+        {
+          name: "sync-source",
+          data: { sourceId: source.id, userId: fullSource.userId },
+        }
+      );
+    }
+
+    return source;
+  });
 }
