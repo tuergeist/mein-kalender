@@ -10,6 +10,7 @@ datasource db {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
+  username     String?  @unique
   passwordHash String?
   displayName  String?
   avatarUrl    String?
@@ -18,8 +19,11 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  calendarSources CalendarSource[]
-  accounts        Account[]
+  calendarSources    CalendarSource[]
+  accounts           Account[]
+  eventTypes         EventType[]
+  availabilityRules  AvailabilityRule[]
+  bookings           Booking[]
 
   @@map("users")
 }
@@ -75,6 +79,8 @@ model CalendarEntry {
   syncDaysInAdvance  Int     @default(30)
   skipWorkLocation       Boolean @default(true)
   skipSingleDayAllDay   Boolean @default(false)
+  skipDeclined           Boolean @default(true)
+  skipFree               Boolean @default(false)
   readOnly           Boolean @default(false)
   enabled            Boolean @default(true)
 
@@ -123,4 +129,61 @@ model TargetEventMapping {
   @@index([targetCalendarEntryId])
   @@unique([sourceEventId, targetCalendarEntryId])
   @@map("target_event_mappings")
+}
+
+model EventType {
+  id              String   @id @default(cuid())
+  userId          String
+  slug            String
+  name            String
+  durationMinutes Int
+  description     String?
+  location        String?
+  color           String   @default("#3b82f6")
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+  @@map("event_types")
+}
+
+model AvailabilityRule {
+  id        String  @id @default(cuid())
+  userId    String
+  dayOfWeek Int     // 0=Sun, 1=Mon, ..., 6=Sat
+  startTime String  // "HH:mm" e.g. "09:00"
+  endTime   String  // "HH:mm" e.g. "17:00"
+  enabled   Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayOfWeek])
+  @@index([userId])
+  @@map("availability_rules")
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  eventTypeId     String
+  userId          String
+  guestName       String
+  guestEmail      String
+  notes           String?
+  startTime       DateTime
+  endTime         DateTime
+  status          String   @default("confirmed") // confirmed, cancelled
+  providerEventId String?
+  createdAt       DateTime @default(now())
+
+  eventType EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventTypeId])
+  @@index([startTime, endTime])
+  @@map("bookings")
 }

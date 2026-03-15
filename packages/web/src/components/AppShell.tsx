@@ -45,6 +45,11 @@ export function AppShell({ children, sidebar }: { children: React.ReactNode; sid
               </Button>
             </Link>
           )}
+          <Link href="/bookings">
+            <Button variant="light" size="sm" className="hidden text-gray-600 sm:flex">
+              Bookings
+            </Button>
+          </Link>
           <Link href="/settings">
             <Button variant="light" size="sm" className="hidden text-gray-600 sm:flex">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

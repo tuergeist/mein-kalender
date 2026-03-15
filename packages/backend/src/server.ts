@@ -13,6 +13,11 @@ import { icsRoutes } from "./routes/ics";
 import { authRoutes } from "./routes/auth";
 import { oauthRoutes } from "./routes/oauth";
 import { adminRoutes } from "./routes/admin";
+import { eventTypesRoutes } from "./routes/event-types";
+import { availabilityRoutes } from "./routes/availability";
+import { bookingsRoutes } from "./routes/bookings";
+import { profileRoutes } from "./routes/profile";
+import { publicBookingRoutes } from "./routes/public-booking";
 
 validateEnv();
 
@@ -29,6 +34,11 @@ server.register(icsRoutes);
 server.register(authRoutes);
 server.register(oauthRoutes);
 server.register(adminRoutes);
+server.register(eventTypesRoutes);
+server.register(availabilityRoutes);
+server.register(bookingsRoutes);
+server.register(profileRoutes);
+server.register(publicBookingRoutes);
 
 async function seedAdminUser() {
   const email = "admin@admin.local";
