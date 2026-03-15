@@ -61,6 +61,7 @@ model CalendarSource {
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   calendarEntries CalendarEntry[]
 
+  @@index([userId])
   @@map("calendar_sources")
 }
 
@@ -78,6 +79,7 @@ model CalendarEntry {
   events Event[]
   targetMappings TargetEventMapping[] @relation("targetCalendar")
 
+  @@index([sourceId])
   @@unique([sourceId, providerCalendarId])
   @@map("calendar_entries")
 }
@@ -99,6 +101,8 @@ model Event {
   calendarEntry CalendarEntry @relation(fields: [calendarEntryId], references: [id], onDelete: Cascade)
   sourceMappings  TargetEventMapping[] @relation("sourceEvent")
 
+  @@index([calendarEntryId])
+  @@index([startTime, endTime])
   @@unique([calendarEntryId, sourceEventId])
   @@map("events")
 }
@@ -112,6 +116,7 @@ model TargetEventMapping {
   sourceEvent    Event         @relation("sourceEvent", fields: [sourceEventId], references: [id], onDelete: Cascade)
   targetCalendar CalendarEntry @relation("targetCalendar", fields: [targetCalendarEntryId], references: [id], onDelete: Cascade)
 
+  @@index([targetCalendarEntryId])
   @@unique([sourceEventId, targetCalendarEntryId])
   @@map("target_event_mappings")
 }

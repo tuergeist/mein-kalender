@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import compress from "@fastify/compress";
 import { validateEnv } from "./lib/env";
 import { healthRoutes } from "./routes/health";
 import { sourcesRoutes } from "./routes/sources";
@@ -15,6 +16,7 @@ validateEnv();
 const server = Fastify({ logger: true });
 
 server.register(cors, { origin: true });
+server.register(compress);
 server.register(healthRoutes);
 server.register(sourcesRoutes);
 server.register(eventsRoutes);

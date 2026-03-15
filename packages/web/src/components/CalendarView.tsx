@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -65,14 +65,15 @@ export function CalendarView() {
     }
   }, [isMobile]);
 
+  const accessToken = (session as { accessToken?: string })?.accessToken;
+
   const fetchEvents = useCallback(
     async (start: Date, end: Date) => {
-      const token = (session as { accessToken?: string })?.accessToken;
-      if (!token) return;
+      if (!accessToken) return;
 
       const res = await apiAuthFetch(
         `/api/events?start=${start.toISOString()}&end=${end.toISOString()}`,
-        token
+        accessToken
       );
 
       if (res.ok) {
@@ -117,18 +118,22 @@ export function CalendarView() {
         setAllEvents(mapped);
       }
     },
-    [session]
+    [accessToken]
   );
 
   useEffect(() => {
-    if (session && dateRange) {
+    if (accessToken && dateRange) {
       fetchEvents(dateRange.start, dateRange.end);
     }
-  }, [session, dateRange, fetchEvents]);
+  }, [accessToken, dateRange, fetchEvents]);
 
-  const events = visibleCalendarIds
-    ? allEvents.filter((e) => visibleCalendarIds.has(e.extendedProps.calendarEntryId))
-    : allEvents;
+  const events = useMemo(
+    () =>
+      visibleCalendarIds
+        ? allEvents.filter((e) => visibleCalendarIds.has(e.extendedProps.calendarEntryId))
+        : allEvents,
+    [allEvents, visibleCalendarIds]
+  );
 
   function handleViewChange(view: string) {
     setCurrentView(view);
@@ -141,10 +146,9 @@ export function CalendarView() {
       return;
     }
 
-    const token = (session as { accessToken?: string })?.accessToken;
-    if (!token) return;
+    if (!accessToken) return;
 
-    const res = await apiAuthFetch(`/api/events/${info.event.id}`, token, {
+    const res = await apiAuthFetch(`/api/events/${info.event.id}`, accessToken, {
       method: "PUT",
       body: JSON.stringify({
         startTime: info.event.start?.toISOString(),
@@ -157,7 +161,49 @@ export function CalendarView() {
     }
   }
 
-  const title = calendarRef.current?.getApi()?.view?.title || "";
+  const eventContent = useCallback((arg: { event: { extendedProps: Record<string, unknown>; title: string }; timeText: string }) => {
+    const meta = arg.event.extendedProps?.providerMetadata as Record<string, unknown> | undefined;
+    const eventType = meta?.eventType as string | undefined;
+    const transparency = meta?.transparency as string | undefined;
+    const wl = meta?.workingLocation as { type?: string } | undefined;
+    const rawTitle = arg.event.title;
+
+    const isWorkingLocation = eventType === "workingLocation"
+      || /^(Arbeitsort:|Working location:)/i.test(rawTitle)
+      || /^Home\s*office$/i.test(rawTitle)
+      || /^Büro$/i.test(rawTitle);
+    const isFree = transparency === "transparent";
+    const isOutOfOffice = eventType === "outOfOffice";
+    const isFocusTime = eventType === "focusTime";
+
+    let icon = "";
+    if (isWorkingLocation) {
+      const isHome = wl?.type === "homeOffice"
+        || /Zuhause|Home|Homeoffice/i.test(rawTitle);
+      const isOffice = wl?.type === "officeLocation"
+        || /Büro|Office/i.test(rawTitle);
+      icon = isHome ? "\u{1F3E0}" : isOffice ? "\u{1F3E2}" : "\u{1F4CD}";
+    } else if (isOutOfOffice) {
+      icon = "\u{1F334}";
+    } else if (isFocusTime) {
+      icon = "\u{1F3AF}";
+    }
+
+    const title = isWorkingLocation
+      ? rawTitle.replace(/^Arbeitsort:\s*|^Working location:\s*/i, "")
+      : rawTitle;
+
+    return {
+      html: `<div class="fc-event-main-frame" style="${isFree ? "opacity:0.6;" : ""}">
+        ${arg.timeText ? `<div class="fc-event-time">${arg.timeText}</div>` : ""}
+        <div class="fc-event-title-container">
+          <div class="fc-event-title fc-sticky">${isWorkingLocation ? icon : (icon ? icon + " " : "") + title}</div>
+        </div>
+      </div>`,
+    };
+  }, []);
+
+  const calendarTitle = calendarRef.current?.getApi()?.view?.title || "";
 
   return (
     <div className="flex h-full flex-col">
@@ -190,7 +236,7 @@ export function CalendarView() {
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </Button>
-            <h2 className="ml-1 text-sm font-semibold text-gray-800 md:ml-2 md:text-lg">{title}</h2>
+            <h2 className="ml-1 text-sm font-semibold text-gray-800 md:ml-2 md:text-lg">{calendarTitle}</h2>
           </div>
 
           <ButtonGroup size="sm" variant="flat" className="md:hidden">
@@ -265,50 +311,14 @@ export function CalendarView() {
           eventClick={(info) => {
             setSelectedEvent(info.event.toPlainObject() as unknown as CalendarEvent);
           }}
-          eventContent={(arg) => {
-            const meta = arg.event.extendedProps?.providerMetadata;
-            const eventType = meta?.eventType as string | undefined;
-            const transparency = meta?.transparency as string | undefined;
-            const wl = meta?.workingLocation as { type?: string } | undefined;
-            const rawTitle = arg.event.title;
-
-            // Detect working location from API metadata or title pattern
-            const isWorkingLocation = eventType === "workingLocation"
-              || /^(Arbeitsort:|Working location:)/i.test(rawTitle)
-              || /^Home\s*office$/i.test(rawTitle)
-              || /^Büro$/i.test(rawTitle);
-            const isFree = transparency === "transparent";
-            const isOutOfOffice = eventType === "outOfOffice";
-            const isFocusTime = eventType === "focusTime";
-
-            let icon = "";
-            if (isWorkingLocation) {
-              const isHome = wl?.type === "homeOffice"
-                || /Zuhause|Home|Homeoffice/i.test(rawTitle);
-              const isOffice = wl?.type === "officeLocation"
-                || /Büro|Office/i.test(rawTitle);
-              icon = isHome ? "\u{1F3E0}" : isOffice ? "\u{1F3E2}" : "\u{1F4CD}";
-            } else if (isOutOfOffice) {
-              icon = "\u{1F334}";
-            } else if (isFocusTime) {
-              icon = "\u{1F3AF}";
-            }
-
-            const title = isWorkingLocation
-              ? rawTitle.replace(/^Arbeitsort:\s*|^Working location:\s*/i, "")
-              : rawTitle;
-
-            return {
-              html: `<div class="fc-event-main-frame" style="${isFree ? "opacity:0.6;" : ""}">
-                ${arg.timeText ? `<div class="fc-event-time">${arg.timeText}</div>` : ""}
-                <div class="fc-event-title-container">
-                  <div class="fc-event-title fc-sticky">${isWorkingLocation ? icon : (icon ? icon + " " : "") + title}</div>
-                </div>
-              </div>`,
-            };
-          }}
+          eventContent={eventContent}
           datesSet={(dateInfo) => {
-            setDateRange({ start: dateInfo.start, end: dateInfo.end });
+            setDateRange((prev) => {
+              if (prev && prev.start.getTime() === dateInfo.start.getTime() && prev.end.getTime() === dateInfo.end.getTime()) {
+                return prev;
+              }
+              return { start: dateInfo.start, end: dateInfo.end };
+            });
           }}
           headerToolbar={false}
           height="100%"

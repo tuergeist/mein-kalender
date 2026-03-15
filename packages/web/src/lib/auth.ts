@@ -99,6 +99,12 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id;
         token.email = user.email;
+        // Sign the API access token once at login, not on every session read
+        const sign = createSigner({ key: process.env.NEXTAUTH_SECRET! });
+        token.accessToken = sign({
+          sub: user.id,
+          email: user.email,
+        });
       }
       return token;
     },
@@ -106,11 +112,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as { id: string }).id = token.sub!;
       }
-      const sign = createSigner({ key: process.env.NEXTAUTH_SECRET! });
-      (session as unknown as { accessToken: string }).accessToken = sign({
-        sub: token.sub,
-        email: token.email,
-      });
+      (session as unknown as { accessToken: string }).accessToken =
+        token.accessToken as string;
       return session;
     },
   },

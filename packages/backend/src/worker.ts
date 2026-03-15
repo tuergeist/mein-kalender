@@ -22,10 +22,6 @@ const worker = new Worker(
   {
     connection,
     concurrency: 5,
-    limiter: {
-      max: 1,
-      duration: 1000,
-    },
   }
 );
 

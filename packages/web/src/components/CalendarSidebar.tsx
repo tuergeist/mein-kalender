@@ -27,17 +27,17 @@ export function CalendarSidebar() {
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [visibleCalendars, setVisibleCalendars] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
+  const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
   useEffect(() => {
-    if (!session) return;
+    if (!accessToken) return;
     loadSources();
-  }, [session]);
+  }, [accessToken]);
 
   async function loadSources() {
-    const token = (session as { accessToken?: string })?.accessToken;
-    if (!token) return;
+    if (!accessToken) return;
 
-    const res = await apiAuthFetch("/api/sources", token);
+    const res = await apiAuthFetch("/api/sources", accessToken);
     if (res.ok) {
       const data = await res.json();
       setSources(data);
@@ -73,11 +73,10 @@ export function CalendarSidebar() {
   }
 
   async function handleSyncNow() {
-    const token = (session as { accessToken?: string })?.accessToken;
-    if (!token) return;
+    if (!accessToken) return;
 
     setSyncing(true);
-    await apiAuthFetch("/api/sync-all", token, { method: "POST" });
+    await apiAuthFetch("/api/sync-all", accessToken, { method: "POST" });
     setTimeout(() => {
       loadSources();
       setSyncing(false);

@@ -46,22 +46,22 @@ export default function SettingsPage() {
   const [showDisconnectModal, setShowDisconnectModal] = useState<string | null>(null);
   const [targetCalendarId, setTargetCalendarId] = useState<string>("");
   const [mapProvider, setMapProvider] = useState<string>("google");
+  const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
   useEffect(() => {
     setMapProvider(localStorage.getItem("mapProvider") || "google");
   }, []);
 
   useEffect(() => {
-    if (session) loadData();
-  }, [session]);
+    if (accessToken) loadData();
+  }, [accessToken]);
 
   async function loadData() {
-    const token = (session as { accessToken?: string })?.accessToken;
-    if (!token) return;
+    if (!accessToken) return;
 
     const [sourcesRes, targetRes] = await Promise.all([
-      apiAuthFetch("/api/sources", token),
-      apiAuthFetch("/api/target-calendar", token),
+      apiAuthFetch("/api/sources", accessToken),
+      apiAuthFetch("/api/target-calendar", accessToken),
     ]);
 
     if (sourcesRes.ok) setSources(await sourcesRes.json());
@@ -72,19 +72,17 @@ export default function SettingsPage() {
   }
 
   async function handleDisconnect(sourceId: string) {
-    const token = (session as { accessToken?: string })?.accessToken;
-    if (!token) return;
+    if (!accessToken) return;
 
-    await apiAuthFetch(`/api/sources/${sourceId}`, token, { method: "DELETE" });
+    await apiAuthFetch(`/api/sources/${sourceId}`, accessToken, { method: "DELETE" });
     setShowDisconnectModal(null);
     loadData();
   }
 
   async function handleSetTarget(calendarEntryId: string) {
-    const token = (session as { accessToken?: string })?.accessToken;
-    if (!token) return;
+    if (!accessToken) return;
 
-    await apiAuthFetch("/api/target-calendar", token, {
+    await apiAuthFetch("/api/target-calendar", accessToken, {
       method: "PUT",
       body: JSON.stringify({ calendarEntryId }),
     });

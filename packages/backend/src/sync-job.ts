@@ -102,36 +102,40 @@ async function syncCalendarEntry(
     syncToken
   );
 
-  // Process created events
-  for (const event of delta.created) {
-    await prisma.event.upsert({
-      where: {
-        calendarEntryId_sourceEventId: {
-          calendarEntryId: entry.id,
-          sourceEventId: event.sourceEventId,
-        },
-      },
-      create: {
-        calendarEntryId: entry.id,
-        sourceEventId: event.sourceEventId,
-        title: event.title,
-        description: event.description,
-        location: event.location,
-        startTime: event.startTime,
-        endTime: event.endTime,
-        allDay: event.allDay,
-        providerMetadata: event.providerMetadata as object ?? undefined,
-      },
-      update: {
-        title: event.title,
-        description: event.description,
-        location: event.location,
-        startTime: event.startTime,
-        endTime: event.endTime,
-        allDay: event.allDay,
-        providerMetadata: event.providerMetadata as object ?? undefined,
-      },
-    });
+  // Process created events in a single transaction
+  if (delta.created.length > 0) {
+    await prisma.$transaction(
+      delta.created.map((event) =>
+        prisma.event.upsert({
+          where: {
+            calendarEntryId_sourceEventId: {
+              calendarEntryId: entry.id,
+              sourceEventId: event.sourceEventId,
+            },
+          },
+          create: {
+            calendarEntryId: entry.id,
+            sourceEventId: event.sourceEventId,
+            title: event.title,
+            description: event.description,
+            location: event.location,
+            startTime: event.startTime,
+            endTime: event.endTime,
+            allDay: event.allDay,
+            providerMetadata: event.providerMetadata as object ?? undefined,
+          },
+          update: {
+            title: event.title,
+            description: event.description,
+            location: event.location,
+            startTime: event.startTime,
+            endTime: event.endTime,
+            allDay: event.allDay,
+            providerMetadata: event.providerMetadata as object ?? undefined,
+          },
+        })
+      )
+    );
   }
 
   // Process updated events
@@ -152,18 +156,25 @@ async function syncCalendarEntry(
     });
   }
 
-  // Process deletions
-  for (const sourceEventId of delta.deleted) {
-    // Also clean up target mappings
-    const localEvent = await prisma.event.findFirst({
-      where: { calendarEntryId: entry.id, sourceEventId },
+  // Process deletions in batch
+  if (delta.deleted.length > 0) {
+    const localEvents = await prisma.event.findMany({
+      where: {
+        calendarEntryId: entry.id,
+        sourceEventId: { in: delta.deleted },
+      },
+      select: { id: true },
     });
 
-    if (localEvent) {
+    const localEventIds = localEvents.map((e) => e.id);
+
+    if (localEventIds.length > 0) {
       await prisma.targetEventMapping.deleteMany({
-        where: { sourceEventId: localEvent.id },
+        where: { sourceEventId: { in: localEventIds } },
       });
-      await prisma.event.delete({ where: { id: localEvent.id } });
+      await prisma.event.deleteMany({
+        where: { id: { in: localEventIds } },
+      });
     }
   }
 
@@ -251,24 +262,31 @@ async function cloneToTarget(
     include: { sourceEvent: true },
   });
 
-  for (const mapping of mappedEvents) {
-    try {
-      await targetProvider.updateEvent(
-        targetToken,
-        targetEntry.providerCalendarId,
-        mapping.targetEventId,
-        {
-          title: `[Sync] ${mapping.sourceEvent.title}`,
-          description: mapping.sourceEvent.description,
-          location: mapping.sourceEvent.location,
-          startTime: mapping.sourceEvent.startTime,
-          endTime: mapping.sourceEvent.endTime,
-          allDay: mapping.sourceEvent.allDay,
+  // Update target events with concurrency limit of 5
+  const CHUNK_SIZE = 5;
+  for (let i = 0; i < mappedEvents.length; i += CHUNK_SIZE) {
+    const chunk = mappedEvents.slice(i, i + CHUNK_SIZE);
+    await Promise.all(
+      chunk.map(async (mapping) => {
+        try {
+          await targetProvider.updateEvent(
+            targetToken,
+            targetEntry.providerCalendarId,
+            mapping.targetEventId,
+            {
+              title: `[Sync] ${mapping.sourceEvent.title}`,
+              description: mapping.sourceEvent.description,
+              location: mapping.sourceEvent.location,
+              startTime: mapping.sourceEvent.startTime,
+              endTime: mapping.sourceEvent.endTime,
+              allDay: mapping.sourceEvent.allDay,
+            }
+          );
+        } catch (err) {
+          console.error(`[sync] Failed to update target event ${mapping.targetEventId}:`, err);
         }
-      );
-    } catch (err) {
-      console.error(`[sync] Failed to update target event ${mapping.targetEventId}:`, err);
-    }
+      })
+    );
   }
 }
 
