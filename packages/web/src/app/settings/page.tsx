@@ -96,21 +96,25 @@ export default function SettingsPage() {
     loadData();
   }
 
-  async function handleSetTarget(calendarEntryId: string, overrides?: { syncDaysInAdvance?: number; skipWorkLocation?: boolean; skipSingleDayAllDay?: boolean; skipDeclined?: boolean; skipFree?: boolean }) {
-    if (!accessToken) return;
+  const [targetSaving, setTargetSaving] = useState(false);
+  const [targetDirty, setTargetDirty] = useState(false);
 
-    const body: Record<string, unknown> = { calendarEntryId, ...overrides };
-
+  async function saveTargetSettings() {
+    if (!accessToken || !targetCalendarId) return;
+    setTargetSaving(true);
     await apiAuthFetch("/api/target-calendar", accessToken, {
       method: "PUT",
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        calendarEntryId: targetCalendarId,
+        syncDaysInAdvance,
+        skipWorkLocation,
+        skipSingleDayAllDay,
+        skipDeclined,
+        skipFree,
+      }),
     });
-    setTargetCalendarId(calendarEntryId);
-    if (overrides?.syncDaysInAdvance !== undefined) setSyncDaysInAdvance(overrides.syncDaysInAdvance);
-    if (overrides?.skipWorkLocation !== undefined) setSkipWorkLocation(overrides.skipWorkLocation);
-    if (overrides?.skipSingleDayAllDay !== undefined) setSkipSingleDayAllDay(overrides.skipSingleDayAllDay);
-    if (overrides?.skipDeclined !== undefined) setSkipDeclined(overrides.skipDeclined);
-    if (overrides?.skipFree !== undefined) setSkipFree(overrides.skipFree);
+    setTargetSaving(false);
+    setTargetDirty(false);
   }
 
   async function handleUnsetTarget(deleteSyncedEvents: boolean) {
@@ -282,7 +286,10 @@ export default function SettingsPage() {
                   selectedKeys={targetCalendarId ? new Set([targetCalendarId]) : new Set()}
                   onSelectionChange={(keys) => {
                     const selected = Array.from(keys)[0] as string;
-                    if (selected) handleSetTarget(selected);
+                    if (selected) {
+                      setTargetCalendarId(selected);
+                      setTargetDirty(true);
+                    }
                   }}
                   className="flex-1"
                 >
@@ -313,7 +320,7 @@ export default function SettingsPage() {
                   selectedKeys={new Set([String(syncDaysInAdvance)])}
                   onSelectionChange={(keys) => {
                     const days = Number(Array.from(keys)[0]);
-                    if (days) handleSetTarget(targetCalendarId, { syncDaysInAdvance: days });
+                    if (days) { setSyncDaysInAdvance(days); setTargetDirty(true); }
                   }}
                   size="sm"
                   className="max-w-xs"
@@ -326,44 +333,41 @@ export default function SettingsPage() {
                   <Switch
                     size="sm"
                     isSelected={skipWorkLocation}
-                    onValueChange={(v) => {
-                      setSkipWorkLocation(v);
-                      handleSetTarget(targetCalendarId, { skipWorkLocation: v });
-                    }}
+                    onValueChange={(v) => { setSkipWorkLocation(v); setTargetDirty(true); }}
                   >
                     <span className="text-sm">Skip work location events</span>
                   </Switch>
                   <Switch
                     size="sm"
                     isSelected={skipSingleDayAllDay}
-                    onValueChange={(v) => {
-                      setSkipSingleDayAllDay(v);
-                      handleSetTarget(targetCalendarId, { skipSingleDayAllDay: v });
-                    }}
+                    onValueChange={(v) => { setSkipSingleDayAllDay(v); setTargetDirty(true); }}
                   >
                     <span className="text-sm">Skip single-day all-day events (birthdays, holidays)</span>
                   </Switch>
                   <Switch
                     size="sm"
                     isSelected={skipDeclined}
-                    onValueChange={(v) => {
-                      setSkipDeclined(v);
-                      handleSetTarget(targetCalendarId, { skipDeclined: v });
-                    }}
+                    onValueChange={(v) => { setSkipDeclined(v); setTargetDirty(true); }}
                   >
                     <span className="text-sm">Skip declined events</span>
                   </Switch>
                   <Switch
                     size="sm"
                     isSelected={skipFree}
-                    onValueChange={(v) => {
-                      setSkipFree(v);
-                      handleSetTarget(targetCalendarId, { skipFree: v });
-                    }}
+                    onValueChange={(v) => { setSkipFree(v); setTargetDirty(true); }}
                   >
                     <span className="text-sm">Skip free/tentative events</span>
                   </Switch>
                 </div>
+                <Button
+                  size="sm"
+                  color="primary"
+                  isLoading={targetSaving}
+                  isDisabled={!targetDirty}
+                  onPress={saveTargetSettings}
+                >
+                  Save
+                </Button>
               </div>
             )}
 
