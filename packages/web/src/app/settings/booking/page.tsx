@@ -19,6 +19,9 @@ interface EventType {
   location: string | null;
   color: string;
   enabled: boolean;
+  redirectUrl: string | null;
+  redirectTitle: string | null;
+  redirectDelaySecs: number;
 }
 
 interface AvailabilityRule {
@@ -50,6 +53,16 @@ export default function BookingSettingsPage() {
   const [newRedirectTitle, setNewRedirectTitle] = useState("");
   const [newRedirectDelay, setNewRedirectDelay] = useState("5");
   const [creating, setCreating] = useState(false);
+
+  const [editingType, setEditingType] = useState<EventType | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDuration, setEditDuration] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editRedirectUrl, setEditRedirectUrl] = useState("");
+  const [editRedirectTitle, setEditRedirectTitle] = useState("");
+  const [editRedirectDelay, setEditRedirectDelay] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
   const [savingRules, setSavingRules] = useState(false);
@@ -154,6 +167,37 @@ export default function BookingSettingsPage() {
     setNewRedirectTitle("");
     setNewRedirectDelay("5");
     setCreating(false);
+    loadEventTypes();
+  }
+
+  function openEditModal(et: EventType) {
+    setEditingType(et);
+    setEditName(et.name);
+    setEditDuration(String(et.durationMinutes));
+    setEditDescription(et.description || "");
+    setEditLocation(et.location || "");
+    setEditRedirectUrl(et.redirectUrl || "");
+    setEditRedirectTitle(et.redirectTitle || "");
+    setEditRedirectDelay(String(et.redirectDelaySecs));
+  }
+
+  async function saveEventType() {
+    if (!accessToken || !editingType) return;
+    setSaving(true);
+    await apiAuthFetch(`/api/event-types/${editingType.id}`, accessToken, {
+      method: "PUT",
+      body: JSON.stringify({
+        name: editName,
+        durationMinutes: parseInt(editDuration) || 30,
+        description: editDescription || null,
+        location: editLocation || null,
+        redirectUrl: editRedirectUrl || null,
+        redirectTitle: editRedirectTitle || null,
+        redirectDelaySecs: editRedirectUrl ? (parseInt(editRedirectDelay) || 5) : 5,
+      }),
+    });
+    setEditingType(null);
+    setSaving(false);
     loadEventTypes();
   }
 
@@ -311,6 +355,9 @@ export default function BookingSettingsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch size="sm" isSelected={et.enabled} onValueChange={(v) => toggleEventType(et.id, v)} />
+                      <Button size="sm" variant="light" onPress={() => openEditModal(et)}>
+                        Edit
+                      </Button>
                       <Button size="sm" color="danger" variant="light" onPress={() => deleteEventType(et.id)}>
                         Delete
                       </Button>
@@ -383,6 +430,34 @@ export default function BookingSettingsPage() {
             <ModalFooter>
               <Button variant="light" onPress={() => setShowCreateModal(false)}>Cancel</Button>
               <Button color="primary" isLoading={creating} onPress={createEventType}>Create</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Edit Event Type Modal */}
+        <Modal isOpen={!!editingType} onClose={() => setEditingType(null)} size="lg">
+          <ModalContent>
+            <ModalHeader>Edit Event Type</ModalHeader>
+            <ModalBody>
+              <div className="space-y-4">
+                <Input label="Name" value={editName} onValueChange={setEditName} />
+                <Input label="Duration (minutes)" type="number" value={editDuration} onValueChange={setEditDuration} />
+                <Input label="Location (optional)" value={editLocation} onValueChange={setEditLocation} placeholder="e.g. Google Meet link" />
+                <Input label="Description (optional)" value={editDescription} onValueChange={setEditDescription} />
+                <Divider />
+                <p className="text-sm font-medium">After booking (optional)</p>
+                <Input label="Redirect URL" value={editRedirectUrl} onValueChange={setEditRedirectUrl} placeholder="https://..." />
+                {editRedirectUrl && (
+                  <>
+                    <Input label="Link title" value={editRedirectTitle} onValueChange={setEditRedirectTitle} placeholder="e.g. Join the meeting" />
+                    <Input label="Redirect delay (seconds)" type="number" value={editRedirectDelay} onValueChange={setEditRedirectDelay} />
+                  </>
+                )}
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" onPress={() => setEditingType(null)}>Cancel</Button>
+              <Button color="primary" isLoading={saving} onPress={saveEventType}>Save</Button>
             </ModalFooter>
           </ModalContent>
         </Modal>
