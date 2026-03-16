@@ -15,7 +15,7 @@ export async function profileRoutes(app: FastifyInstance) {
 
     const profile = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { id: true, email: true, username: true, displayName: true, avatarUrl: true },
+      select: { id: true, email: true, username: true, displayName: true, avatarUrl: true, bookingCalendarEntryId: true },
     });
 
     return profile;
@@ -46,6 +46,32 @@ export async function profileRoutes(app: FastifyInstance) {
         where: { id: user.id },
         data: { username },
         select: { id: true, email: true, username: true, displayName: true },
+      });
+
+      return updated;
+    }
+  );
+
+  // Set booking calendar
+  app.put<{ Body: { bookingCalendarEntryId: string | null } }>(
+    "/api/profile/booking-calendar",
+    async (request, reply) => {
+      const { user } = request as unknown as AuthenticatedRequest;
+      const { bookingCalendarEntryId } = request.body;
+
+      if (bookingCalendarEntryId) {
+        const entry = await prisma.calendarEntry.findFirst({
+          where: { id: bookingCalendarEntryId, source: { userId: user.id }, readOnly: false },
+        });
+        if (!entry) {
+          return reply.code(404).send({ error: "Calendar not found or read-only" });
+        }
+      }
+
+      const updated = await prisma.user.update({
+        where: { id: user.id },
+        data: { bookingCalendarEntryId },
+        select: { id: true, bookingCalendarEntryId: true },
       });
 
       return updated;

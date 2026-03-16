@@ -207,8 +207,11 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
   ): Promise<NormalizedEvent> {
     const body = this.toGoogleEvent(event);
 
+    const sendUpdates = event.attendees?.length ? "sendUpdates=all" : "";
+    const url = `${GOOGLE_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events${sendUpdates ? `?${sendUpdates}` : ""}`;
+
     const res = await this.fetchWithRefresh(
-      `${GOOGLE_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events`,
+      url,
       token,
       {
         method: "POST",
@@ -316,6 +319,10 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
       body.end = event.allDay
         ? { date: event.endTime.toISOString().split("T")[0] }
         : { dateTime: event.endTime.toISOString() };
+    }
+
+    if (event.attendees?.length) {
+      body.attendees = event.attendees.map((a) => ({ email: a.email, displayName: a.name }));
     }
 
     return body;

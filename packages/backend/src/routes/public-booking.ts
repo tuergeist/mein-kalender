@@ -23,7 +23,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const eventType = await prisma.eventType.findFirst({
         where: { userId: user.id, slug },
-        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true },
+        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true, redirectUrl: true, redirectTitle: true, redirectDelaySecs: true },
       });
 
       if (!eventType || !eventType.enabled) {
@@ -91,22 +91,35 @@ export async function publicBookingRoutes(app: FastifyInstance) {
         return reply.code(409).send({ error: "This slot is no longer available" });
       }
 
-      // Create calendar event on host's calendar
+      // Create calendar event on host's booking calendar (or target, or first writable)
       let providerEventId: string | null = null;
       try {
-        const targetEntry = await prisma.calendarEntry.findFirst({
-          where: {
-            source: { userId: user.id },
-            OR: [{ isTarget: true }, { readOnly: false }],
-          },
-          include: { source: true },
-          orderBy: { isTarget: "desc" },
-        });
+        let bookingEntry = null;
 
-        if (targetEntry) {
-          const provider = getProvider(targetEntry.source.provider);
+        // 1. Try user's designated booking calendar
+        if (user.bookingCalendarEntryId) {
+          bookingEntry = await prisma.calendarEntry.findFirst({
+            where: { id: user.bookingCalendarEntryId, source: { userId: user.id } },
+            include: { source: true },
+          });
+        }
+
+        // 2. Fall back to target calendar, then first writable
+        if (!bookingEntry) {
+          bookingEntry = await prisma.calendarEntry.findFirst({
+            where: {
+              source: { userId: user.id },
+              OR: [{ isTarget: true }, { readOnly: false }],
+            },
+            include: { source: true },
+            orderBy: { isTarget: "desc" },
+          });
+        }
+
+        if (bookingEntry) {
+          const provider = getProvider(bookingEntry.source.provider);
           const creds = JSON.parse(
-            decrypt(targetEntry.source.credentials, process.env.ENCRYPTION_SECRET!)
+            decrypt(bookingEntry.source.credentials, process.env.ENCRYPTION_SECRET!)
           );
           const token: TokenSet = {
             accessToken: creds.accessToken || "",
@@ -114,13 +127,14 @@ export async function publicBookingRoutes(app: FastifyInstance) {
             expiresAt: creds.expiresAt ? new Date(creds.expiresAt) : null,
           };
 
-          const calEvent = await provider.createEvent(token, targetEntry.providerCalendarId, {
+          const calEvent = await provider.createEvent(token, bookingEntry.providerCalendarId, {
             title: `[Booking] ${guestName} — ${eventType.name}`,
             description: `Guest: ${guestName} <${guestEmail}>${notes ? `\nNotes: ${notes}` : ""}`,
             location: eventType.location,
             startTime: start,
             endTime: end,
             allDay: false,
+            attendees: [{ email: guestEmail, name: guestName }],
           });
           providerEventId = calEvent.sourceEventId;
         }

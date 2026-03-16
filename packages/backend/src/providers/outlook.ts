@@ -321,6 +321,13 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       body.end = { dateTime: event.endTime.toISOString(), timeZone: "UTC" };
     }
 
+    if (event.attendees?.length) {
+      body.attendees = event.attendees.map((a) => ({
+        emailAddress: { address: a.email, name: a.name || a.email },
+        type: "required",
+      }));
+    }
+
     return body;
   }
 

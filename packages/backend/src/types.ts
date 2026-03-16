@@ -30,6 +30,7 @@ export interface NormalizedEvent {
   endTime: Date;
   allDay: boolean;
   providerMetadata?: Record<string, unknown>;
+  attendees?: Array<{ email: string; name?: string }>;
 }
 
 export interface EventDelta {

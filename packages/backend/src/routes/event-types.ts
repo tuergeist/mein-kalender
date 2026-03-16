@@ -27,11 +27,11 @@ export async function eventTypesRoutes(app: FastifyInstance) {
   });
 
   // Create event type
-  app.post<{ Body: { name: string; durationMinutes: number; description?: string; location?: string; color?: string } }>(
+  app.post<{ Body: { name: string; durationMinutes: number; description?: string; location?: string; color?: string; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number } }>(
     "/api/event-types",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
-      const { name, durationMinutes, description, location, color } = request.body;
+      const { name, durationMinutes, description, location, color, redirectUrl, redirectTitle, redirectDelaySecs } = request.body;
 
       if (!name || !durationMinutes) {
         return reply.code(400).send({ error: "name and durationMinutes are required" });
@@ -60,6 +60,9 @@ export async function eventTypesRoutes(app: FastifyInstance) {
           description: description || null,
           location: location || null,
           color: color || "#3b82f6",
+          redirectUrl: redirectUrl || null,
+          redirectTitle: redirectTitle || null,
+          ...(redirectDelaySecs !== undefined && { redirectDelaySecs }),
         },
       });
 
@@ -68,12 +71,12 @@ export async function eventTypesRoutes(app: FastifyInstance) {
   );
 
   // Update event type
-  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean } }>(
+  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number } }>(
     "/api/event-types/:id",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
       const { id } = request.params;
-      const { name, durationMinutes, description, location, color, enabled } = request.body;
+      const { name, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs } = request.body;
 
       const existing = await prisma.eventType.findFirst({
         where: { id, userId: user.id },
@@ -90,6 +93,9 @@ export async function eventTypesRoutes(app: FastifyInstance) {
           ...(description !== undefined && { description }),
           ...(location !== undefined && { location }),
           ...(color !== undefined && { color }),
+          ...(redirectUrl !== undefined && { redirectUrl: redirectUrl || null }),
+          ...(redirectTitle !== undefined && { redirectTitle: redirectTitle || null }),
+          ...(redirectDelaySecs !== undefined && { redirectDelaySecs }),
           ...(enabled !== undefined && { enabled }),
         },
       });

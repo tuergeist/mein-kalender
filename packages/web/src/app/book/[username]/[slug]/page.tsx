@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Button, Input, Textarea, Card, CardBody, Divider } from "@heroui/react";
 import { apiFetch } from "@/lib/api";
@@ -13,6 +13,9 @@ interface EventTypeInfo {
   description: string | null;
   location: string | null;
   color: string;
+  redirectUrl: string | null;
+  redirectTitle: string | null;
+  redirectDelaySecs: number;
 }
 
 interface HostInfo {
@@ -51,6 +54,7 @@ export default function BookingPage() {
 
   // Confirmation
   const [confirmation, setConfirmation] = useState<{ startTime: string; endTime: string } | null>(null);
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
 
   const step: Step = confirmation
     ? "confirmed"
@@ -117,6 +121,28 @@ export default function BookingPage() {
     }
     setSubmitting(false);
   }
+
+  // Auto-redirect after booking confirmation
+  const redirectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (confirmation && eventType?.redirectUrl) {
+      const delay = eventType.redirectDelaySecs ?? 5;
+      setRedirectCountdown(delay);
+      redirectTimerRef.current = setInterval(() => {
+        setRedirectCountdown((prev) => {
+          if (prev === null || prev <= 1) {
+            if (redirectTimerRef.current) clearInterval(redirectTimerRef.current);
+            window.location.href = eventType.redirectUrl!;
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => {
+        if (redirectTimerRef.current) clearInterval(redirectTimerRef.current);
+      };
+    }
+  }, [confirmation, eventType?.redirectUrl, eventType?.redirectDelaySecs]);
 
   // Calendar helpers
   const today = new Date();
@@ -204,8 +230,24 @@ export default function BookingPage() {
                   {formatDate(confirmation.startTime)}, {formatTime(confirmation.startTime)} – {formatTime(confirmation.endTime)}
                 </p>
                 <p className="mt-1 text-sm text-gray-500">
-                  A calendar invitation will be sent to your email.
+                  You will receive a calendar invitation by email.
                 </p>
+                {eventType.redirectUrl && (
+                  <div className="mt-6">
+                    <a
+                      href={eventType.redirectUrl}
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                    >
+                      {eventType.redirectTitle || "Continue"}
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </a>
+                    {redirectCountdown !== null && redirectCountdown > 0 && (
+                      <p className="mt-2 text-xs text-gray-400">
+                        Redirecting in {redirectCountdown}s...
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  Card, CardBody, CardHeader, Button, Input, Switch, Divider,
+  Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, SelectItem,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
 } from "@heroui/react";
 import Link from "next/link";
@@ -46,16 +46,23 @@ export default function BookingSettingsPage() {
   const [newDuration, setNewDuration] = useState("30");
   const [newDescription, setNewDescription] = useState("");
   const [newLocation, setNewLocation] = useState("");
+  const [newRedirectUrl, setNewRedirectUrl] = useState("");
+  const [newRedirectTitle, setNewRedirectTitle] = useState("");
+  const [newRedirectDelay, setNewRedirectDelay] = useState("5");
   const [creating, setCreating] = useState(false);
 
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
   const [savingRules, setSavingRules] = useState(false);
+
+  const [bookingCalendarId, setBookingCalendarId] = useState("");
+  const [allCalendarEntries, setAllCalendarEntries] = useState<Array<{ id: string; name: string; sourceName: string }>>([]);
 
   useEffect(() => {
     if (accessToken) {
       loadProfile();
       loadEventTypes();
       loadAvailability();
+      loadCalendars();
     }
   }, [accessToken]);
 
@@ -66,7 +73,31 @@ export default function BookingSettingsPage() {
       const data = await res.json();
       setUsername(data.username || "");
       setSavedUsername(data.username || "");
+      setBookingCalendarId(data.bookingCalendarEntryId || "");
     }
+  }
+
+  async function loadCalendars() {
+    if (!accessToken) return;
+    const res = await apiAuthFetch("/api/sources", accessToken);
+    if (res.ok) {
+      const sources = await res.json();
+      const entries = sources.flatMap((s: { calendarEntries: Array<{ id: string; name: string; readOnly: boolean }>; label: string | null; provider: string }) =>
+        s.calendarEntries
+          .filter((e: { readOnly: boolean }) => !e.readOnly)
+          .map((e: { id: string; name: string }) => ({ ...e, sourceName: s.label || s.provider }))
+      );
+      setAllCalendarEntries(entries);
+    }
+  }
+
+  async function handleSetBookingCalendar(calendarEntryId: string) {
+    if (!accessToken) return;
+    await apiAuthFetch("/api/profile/booking-calendar", accessToken, {
+      method: "PUT",
+      body: JSON.stringify({ bookingCalendarEntryId: calendarEntryId || null }),
+    });
+    setBookingCalendarId(calendarEntryId);
   }
 
   async function loadEventTypes() {
@@ -109,6 +140,9 @@ export default function BookingSettingsPage() {
         durationMinutes: parseInt(newDuration) || 30,
         description: newDescription || undefined,
         location: newLocation || undefined,
+        redirectUrl: newRedirectUrl || undefined,
+        redirectTitle: newRedirectTitle || undefined,
+        redirectDelaySecs: newRedirectUrl ? (parseInt(newRedirectDelay) || 5) : undefined,
       }),
     });
     setShowCreateModal(false);
@@ -116,6 +150,9 @@ export default function BookingSettingsPage() {
     setNewDuration("30");
     setNewDescription("");
     setNewLocation("");
+    setNewRedirectUrl("");
+    setNewRedirectTitle("");
+    setNewRedirectDelay("5");
     setCreating(false);
     loadEventTypes();
   }
@@ -201,6 +238,35 @@ export default function BookingSettingsPage() {
           </CardBody>
         </Card>
 
+        {/* Booking Calendar */}
+        <Card>
+          <CardHeader><h2 className="text-lg font-semibold">Booking Calendar</h2></CardHeader>
+          <CardBody>
+            <p className="mb-3 text-sm text-default-500">
+              Select the calendar where booking events are created. The guest will receive an invitation email from your calendar provider.
+            </p>
+            {allCalendarEntries.length === 0 ? (
+              <p className="text-default-400">Connect a calendar with write access first.</p>
+            ) : (
+              <Select
+                label="Booking Calendar"
+                placeholder="Select a calendar"
+                selectedKeys={bookingCalendarId ? new Set([bookingCalendarId]) : new Set()}
+                onSelectionChange={(keys) => {
+                  const selected = Array.from(keys)[0] as string;
+                  if (selected) handleSetBookingCalendar(selected);
+                }}
+              >
+                {allCalendarEntries.map((entry) => (
+                  <SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>
+                    {entry.name} ({entry.sourceName})
+                  </SelectItem>
+                ))}
+              </Select>
+            )}
+          </CardBody>
+        </Card>
+
         {/* Event Types */}
         <Card>
           <CardHeader className="flex items-center justify-between">
@@ -216,15 +282,32 @@ export default function BookingSettingsPage() {
               <div className="space-y-3">
                 {eventTypes.map((et) => (
                   <div key={et.id} className="flex items-center justify-between rounded-lg border border-default-200 p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: et.color }} />
-                      <div>
-                        <span className="font-medium">{et.name}</span>
-                        <span className="ml-2 text-sm text-default-400">{et.durationMinutes} min</span>
-                        {savedUsername && (
-                          <p className="text-xs text-default-400">/book/{savedUsername}/{et.slug}</p>
-                        )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <div className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: et.color }} />
+                        <div>
+                          <span className="font-medium">{et.name}</span>
+                          <span className="ml-2 text-sm text-default-400">{et.durationMinutes} min</span>
+                        </div>
                       </div>
+                      {savedUsername && et.enabled && (
+                        <div className="ml-6 mt-2 flex items-center gap-1.5">
+                          <code className="rounded bg-default-100 px-2 py-1 text-xs text-default-600">
+                            {bookingBaseUrl}/{et.slug}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="light"
+                            isIconOnly
+                            className="h-7 w-7 min-w-0"
+                            onPress={() => {
+                              navigator.clipboard.writeText(`${bookingBaseUrl}/${et.slug}`);
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch size="sm" isSelected={et.enabled} onValueChange={(v) => toggleEventType(et.id, v)} />
@@ -286,6 +369,15 @@ export default function BookingSettingsPage() {
                 <Input label="Duration (minutes)" type="number" value={newDuration} onValueChange={setNewDuration} />
                 <Input label="Location (optional)" value={newLocation} onValueChange={setNewLocation} placeholder="e.g. Google Meet link" />
                 <Input label="Description (optional)" value={newDescription} onValueChange={setNewDescription} />
+                <Divider />
+                <p className="text-sm font-medium">After booking (optional)</p>
+                <Input label="Redirect URL" value={newRedirectUrl} onValueChange={setNewRedirectUrl} placeholder="https://..." />
+                {newRedirectUrl && (
+                  <>
+                    <Input label="Link title" value={newRedirectTitle} onValueChange={setNewRedirectTitle} placeholder="e.g. Join the meeting" />
+                    <Input label="Redirect delay (seconds)" type="number" value={newRedirectDelay} onValueChange={setNewRedirectDelay} />
+                  </>
+                )}
               </div>
             </ModalBody>
             <ModalFooter>
