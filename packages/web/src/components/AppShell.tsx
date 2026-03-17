@@ -11,9 +11,23 @@ import {
   DropdownItem,
 } from "@heroui/react";
 import Link from "next/link";
-import { CalendarSidebar } from "./CalendarSidebar";
 
-export function AppShell({ children, sidebar }: { children: React.ReactNode; sidebar?: React.ReactNode }) {
+export type AppSection = "calendar" | "bookings" | "sync" | "settings";
+
+interface AppShellProps {
+  children: React.ReactNode;
+  section?: AppSection;
+  sidebarContent?: React.ReactNode;
+}
+
+const NAV_ITEMS: { key: AppSection; label: string; href: string; icon: string }[] = [
+  { key: "calendar", label: "Calendar", href: "/calendar", icon: "M6 2v2M18 2v2M3 8h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" },
+  { key: "bookings", label: "Bookings", href: "/bookings", icon: "M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2M9 14l2 2 4-4M12 2v4" },
+  { key: "sync", label: "Cal Sync", href: "/sync", icon: "M4 4v5h5M20 20v-5h-5M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" },
+  { key: "settings", label: "Settings", href: "/settings", icon: "M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" },
+];
+
+export function AppShell({ children, section, sidebarContent }: AppShellProps) {
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -22,10 +36,12 @@ export function AppShell({ children, sidebar }: { children: React.ReactNode; sid
       {/* Navbar */}
       <header className="relative z-40 flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 shadow-sm">
         <div className="flex items-center gap-3">
+          {/* Burger — mobile only */}
           <Button
             isIconOnly
             variant="light"
             size="sm"
+            className="md:hidden"
             onPress={() => setSidebarOpen(!sidebarOpen)}
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -45,20 +61,6 @@ export function AppShell({ children, sidebar }: { children: React.ReactNode; sid
               </Button>
             </Link>
           )}
-          <Link href="/bookings">
-            <Button variant="light" size="sm" className="hidden text-gray-600 sm:flex">
-              Bookings
-            </Button>
-          </Link>
-          <Link href="/settings">
-            <Button variant="light" size="sm" className="hidden text-gray-600 sm:flex">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M6.5 1.5h3l.3 1.7a5 5 0 011.2.7l1.6-.6 1.5 2.6-1.3 1.1a5 5 0 010 1.4l1.3 1.1-1.5 2.6-1.6-.6a5 5 0 01-1.2.7l-.3 1.7h-3l-.3-1.7a5 5 0 01-1.2-.7l-1.6.6-1.5-2.6 1.3-1.1a5 5 0 010-1.4L2.9 5.9l1.5-2.6 1.6.6a5 5 0 011.2-.7l.3-1.7z" stroke="currentColor" strokeWidth="1.2" />
-                <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2" />
-              </svg>
-              Settings
-            </Button>
-          </Link>
           <Dropdown>
             <DropdownTrigger>
               <Avatar
@@ -73,9 +75,6 @@ export function AppShell({ children, sidebar }: { children: React.ReactNode; sid
               <DropdownItem key="profile" href="/profile">
                 Profile
               </DropdownItem>
-              <DropdownItem key="settings" href="/settings">
-                Settings
-              </DropdownItem>
               <DropdownItem
                 key="logout"
                 color="danger"
@@ -89,7 +88,7 @@ export function AppShell({ children, sidebar }: { children: React.ReactNode; sid
       </header>
 
       <div className="relative flex flex-1 overflow-hidden">
-        {/* Sidebar — overlay on mobile, inline on desktop */}
+        {/* Sidebar overlay — mobile only */}
         {sidebarOpen && (
           <div
             className="fixed inset-0 z-20 bg-black/30 md:hidden"
@@ -99,11 +98,37 @@ export function AppShell({ children, sidebar }: { children: React.ReactNode; sid
         <aside
           className={`
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-            fixed z-30 h-[calc(100vh-3.5rem)] w-60 border-r border-gray-200 bg-white transition-transform duration-200
+            fixed z-30 flex h-[calc(100vh-3.5rem)] w-56 flex-col border-r border-gray-200 bg-white transition-transform duration-200
             md:relative md:z-auto md:h-auto
           `}
         >
-          {sidebar || <CalendarSidebar />}
+          {/* Navigation links */}
+          <nav className="flex flex-col gap-1 p-3">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.key}
+                href={item.href}
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  section === item.key
+                    ? "bg-primary/10 text-primary"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d={item.icon} />
+                </svg>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Contextual sidebar content (e.g. calendar list) */}
+          {sidebarContent && (
+            <div className="flex-1 overflow-y-auto border-t border-gray-100">
+              {sidebarContent}
+            </div>
+          )}
         </aside>
 
         {/* Main content */}

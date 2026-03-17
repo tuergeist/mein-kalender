@@ -18,7 +18,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <AppShell>
+    <AppShell section="settings">
       <div className="mx-auto max-w-md">
         <h1 className="mb-6 text-2xl font-bold">Profile</h1>
 

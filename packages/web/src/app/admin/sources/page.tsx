@@ -138,7 +138,7 @@ export default function AdminSourcesPage() {
   const totalPages = Math.ceil(total / 20);
 
   return (
-    <AppShell sidebar={<AdminSidebar />}>
+    <AppShell sidebarContent={<AdminSidebar />}>
       <div className="mx-auto max-w-5xl space-y-4">
         <h1 className="text-2xl font-bold">Sources</h1>
 

@@ -245,7 +245,7 @@ export default function BookingSettingsPage() {
   const bookingBaseUrl = typeof window !== "undefined" ? `${window.location.origin}/book/${savedUsername}` : "";
 
   return (
-    <AppShell>
+    <AppShell section="bookings">
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center gap-3">
           <Link href="/settings">
