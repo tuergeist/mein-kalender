@@ -146,14 +146,16 @@ model EventType {
   location        String?
   color              String   @default("#3b82f6")
   enabled            Boolean  @default(true)
-  redirectUrl        String?
-  redirectTitle      String?
-  redirectDelaySecs  Int      @default(5)
-  createdAt          DateTime @default(now())
+  redirectUrl              String?
+  redirectTitle            String?
+  redirectDelaySecs        Int      @default(5)
+  bookingCalendarEntryId   String?
+  createdAt                DateTime @default(now())
 
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookings  Booking[]
-  calendars CalendarEntry[] @relation("EventTypeCalendars")
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings          Booking[]
+  calendars         CalendarEntry[]   @relation("EventTypeCalendars")
+  availabilityRules AvailabilityRule[]
 
   @@unique([userId, slug])
   @@index([userId])
@@ -161,16 +163,18 @@ model EventType {
 }
 
 model AvailabilityRule {
-  id        String  @id @default(cuid())
-  userId    String
-  dayOfWeek Int     // 0=Sun, 1=Mon, ..., 6=Sat
-  startTime String  // "HH:mm" e.g. "09:00"
-  endTime   String  // "HH:mm" e.g. "17:00"
-  enabled   Boolean @default(true)
+  id          String  @id @default(cuid())
+  userId      String
+  eventTypeId String?
+  dayOfWeek   Int     // 0=Sun, 1=Mon, ..., 6=Sat
+  startTime   String  // "HH:mm" e.g. "09:00"
+  endTime     String  // "HH:mm" e.g. "17:00"
+  enabled     Boolean @default(true)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventType EventType? @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, dayOfWeek])
+  @@unique([userId, eventTypeId, dayOfWeek])
   @@index([userId])
   @@map("availability_rules")
 }

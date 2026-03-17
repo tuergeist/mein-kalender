@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
+import { computeSlotsForPreview } from "./public-booking";
 
 interface AuthenticatedRequest {
   user: AuthUser;
@@ -22,17 +23,20 @@ export async function eventTypesRoutes(app: FastifyInstance) {
     const eventTypes = await prisma.eventType.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "asc" },
-      include: { calendars: { select: { id: true, name: true } } },
+      include: {
+        calendars: { select: { id: true, name: true } },
+        availabilityRules: { orderBy: { dayOfWeek: "asc" } },
+      },
     });
     return eventTypes;
   });
 
   // Create event type
-  app.post<{ Body: { name: string; durationMinutes: number; description?: string; location?: string; color?: string; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number } }>(
+  app.post<{ Body: { name: string; durationMinutes: number; description?: string; location?: string; color?: string; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; bookingCalendarEntryId?: string } }>(
     "/api/event-types",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
-      const { name, durationMinutes, description, location, color, redirectUrl, redirectTitle, redirectDelaySecs } = request.body;
+      const { name, durationMinutes, description, location, color, redirectUrl, redirectTitle, redirectDelaySecs, bookingCalendarEntryId } = request.body;
 
       if (!name || !durationMinutes) {
         return reply.code(400).send({ error: "name and durationMinutes are required" });
@@ -64,6 +68,7 @@ export async function eventTypesRoutes(app: FastifyInstance) {
           redirectUrl: redirectUrl || null,
           redirectTitle: redirectTitle || null,
           ...(redirectDelaySecs !== undefined && { redirectDelaySecs }),
+          bookingCalendarEntryId: bookingCalendarEntryId || null,
         },
       });
 
@@ -72,12 +77,12 @@ export async function eventTypesRoutes(app: FastifyInstance) {
   );
 
   // Update event type
-  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[] } }>(
+  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[]; bookingCalendarEntryId?: string | null; availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }> } }>(
     "/api/event-types/:id",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
       const { id } = request.params;
-      const { name, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds } = request.body;
+      const { name, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds, bookingCalendarEntryId, availabilityRules } = request.body;
 
       const existing = await prisma.eventType.findFirst({
         where: { id, userId: user.id },
@@ -101,10 +106,119 @@ export async function eventTypesRoutes(app: FastifyInstance) {
           ...(calendarEntryIds !== undefined && {
             calendars: { set: calendarEntryIds.map((cid) => ({ id: cid })) },
           }),
+          ...(bookingCalendarEntryId !== undefined && { bookingCalendarEntryId: bookingCalendarEntryId || null }),
         },
       });
 
+      // Upsert per-type availability rules if provided
+      if (availabilityRules !== undefined) {
+        await Promise.all(
+          availabilityRules.map((rule) =>
+            prisma.availabilityRule.upsert({
+              where: { userId_eventTypeId_dayOfWeek: { userId: user.id, eventTypeId: id, dayOfWeek: rule.dayOfWeek } },
+              create: { userId: user.id, eventTypeId: id, dayOfWeek: rule.dayOfWeek, startTime: rule.startTime, endTime: rule.endTime, enabled: rule.enabled },
+              update: { startTime: rule.startTime, endTime: rule.endTime, enabled: rule.enabled },
+            })
+          )
+        );
+      }
+
       return updated;
+    }
+  );
+
+  // Availability preview
+  app.get<{ Params: { id: string }; Querystring: { week?: string } }>(
+    "/api/event-types/:id/availability-preview",
+    async (request, reply) => {
+      const { user } = request as unknown as AuthenticatedRequest;
+      const { id } = request.params;
+      const weekStart = request.query.week || new Date().toISOString().slice(0, 10);
+
+      const eventType = await prisma.eventType.findFirst({
+        where: { id, userId: user.id },
+        include: { calendars: { select: { id: true } } },
+      });
+      if (!eventType) return reply.code(404).send({ error: "Event type not found" });
+
+      const calendarIds = eventType.calendars.map((c) => c.id);
+      const days = [];
+
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart + "T00:00:00Z");
+        date.setUTCDate(date.getUTCDate() + i);
+        const dateStr = date.toISOString().slice(0, 10);
+        const dayOfWeek = date.getUTCDay();
+
+        // Load working hours (per-type first, then default)
+        let rule = await prisma.availabilityRule.findUnique({
+          where: { userId_eventTypeId_dayOfWeek: { userId: user.id, eventTypeId: id, dayOfWeek } },
+        });
+        if (!rule) {
+          rule = await prisma.availabilityRule.findFirst({
+            where: { userId: user.id, eventTypeId: null, dayOfWeek },
+          });
+        }
+
+        const workingHours = rule
+          ? { start: rule.startTime, end: rule.endTime, enabled: rule.enabled }
+          : { start: "09:00", end: "17:00", enabled: false };
+
+        if (!workingHours.enabled) {
+          days.push({ date: dateStr, workingHours, busyBlocks: [], bookings: [], availableSlots: [] });
+          continue;
+        }
+
+        const [startH, startM] = workingHours.start.split(":").map(Number);
+        const [endH, endM] = workingHours.end.split(":").map(Number);
+        const dayStart = new Date(date); dayStart.setUTCHours(startH, startM, 0, 0);
+        const dayEnd = new Date(date); dayEnd.setUTCHours(endH, endM, 0, 0);
+
+        // Busy events
+        const events = await prisma.event.findMany({
+          where: {
+            startTime: { lt: dayEnd },
+            endTime: { gt: dayStart },
+            calendarEntry: {
+              source: { userId: user.id },
+              ...(calendarIds.length > 0 ? { id: { in: calendarIds } } : { enabled: true }),
+            },
+          },
+          select: { startTime: true, endTime: true, title: true, providerMetadata: true, calendarEntry: { select: { name: true, color: true } } },
+        });
+
+        const busyBlocks = events
+          .filter((e) => {
+            const meta = e.providerMetadata as Record<string, unknown> | null;
+            return meta?.showAs !== "free" && meta?.transparency !== "transparent" && meta?.eventType !== "workingLocation";
+          })
+          .map((e) => ({
+            start: e.startTime.toISOString(),
+            end: e.endTime.toISOString(),
+            title: e.title,
+            calendar: e.calendarEntry.name,
+            color: e.calendarEntry.color,
+          }));
+
+        // Existing bookings
+        const bookingsList = await prisma.booking.findMany({
+          where: { userId: user.id, status: "confirmed", startTime: { lt: dayEnd }, endTime: { gt: dayStart } },
+          select: { startTime: true, endTime: true, guestName: true },
+        });
+
+        const bookings = bookingsList.map((b) => ({
+          start: b.startTime.toISOString(),
+          end: b.endTime.toISOString(),
+          guestName: b.guestName,
+        }));
+
+        // Available slots (reuse logic from computeSlots)
+        const availableSlots = await computeSlotsForPreview(user.id, eventType.durationMinutes, dateStr, calendarIds, id);
+
+        days.push({ date: dateStr, workingHours, busyBlocks, bookings, availableSlots });
+      }
+
+      return { days };
     }
   );
 

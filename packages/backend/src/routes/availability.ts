@@ -53,23 +53,26 @@ export async function availabilityRoutes(app: FastifyInstance) {
       }
 
       const results = await Promise.all(
-        rules.map((rule) =>
-          prisma.availabilityRule.upsert({
-            where: { userId_dayOfWeek: { userId: user.id, dayOfWeek: rule.dayOfWeek } },
-            create: {
+        rules.map(async (rule) => {
+          const existing = await prisma.availabilityRule.findFirst({
+            where: { userId: user.id, eventTypeId: null, dayOfWeek: rule.dayOfWeek },
+          });
+          if (existing) {
+            return prisma.availabilityRule.update({
+              where: { id: existing.id },
+              data: { startTime: rule.startTime, endTime: rule.endTime, enabled: rule.enabled },
+            });
+          }
+          return prisma.availabilityRule.create({
+            data: {
               userId: user.id,
               dayOfWeek: rule.dayOfWeek,
               startTime: rule.startTime,
               endTime: rule.endTime,
               enabled: rule.enabled,
             },
-            update: {
-              startTime: rule.startTime,
-              endTime: rule.endTime,
-              enabled: rule.enabled,
-            },
-          })
-        )
+          });
+        })
       );
 
       return results;

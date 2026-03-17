@@ -53,12 +53,12 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const eventType = await prisma.eventType.findFirst({
         where: { userId: user.id, slug, enabled: true },
-        include: { calendars: { select: { id: true } } },
+        include: { calendars: { select: { id: true } }, availabilityRules: true },
       });
       if (!eventType) return reply.code(404).send({ error: "Event type not available" });
 
       const calendarIds = eventType.calendars.map((c) => c.id);
-      const slots = await computeSlots(user.id, eventType.durationMinutes, date, calendarIds);
+      const slots = await computeSlots(user.id, eventType.durationMinutes, date, calendarIds, eventType.id);
       return { date, slots };
     }
   );
@@ -79,7 +79,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const eventType = await prisma.eventType.findFirst({
         where: { userId: user.id, slug, enabled: true },
-        include: { calendars: { select: { id: true } } },
+        include: { calendars: { select: { id: true } }, availabilityRules: true },
       });
       if (!eventType) return reply.code(404).send({ error: "Event type not available" });
 
@@ -89,7 +89,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       // Re-check availability to prevent double-booking
       const calendarIds = eventType.calendars.map((c) => c.id);
-      const slots = await computeSlots(user.id, eventType.durationMinutes, dateStr, calendarIds);
+      const slots = await computeSlots(user.id, eventType.durationMinutes, dateStr, calendarIds, eventType.id);
       const slotAvailable = slots.some((s) => new Date(s).getTime() === start.getTime());
       if (!slotAvailable) {
         return reply.code(409).send({ error: "This slot is no longer available" });
@@ -100,15 +100,23 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       try {
         let bookingEntry = null;
 
-        // 1. Try user's designated booking calendar
-        if (user.bookingCalendarEntryId) {
+        // 1. Try event-type-specific booking calendar
+        if (eventType.bookingCalendarEntryId) {
+          bookingEntry = await prisma.calendarEntry.findFirst({
+            where: { id: eventType.bookingCalendarEntryId, source: { userId: user.id } },
+            include: { source: true },
+          });
+        }
+
+        // 2. Try user's global booking calendar
+        if (!bookingEntry && user.bookingCalendarEntryId) {
           bookingEntry = await prisma.calendarEntry.findFirst({
             where: { id: user.bookingCalendarEntryId, source: { userId: user.id } },
             include: { source: true },
           });
         }
 
-        // 2. Fall back to target calendar, then first writable
+        // 3. Fall back to target calendar, then first writable
         if (!bookingEntry) {
           bookingEntry = await prisma.calendarEntry.findFirst({
             where: {
@@ -172,14 +180,25 @@ export async function publicBookingRoutes(app: FastifyInstance) {
   );
 }
 
-async function computeSlots(userId: string, durationMinutes: number, dateStr: string, calendarIds: string[] = []): Promise<string[]> {
+export async function computeSlotsForPreview(userId: string, durationMinutes: number, dateStr: string, calendarIds: string[] = [], eventTypeId?: string): Promise<string[]> {
+  return computeSlots(userId, durationMinutes, dateStr, calendarIds, eventTypeId);
+}
+
+async function computeSlots(userId: string, durationMinutes: number, dateStr: string, calendarIds: string[] = [], eventTypeId?: string): Promise<string[]> {
   const date = new Date(dateStr + "T00:00:00Z");
   const dayOfWeek = date.getUTCDay();
 
-  // 1. Get availability rule for this day
-  const rule = await prisma.availabilityRule.findUnique({
-    where: { userId_dayOfWeek: { userId, dayOfWeek } },
-  });
+  // 1. Get availability rule for this day (per-event-type first, fall back to user default)
+  let rule = eventTypeId
+    ? await prisma.availabilityRule.findUnique({
+        where: { userId_eventTypeId_dayOfWeek: { userId, eventTypeId, dayOfWeek } },
+      })
+    : null;
+  if (!rule) {
+    rule = await prisma.availabilityRule.findFirst({
+      where: { userId, eventTypeId: null, dayOfWeek },
+    });
+  }
 
   if (!rule || !rule.enabled) return [];
 
