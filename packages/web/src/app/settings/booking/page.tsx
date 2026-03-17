@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import {
   Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, SelectItem,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  Checkbox, CheckboxGroup,
 } from "@heroui/react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
@@ -22,6 +23,7 @@ interface EventType {
   redirectUrl: string | null;
   redirectTitle: string | null;
   redirectDelaySecs: number;
+  calendars?: Array<{ id: string; name: string }>;
 }
 
 interface AvailabilityRule {
@@ -62,6 +64,7 @@ export default function BookingSettingsPage() {
   const [editRedirectUrl, setEditRedirectUrl] = useState("");
   const [editRedirectTitle, setEditRedirectTitle] = useState("");
   const [editRedirectDelay, setEditRedirectDelay] = useState("");
+  const [editCalendarIds, setEditCalendarIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
@@ -179,6 +182,7 @@ export default function BookingSettingsPage() {
     setEditRedirectUrl(et.redirectUrl || "");
     setEditRedirectTitle(et.redirectTitle || "");
     setEditRedirectDelay(String(et.redirectDelaySecs));
+    setEditCalendarIds((et.calendars ?? []).map((c: { id: string }) => c.id));
   }
 
   async function saveEventType() {
@@ -194,6 +198,7 @@ export default function BookingSettingsPage() {
         redirectUrl: editRedirectUrl || null,
         redirectTitle: editRedirectTitle || null,
         redirectDelaySecs: editRedirectUrl ? (parseInt(editRedirectDelay) || 5) : 5,
+        calendarEntryIds: editCalendarIds,
       }),
     });
     setEditingType(null);
@@ -453,6 +458,24 @@ export default function BookingSettingsPage() {
                     <Input label="Redirect delay (seconds)" type="number" value={editRedirectDelay} onValueChange={setEditRedirectDelay} />
                   </>
                 )}
+                <Divider />
+                <div>
+                  <p className="text-sm font-medium">Calendars for availability check</p>
+                  <p className="mb-2 text-xs text-default-400">
+                    {editCalendarIds.length === 0 ? "All calendars (default)" : `${editCalendarIds.length} selected`}
+                  </p>
+                  <CheckboxGroup
+                    size="sm"
+                    value={editCalendarIds}
+                    onChange={(vals) => setEditCalendarIds(vals as string[])}
+                  >
+                    {allCalendarEntries.map((entry) => (
+                      <Checkbox key={entry.id} value={entry.id}>
+                        <span className="text-sm">{entry.name} ({entry.sourceName})</span>
+                      </Checkbox>
+                    ))}
+                  </CheckboxGroup>
+                </div>
               </div>
             </ModalBody>
             <ModalFooter>

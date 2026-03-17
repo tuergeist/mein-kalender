@@ -238,10 +238,12 @@ async function cloneToTarget(
       isTarget: true,
       source: { userId },
     },
-    include: { source: true },
+    include: { source: true, sourceCalendars: { select: { id: true } } },
   });
 
   if (!targetEntry) return; // No target configured, skip
+
+  const sourceCalendarIds = (targetEntry as any).sourceCalendars?.map((c: { id: string }) => c.id) as string[] | undefined;
 
   const targetProvider = getProvider(targetEntry.source.provider);
   const targetCredentials = JSON.parse(
@@ -299,7 +301,9 @@ async function cloneToTarget(
       calendarEntry: {
         source: { userId },
         isTarget: false,
-        enabled: true,
+        ...(sourceCalendarIds && sourceCalendarIds.length > 0
+          ? { id: { in: sourceCalendarIds } }
+          : { enabled: true }),
       },
       startTime: { lte: syncCutoff },
       sourceMappings: {

@@ -88,6 +88,9 @@ model CalendarEntry {
   source CalendarSource      @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   events Event[]
   targetMappings TargetEventMapping[] @relation("targetCalendar")
+  sourceCalendars    CalendarEntry[] @relation("TargetSyncCalendars")
+  syncTargets        CalendarEntry[] @relation("TargetSyncCalendars")
+  eventTypes         EventType[]     @relation("EventTypeCalendars")
 
   @@index([sourceId])
   @@unique([sourceId, providerCalendarId])
@@ -147,8 +150,9 @@ model EventType {
   redirectDelaySecs  Int      @default(5)
   createdAt          DateTime @default(now())
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookings Booking[]
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings  Booking[]
+  calendars CalendarEntry[] @relation("EventTypeCalendars")
 
   @@unique([userId, slug])
   @@index([userId])

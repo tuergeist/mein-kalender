@@ -18,6 +18,8 @@ import {
   ModalFooter,
   Chip,
   Switch,
+  Checkbox,
+  CheckboxGroup,
 } from "@heroui/react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
@@ -57,6 +59,7 @@ export default function SettingsPage() {
   const [skipSingleDayAllDay, setSkipSingleDayAllDay] = useState(false);
   const [skipDeclined, setSkipDeclined] = useState(true);
   const [skipFree, setSkipFree] = useState(false);
+  const [sourceCalendarIds, setSourceCalendarIds] = useState<string[]>([]);
   const [mapProvider, setMapProvider] = useState<string>("google");
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
@@ -85,6 +88,7 @@ export default function SettingsPage() {
       setSkipSingleDayAllDay(data.targetCalendar?.skipSingleDayAllDay ?? false);
       setSkipDeclined(data.targetCalendar?.skipDeclined ?? true);
       setSkipFree(data.targetCalendar?.skipFree ?? false);
+      setSourceCalendarIds((data.targetCalendar?.sourceCalendars ?? []).map((c: { id: string }) => c.id));
     }
   }
 
@@ -111,6 +115,7 @@ export default function SettingsPage() {
         skipSingleDayAllDay,
         skipDeclined,
         skipFree,
+        sourceCalendarEntryIds: sourceCalendarIds,
       }),
     });
     setTargetSaving(false);
@@ -192,6 +197,13 @@ export default function SettingsPage() {
     window.location.href = `${origin}/api/oauth/${provider}/start?redirect=${encodeURIComponent(redirectUri)}`;
     setShowAddModal(false);
   }
+
+  const allSourceCalendars = sources.flatMap((s) =>
+    s.calendarEntries.map((e) => ({
+      ...e,
+      sourceName: s.label || s.provider,
+    }))
+  );
 
   const allCalendarEntries = sources.flatMap((s) =>
     s.calendarEntries
@@ -358,6 +370,24 @@ export default function SettingsPage() {
                   >
                     <span className="text-sm">Skip free/tentative events</span>
                   </Switch>
+                </div>
+                <Divider />
+                <div>
+                  <p className="mb-2 text-sm font-medium">Source calendars to sync</p>
+                  <p className="mb-2 text-xs text-default-400">
+                    {sourceCalendarIds.length === 0 ? "All calendars (default)" : `${sourceCalendarIds.length} selected`}
+                  </p>
+                  <CheckboxGroup
+                    size="sm"
+                    value={sourceCalendarIds}
+                    onChange={(vals) => { setSourceCalendarIds(vals as string[]); setTargetDirty(true); }}
+                  >
+                    {allSourceCalendars.map((entry) => (
+                      <Checkbox key={entry.id} value={entry.id}>
+                        <span className="text-sm">{entry.name} ({entry.sourceName})</span>
+                      </Checkbox>
+                    ))}
+                  </CheckboxGroup>
                 </div>
                 <Button
                   size="sm"

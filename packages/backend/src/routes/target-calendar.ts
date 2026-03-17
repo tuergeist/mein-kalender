@@ -23,6 +23,7 @@ export async function targetCalendarRoutes(app: FastifyInstance) {
       },
       include: {
         source: { select: { id: true, provider: true, label: true } },
+        sourceCalendars: { select: { id: true, name: true } },
       },
     });
 
@@ -30,11 +31,11 @@ export async function targetCalendarRoutes(app: FastifyInstance) {
   });
 
   // Set the target calendar
-  app.put<{ Body: { calendarEntryId: string; syncDaysInAdvance?: number; skipWorkLocation?: boolean; skipSingleDayAllDay?: boolean; skipDeclined?: boolean; skipFree?: boolean } }>(
+  app.put<{ Body: { calendarEntryId: string; syncDaysInAdvance?: number; skipWorkLocation?: boolean; skipSingleDayAllDay?: boolean; skipDeclined?: boolean; skipFree?: boolean; sourceCalendarEntryIds?: string[] } }>(
     "/api/target-calendar",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
-      const { calendarEntryId, syncDaysInAdvance, skipWorkLocation, skipSingleDayAllDay, skipDeclined, skipFree } = request.body;
+      const { calendarEntryId, syncDaysInAdvance, skipWorkLocation, skipSingleDayAllDay, skipDeclined, skipFree, sourceCalendarEntryIds } = request.body;
 
       const VALID_SYNC_DAYS = [30, 60, 90];
       if (syncDaysInAdvance !== undefined && !VALID_SYNC_DAYS.includes(syncDaysInAdvance)) {
@@ -76,6 +77,9 @@ export async function targetCalendarRoutes(app: FastifyInstance) {
           ...(skipSingleDayAllDay !== undefined && { skipSingleDayAllDay }),
           ...(skipDeclined !== undefined && { skipDeclined }),
           ...(skipFree !== undefined && { skipFree }),
+          ...(sourceCalendarEntryIds !== undefined && {
+            sourceCalendars: { set: sourceCalendarEntryIds.map((id) => ({ id })) },
+          }),
         },
       });
 

@@ -22,6 +22,7 @@ export async function eventTypesRoutes(app: FastifyInstance) {
     const eventTypes = await prisma.eventType.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "asc" },
+      include: { calendars: { select: { id: true, name: true } } },
     });
     return eventTypes;
   });
@@ -71,12 +72,12 @@ export async function eventTypesRoutes(app: FastifyInstance) {
   );
 
   // Update event type
-  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number } }>(
+  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[] } }>(
     "/api/event-types/:id",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
       const { id } = request.params;
-      const { name, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs } = request.body;
+      const { name, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds } = request.body;
 
       const existing = await prisma.eventType.findFirst({
         where: { id, userId: user.id },
@@ -97,6 +98,9 @@ export async function eventTypesRoutes(app: FastifyInstance) {
           ...(redirectTitle !== undefined && { redirectTitle: redirectTitle || null }),
           ...(redirectDelaySecs !== undefined && { redirectDelaySecs }),
           ...(enabled !== undefined && { enabled }),
+          ...(calendarEntryIds !== undefined && {
+            calendars: { set: calendarEntryIds.map((cid) => ({ id: cid })) },
+          }),
         },
       });
 

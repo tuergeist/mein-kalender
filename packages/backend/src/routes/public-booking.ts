@@ -53,10 +53,12 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const eventType = await prisma.eventType.findFirst({
         where: { userId: user.id, slug, enabled: true },
+        include: { calendars: { select: { id: true } } },
       });
       if (!eventType) return reply.code(404).send({ error: "Event type not available" });
 
-      const slots = await computeSlots(user.id, eventType.durationMinutes, date);
+      const calendarIds = eventType.calendars.map((c) => c.id);
+      const slots = await computeSlots(user.id, eventType.durationMinutes, date, calendarIds);
       return { date, slots };
     }
   );
@@ -77,6 +79,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const eventType = await prisma.eventType.findFirst({
         where: { userId: user.id, slug, enabled: true },
+        include: { calendars: { select: { id: true } } },
       });
       if (!eventType) return reply.code(404).send({ error: "Event type not available" });
 
@@ -85,7 +88,8 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       const dateStr = start.toISOString().slice(0, 10);
 
       // Re-check availability to prevent double-booking
-      const slots = await computeSlots(user.id, eventType.durationMinutes, dateStr);
+      const calendarIds = eventType.calendars.map((c) => c.id);
+      const slots = await computeSlots(user.id, eventType.durationMinutes, dateStr, calendarIds);
       const slotAvailable = slots.some((s) => new Date(s).getTime() === start.getTime());
       if (!slotAvailable) {
         return reply.code(409).send({ error: "This slot is no longer available" });
@@ -168,7 +172,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
   );
 }
 
-async function computeSlots(userId: string, durationMinutes: number, dateStr: string): Promise<string[]> {
+async function computeSlots(userId: string, durationMinutes: number, dateStr: string, calendarIds: string[] = []): Promise<string[]> {
   const date = new Date(dateStr + "T00:00:00Z");
   const dayOfWeek = date.getUTCDay();
 
@@ -199,7 +203,9 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
       endTime: { gt: dayStart },
       calendarEntry: {
         source: { userId },
-        enabled: true,
+        ...(calendarIds.length > 0
+          ? { id: { in: calendarIds } }
+          : { enabled: true }),
       },
     },
     select: { startTime: true, endTime: true, allDay: true, providerMetadata: true },
