@@ -57,7 +57,7 @@ export async function processSyncJob(
     // Sync each enabled calendar entry
     for (const entry of source.calendarEntries) {
       try {
-        await syncCalendarEntry(prisma, provider, token, entry, source.syncToken, userId);
+        await syncCalendarEntry(prisma, provider, token, entry, source.syncToken, userId, source.fetchDaysInAdvance);
       } catch (err) {
         if (
           err instanceof ProviderError &&
@@ -65,7 +65,7 @@ export async function processSyncJob(
         ) {
           // Full sync fallback
           console.log(`[sync] Sync token expired for ${entry.id}, doing full sync`);
-          await syncCalendarEntry(prisma, provider, token, entry, null, userId);
+          await syncCalendarEntry(prisma, provider, token, entry, null, userId, source.fetchDaysInAdvance);
         } else {
           throw err;
         }
@@ -106,12 +106,14 @@ async function syncCalendarEntry(
   token: TokenSet,
   entry: { id: string; sourceId: string; providerCalendarId: string },
   syncToken: string | null,
-  userId: string
+  userId: string,
+  fetchDaysInAdvance?: number
 ): Promise<void> {
   const delta: EventDelta = await provider.getEvents(
     token,
     entry.providerCalendarId,
-    syncToken
+    syncToken,
+    fetchDaysInAdvance
   );
 
   // Process created events in a single transaction

@@ -54,8 +54,9 @@ model CalendarSource {
   provider        String   // google, outlook, proton, ics
   label           String?
   credentials     String   // encrypted JSON (tokens, etc.)
-  syncInterval    Int      @default(300) // seconds, default 5 min
-  syncToken       String?
+  syncInterval        Int      @default(600) // seconds, default 10 min
+  fetchDaysInAdvance  Int      @default(90)  // how far ahead to fetch events
+  syncToken           String?
   syncStatus      String   @default("ok") // ok, syncing, error
   syncError       String?
   lastSyncAt      DateTime?

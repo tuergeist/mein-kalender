@@ -63,7 +63,7 @@ export async function sourcesRoutes(app: FastifyInstance) {
         provider,
         label,
         credentials: encryptedCredentials,
-        syncInterval: syncInterval ?? 300,
+        syncInterval: syncInterval ?? 600,
         icsUrl,
       },
     });
@@ -77,6 +77,7 @@ export async function sourcesRoutes(app: FastifyInstance) {
     Body: {
       label?: string;
       syncInterval?: number;
+      fetchDaysInAdvance?: number;
     };
   }>("/api/sources/:id", async (request, reply) => {
     const { user } = request as unknown as AuthenticatedRequest;
@@ -88,11 +89,17 @@ export async function sourcesRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Not found" });
     }
 
+    const VALID_FETCH_DAYS = [30, 60, 90];
+    if (request.body.fetchDaysInAdvance !== undefined && !VALID_FETCH_DAYS.includes(request.body.fetchDaysInAdvance)) {
+      return reply.code(400).send({ error: "fetchDaysInAdvance must be 30, 60, or 90" });
+    }
+
     const updated = await prisma.calendarSource.update({
       where: { id: request.params.id },
       data: {
-        label: request.body.label,
-        syncInterval: request.body.syncInterval,
+        ...(request.body.label !== undefined && { label: request.body.label }),
+        ...(request.body.syncInterval !== undefined && { syncInterval: request.body.syncInterval }),
+        ...(request.body.fetchDaysInAdvance !== undefined && { fetchDaysInAdvance: request.body.fetchDaysInAdvance }),
       },
     });
 

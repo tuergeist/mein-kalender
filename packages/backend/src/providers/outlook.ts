@@ -139,7 +139,8 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
   async getEvents(
     token: TokenSet,
     calendarId: string,
-    syncToken?: string | null
+    syncToken?: string | null,
+    fetchDaysInAdvance?: number
   ): Promise<EventDelta> {
     let url: string;
 
@@ -148,7 +149,9 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
     } else {
       const timeMin = new Date();
       timeMin.setDate(timeMin.getDate() - 30);
-      url = `${GRAPH_API_BASE}/me/calendars/${calendarId}/calendarView/delta?startDateTime=${timeMin.toISOString()}&endDateTime=${new Date(Date.now() + 365 * 86400000).toISOString()}`;
+      const daysAhead = fetchDaysInAdvance || 90;
+      const timeMax = new Date(Date.now() + daysAhead * 86400000);
+      url = `${GRAPH_API_BASE}/me/calendars/${calendarId}/calendarView/delta?startDateTime=${timeMin.toISOString()}&endDateTime=${timeMax.toISOString()}`;
     }
 
     const created: NormalizedEvent[] = [];

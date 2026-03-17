@@ -138,7 +138,8 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
   async getEvents(
     token: TokenSet,
     calendarId: string,
-    syncToken?: string | null
+    syncToken?: string | null,
+    fetchDaysInAdvance?: number
   ): Promise<EventDelta> {
     const params = new URLSearchParams({
       maxResults: "2500",
@@ -152,10 +153,14 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
     if (syncToken) {
       params.set("syncToken", syncToken);
     } else {
-      // Initial sync: get events from 30 days ago
       const timeMin = new Date();
       timeMin.setDate(timeMin.getDate() - 30);
       params.set("timeMin", timeMin.toISOString());
+      if (fetchDaysInAdvance) {
+        const timeMax = new Date();
+        timeMax.setDate(timeMax.getDate() + fetchDaysInAdvance);
+        params.set("timeMax", timeMax.toISOString());
+      }
     }
 
     const res = await this.fetchWithRefresh(

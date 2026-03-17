@@ -3,6 +3,21 @@ import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
 import { getProvider } from "../providers";
 import { encrypt } from "../encryption";
+import { Queue } from "bullmq";
+
+let syncQueue: Queue | null = null;
+
+function getSyncQueue(): Queue {
+  if (!syncQueue) {
+    syncQueue = new Queue("calendar-sync", {
+      connection: {
+        host: new URL(process.env.REDIS_URL || "redis://localhost:6379").hostname,
+        port: parseInt(new URL(process.env.REDIS_URL || "redis://localhost:6379").port || "6379"),
+      },
+    });
+  }
+  return syncQueue;
+}
 
 interface AuthenticatedRequest {
   user: AuthUser;
@@ -129,6 +144,13 @@ export async function oauthRoutes(app: FastifyInstance) {
           },
         });
       }
+
+      // Trigger initial sync immediately
+      await getSyncQueue().add(
+        "sync-source",
+        { sourceId: source.id, userId: user.id },
+        { jobId: `sync-${source.id}-initial` }
+      );
 
       return { sourceId: source.id, calendarsImported: calendars.length };
     }

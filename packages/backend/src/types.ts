@@ -53,7 +53,8 @@ export interface CalendarProviderInterface {
   getEvents(
     token: TokenSet,
     calendarId: string,
-    syncToken?: string | null
+    syncToken?: string | null,
+    fetchDaysInAdvance?: number
   ): Promise<EventDelta>;
   createEvent(
     token: TokenSet,
