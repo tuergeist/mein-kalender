@@ -24,6 +24,8 @@ interface EventType {
   redirectTitle: string | null;
   redirectDelaySecs: number;
   calendars?: Array<{ id: string; name: string }>;
+  bookingCalendarEntryId: string | null;
+  availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>;
 }
 
 interface AvailabilityRule {
@@ -35,6 +37,15 @@ interface AvailabilityRule {
 }
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DEFAULT_RULES = [
+  { dayOfWeek: 0, startTime: "09:00", endTime: "17:00", enabled: false },
+  { dayOfWeek: 1, startTime: "09:00", endTime: "17:00", enabled: true },
+  { dayOfWeek: 2, startTime: "09:00", endTime: "17:00", enabled: true },
+  { dayOfWeek: 3, startTime: "09:00", endTime: "17:00", enabled: true },
+  { dayOfWeek: 4, startTime: "09:00", endTime: "17:00", enabled: true },
+  { dayOfWeek: 5, startTime: "09:00", endTime: "17:00", enabled: true },
+  { dayOfWeek: 6, startTime: "09:00", endTime: "17:00", enabled: false },
+];
 
 export default function BookingSettingsPage() {
   const { data: session } = useSession();
@@ -65,6 +76,9 @@ export default function BookingSettingsPage() {
   const [editRedirectTitle, setEditRedirectTitle] = useState("");
   const [editRedirectDelay, setEditRedirectDelay] = useState("");
   const [editCalendarIds, setEditCalendarIds] = useState<string[]>([]);
+  const [editBookingCalendarId, setEditBookingCalendarId] = useState("");
+  const [editCustomHours, setEditCustomHours] = useState(false);
+  const [editRules, setEditRules] = useState<Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>>([]);
   const [saving, setSaving] = useState(false);
 
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
@@ -183,6 +197,13 @@ export default function BookingSettingsPage() {
     setEditRedirectTitle(et.redirectTitle || "");
     setEditRedirectDelay(String(et.redirectDelaySecs));
     setEditCalendarIds((et.calendars ?? []).map((c: { id: string }) => c.id));
+    setEditBookingCalendarId(et.bookingCalendarEntryId || "");
+    const hasCustomRules = (et.availabilityRules ?? []).length > 0;
+    setEditCustomHours(hasCustomRules);
+    setEditRules(hasCustomRules
+      ? (et.availabilityRules ?? [])
+      : DEFAULT_RULES.map((r) => ({ ...r }))
+    );
   }
 
   async function saveEventType() {
@@ -199,6 +220,8 @@ export default function BookingSettingsPage() {
         redirectTitle: editRedirectTitle || null,
         redirectDelaySecs: editRedirectUrl ? (parseInt(editRedirectDelay) || 5) : 5,
         calendarEntryIds: editCalendarIds,
+        bookingCalendarEntryId: editBookingCalendarId || null,
+        availabilityRules: editCustomHours ? editRules : undefined,
       }),
     });
     setEditingType(null);
@@ -360,6 +383,9 @@ export default function BookingSettingsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch size="sm" isSelected={et.enabled} onValueChange={(v) => toggleEventType(et.id, v)} />
+                      <Link href={`/settings/booking/${et.id}/preview`}>
+                        <Button size="sm" variant="light">Preview</Button>
+                      </Link>
                       <Button size="sm" variant="light" onPress={() => openEditModal(et)}>
                         Edit
                       </Button>
@@ -458,6 +484,57 @@ export default function BookingSettingsPage() {
                     <Input label="Redirect delay (seconds)" type="number" value={editRedirectDelay} onValueChange={setEditRedirectDelay} />
                   </>
                 )}
+                <Divider />
+                <Select
+                  label="Booking calendar"
+                  placeholder="Use default"
+                  selectedKeys={editBookingCalendarId ? new Set([editBookingCalendarId]) : new Set()}
+                  onSelectionChange={(keys) => {
+                    const s = Array.from(keys)[0] as string;
+                    setEditBookingCalendarId(s || "");
+                  }}
+                  size="sm"
+                >
+                  {allCalendarEntries.map((entry) => (
+                    <SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>
+                      {entry.name} ({entry.sourceName})
+                    </SelectItem>
+                  ))}
+                </Select>
+
+                <Divider />
+                <div>
+                  <div className="mb-2 flex items-center gap-2">
+                    <Switch size="sm" isSelected={editCustomHours} onValueChange={setEditCustomHours} />
+                    <span className="text-sm font-medium">Custom working hours</span>
+                  </div>
+                  {editCustomHours && (
+                    <div className="space-y-2">
+                      {editRules.map((rule, idx) => (
+                        <div key={rule.dayOfWeek} className="flex items-center gap-3">
+                          <Switch size="sm" isSelected={rule.enabled} onValueChange={(v) => {
+                            const updated = [...editRules];
+                            updated[idx] = { ...rule, enabled: v };
+                            setEditRules(updated);
+                          }} />
+                          <span className="w-10 text-sm font-medium">{DAY_NAMES[rule.dayOfWeek]}</span>
+                          <Input type="time" size="sm" value={rule.startTime} onValueChange={(v) => {
+                            const updated = [...editRules];
+                            updated[idx] = { ...rule, startTime: v };
+                            setEditRules(updated);
+                          }} isDisabled={!rule.enabled} className="w-28" />
+                          <span className="text-sm text-default-400">–</span>
+                          <Input type="time" size="sm" value={rule.endTime} onValueChange={(v) => {
+                            const updated = [...editRules];
+                            updated[idx] = { ...rule, endTime: v };
+                            setEditRules(updated);
+                          }} isDisabled={!rule.enabled} className="w-28" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <Divider />
                 <div>
                   <p className="text-sm font-medium">Calendars for availability check</p>
