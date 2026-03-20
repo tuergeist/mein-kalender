@@ -52,9 +52,11 @@ export function CalendarSidebar() {
   }
 
   function dispatchVisibility(ids: Set<string>) {
+    const arr = Array.from(ids);
+    localStorage.setItem("visibleCalendarIds", JSON.stringify(arr));
     window.dispatchEvent(
       new CustomEvent("calendar-visibility-change", {
-        detail: { visibleCalendars: Array.from(ids) },
+        detail: { visibleCalendars: arr },
       })
     );
   }

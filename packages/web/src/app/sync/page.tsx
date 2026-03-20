@@ -272,7 +272,27 @@ export default function SyncPage() {
 
                 <Divider />
                 <div>
-                  <p className="mb-2 text-sm font-medium">Source calendars to sync</p>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm font-medium">Source calendars to sync</p>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onPress={() => {
+                        try {
+                          const stored = localStorage.getItem("visibleCalendarIds");
+                          if (stored) {
+                            const ids = JSON.parse(stored) as string[];
+                            if (ids.length > 0) {
+                              setSourceCalendarIds(ids);
+                              setDirty(true);
+                            }
+                          }
+                        } catch { /* ignore */ }
+                      }}
+                    >
+                      Use visible calendars
+                    </Button>
+                  </div>
                   <p className="mb-2 text-xs text-default-400">
                     {sourceCalendarIds.length === 0 ? "All calendars (default)" : `${sourceCalendarIds.length} selected`}
                   </p>
