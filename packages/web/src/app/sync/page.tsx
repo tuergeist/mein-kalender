@@ -449,7 +449,7 @@ export default function SyncPage() {
         </Card>
 
         {/* Create Feed Modal */}
-        <Modal isOpen={showFeedModal} onClose={() => setShowFeedModal(false)} size="lg">
+        <Modal isOpen={showFeedModal} onClose={() => setShowFeedModal(false)} size="2xl" scrollBehavior="inside" placement="center">
           <ModalContent>
             <ModalHeader>New ICS Feed</ModalHeader>
             <ModalBody>
