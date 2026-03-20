@@ -178,6 +178,37 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       });
     }
   );
+
+  // Resolve short hash to event type info
+  app.get<{ Params: { hash: string } }>(
+    "/api/public/book-by-hash/:hash",
+    async (request, reply) => {
+      const { hash } = request.params;
+
+      const eventType = await prisma.eventType.findUnique({
+        where: { shortHash: hash },
+        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true, redirectUrl: true, redirectTitle: true, redirectDelaySecs: true, userId: true },
+      });
+
+      if (!eventType || !eventType.enabled) {
+        return reply.code(404).send({ error: "Not found" });
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: eventType.userId },
+        select: { username: true, displayName: true, email: true },
+      });
+
+      if (!user || !user.username) {
+        return reply.code(404).send({ error: "Not found" });
+      }
+
+      return {
+        eventType: { ...eventType, userId: undefined },
+        host: { displayName: user.displayName || user.email, username: user.username },
+      };
+    }
+  );
 }
 
 export async function computeSlotsForPreview(userId: string, durationMinutes: number, dateStr: string, calendarIds: string[] = [], eventTypeId?: string): Promise<string[]> {

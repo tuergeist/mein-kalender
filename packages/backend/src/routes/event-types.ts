@@ -1,7 +1,17 @@
 import { FastifyInstance } from "fastify";
+import { randomBytes } from "crypto";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
 import { computeSlotsForPreview } from "./public-booking";
+
+async function generateShortHash(): Promise<string> {
+  for (let i = 0; i < 10; i++) {
+    const hash = randomBytes(4).readUInt32BE(0).toString(36).slice(0, 5).padStart(5, "0");
+    const existing = await prisma.eventType.findUnique({ where: { shortHash: hash } });
+    if (!existing) return hash;
+  }
+  throw new Error("Failed to generate unique short hash");
+}
 
 interface AuthenticatedRequest {
   user: AuthUser;
@@ -77,18 +87,26 @@ export async function eventTypesRoutes(app: FastifyInstance) {
   );
 
   // Update event type
-  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[]; bookingCalendarEntryId?: string | null; availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }> } }>(
+  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[]; bookingCalendarEntryId?: string | null; availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>; enableShortLink?: boolean } }>(
     "/api/event-types/:id",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
       const { id } = request.params;
-      const { name, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds, bookingCalendarEntryId, availabilityRules } = request.body;
+      const { name, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds, bookingCalendarEntryId, availabilityRules, enableShortLink } = request.body;
 
       const existing = await prisma.eventType.findFirst({
         where: { id, userId: user.id },
       });
       if (!existing) {
         return reply.code(404).send({ error: "Event type not found" });
+      }
+
+      // Handle short link toggle
+      let shortHashUpdate: { shortHash: string | null } | undefined;
+      if (enableShortLink === true && !existing.shortHash) {
+        shortHashUpdate = { shortHash: await generateShortHash() };
+      } else if (enableShortLink === false && existing.shortHash) {
+        shortHashUpdate = { shortHash: null };
       }
 
       const updated = await prisma.eventType.update({
@@ -107,6 +125,7 @@ export async function eventTypesRoutes(app: FastifyInstance) {
             calendars: { set: calendarEntryIds.map((cid) => ({ id: cid })) },
           }),
           ...(bookingCalendarEntryId !== undefined && { bookingCalendarEntryId: bookingCalendarEntryId || null }),
+          ...(shortHashUpdate && shortHashUpdate),
         },
       });
 

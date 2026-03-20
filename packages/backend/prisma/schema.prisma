@@ -25,6 +25,7 @@ model User {
   eventTypes         EventType[]
   availabilityRules  AvailabilityRule[]
   bookings           Booking[]
+  icsFeeds           IcsFeed[]
 
   @@map("users")
 }
@@ -92,6 +93,7 @@ model CalendarEntry {
   sourceCalendars    CalendarEntry[] @relation("TargetSyncCalendars")
   syncTargets        CalendarEntry[] @relation("TargetSyncCalendars")
   eventTypes         EventType[]     @relation("EventTypeCalendars")
+  icsFeeds           IcsFeed[]       @relation("IcsFeedCalendars")
 
   @@index([sourceId])
   @@unique([sourceId, providerCalendarId])
@@ -150,6 +152,7 @@ model EventType {
   redirectTitle            String?
   redirectDelaySecs        Int      @default(5)
   bookingCalendarEntryId   String?
+  shortHash                String?  @unique
   createdAt                DateTime @default(now())
 
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -199,4 +202,20 @@ model Booking {
   @@index([eventTypeId])
   @@index([startTime, endTime])
   @@map("bookings")
+}
+
+model IcsFeed {
+  id             String   @id @default(cuid())
+  userId         String
+  name           String
+  token          String   @unique
+  mode           String   @default("full") // "full" or "freebusy"
+  daysInAdvance  Int      @default(30)
+  createdAt      DateTime @default(now())
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendars CalendarEntry[] @relation("IcsFeedCalendars")
+
+  @@index([userId])
+  @@map("ics_feeds")
 }
