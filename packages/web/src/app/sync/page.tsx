@@ -338,26 +338,30 @@ export default function SyncPage() {
                     {sourceCalendarIds.length === 0 ? "All calendars (default)" : `${sourceCalendarIds.length} selected`}
                   </p>
                   <CheckboxGroup size="sm" value={sourceCalendarIds} onChange={(vals) => { setSourceCalendarIds(vals as string[]); setDirty(true); }}>
-                    {sources.map((source) => (
-                      <div key={source.id} className="mb-3">
-                        <div className="mb-1 flex items-center gap-1.5">
-                          <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
-                            {{ google: "G", outlook: "O", proton: "P", ics: "I" }[source.provider] || "?"}
-                          </span>
-                          <span className="text-xs font-medium text-gray-500">{source.label || source.provider}</span>
+                    {sources.map((source) => {
+                      const entries = source.calendarEntries.filter((e) => e.id !== targetCalendarId);
+                      if (entries.length === 0) return null;
+                      return (
+                        <div key={source.id} className="mb-3">
+                          <div className="mb-1 flex items-center gap-1.5">
+                            <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
+                              {{ google: "G", outlook: "O", proton: "P", ics: "I" }[source.provider] || "?"}
+                            </span>
+                            <span className="text-xs font-medium text-gray-500">{source.label || source.provider}</span>
+                          </div>
+                          <div className="flex flex-col gap-0.5 pl-1">
+                            {entries.map((entry) => (
+                              <Checkbox key={entry.id} value={entry.id}>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color || "#3b82f6" }} />
+                                  <span className="text-xs">{entry.name}</span>
+                                </div>
+                              </Checkbox>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-0.5 pl-1">
-                          {source.calendarEntries.map((entry) => (
-                            <Checkbox key={entry.id} value={entry.id}>
-                              <div className="flex items-center gap-1.5">
-                                <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color || "#3b82f6" }} />
-                                <span className="text-xs">{entry.name}</span>
-                              </div>
-                            </Checkbox>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </CheckboxGroup>
                 </div>
 
