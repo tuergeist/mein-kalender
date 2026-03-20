@@ -299,7 +299,8 @@ export function CalendarView() {
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-          initialView={isMobile ? "listWeek" : "dayGridMonth"}
+          initialView={isMobile ? "listWeek" : "timeGridWeek"}
+          nowIndicator={true}
           locale={deLocale}
           firstDay={1}
           eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}

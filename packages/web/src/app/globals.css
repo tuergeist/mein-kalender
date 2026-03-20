@@ -274,3 +274,13 @@ select:focus {
 .fc .fc-col-header-cell.fc-day-sun {
   @apply bg-gray-200;
 }
+
+/* Now indicator (red line for current time) */
+.fc .fc-timegrid-now-indicator-line {
+  border-color: #ef4444;
+  border-width: 2px;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+  border-color: #ef4444;
+}
