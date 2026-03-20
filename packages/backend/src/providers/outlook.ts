@@ -6,6 +6,23 @@ import {
   TokenSet,
   Provider,
 } from "../types";
+
+function stripHtml(html: string | undefined | null): string | null {
+  if (!html) return null;
+  // Remove style/script tags and their content, then strip remaining tags
+  const text = html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+  return text || null;
+}
 import { ProviderError, ProviderErrorCode } from "../errors";
 
 const GRAPH_API_BASE = "https://graph.microsoft.com/v1.0";
@@ -294,7 +311,7 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       sourceEventId: item.id as string,
       calendarId,
       title: (item.subject as string) || "(No title)",
-      description: ((item.body as Record<string, string>)?.content) || null,
+      description: stripHtml((item.body as Record<string, string>)?.content) || null,
       location: ((item.location as Record<string, string>)?.displayName) || null,
       startTime: new Date(start.dateTime + (start.timeZone === "UTC" ? "Z" : "")),
       endTime: new Date(end.dateTime + (end.timeZone === "UTC" ? "Z" : "")),
