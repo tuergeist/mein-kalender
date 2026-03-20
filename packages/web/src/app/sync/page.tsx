@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   Card, CardBody, CardHeader, Button, Select, SelectItem, Switch, Divider, Input,
@@ -28,6 +29,7 @@ interface CalendarSource {
 
 export default function SyncPage() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
   const [sources, setSources] = useState<CalendarSource[]>([]);
@@ -58,7 +60,7 @@ export default function SyncPage() {
   // ICS feeds
   interface IcsFeedItem { id: string; name: string; token: string; mode: string; daysInAdvance: number; calendars: Array<{ id: string; name: string }> }
   const [icsFeeds, setIcsFeeds] = useState<IcsFeedItem[]>([]);
-  const [showFeedModal, setShowFeedModal] = useState(false);
+  const [showFeedForm, setShowFeedForm] = useState(false);
   const [feedName, setFeedName] = useState("");
   const [feedMode, setFeedMode] = useState("full");
   const [feedDays, setFeedDays] = useState("30");
@@ -166,7 +168,7 @@ export default function SyncPage() {
         calendarEntryIds: feedCalendarIds,
       }),
     });
-    setShowFeedModal(false);
+    setShowFeedForm(false);
     setFeedName("");
     setFeedMode("full");
     setFeedDays("30");
@@ -400,15 +402,86 @@ export default function SyncPage() {
         <Card>
           <CardHeader className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">ICS Feeds</h2>
-            <Button size="sm" color="primary" onPress={() => setShowFeedModal(true)}>
-              New Feed
-            </Button>
+            {!showFeedForm && (
+              <Button size="sm" color="primary" onPress={() => setShowFeedForm(true)}>
+                New Feed
+              </Button>
+            )}
           </CardHeader>
           <CardBody>
             <p className="mb-3 text-sm text-default-500">
               Create subscribable ICS feeds from your calendars. Use the URL in Google Calendar, Apple Calendar, etc.
             </p>
-            {icsFeeds.length === 0 ? (
+
+            {/* Inline new feed form */}
+            {showFeedForm && (
+              <div className="mb-4 space-y-4 rounded-lg border border-primary-200 bg-primary-50/30 p-4">
+                <p className="text-sm font-semibold">New Feed</p>
+                <Input label="Name" isRequired value={feedName} onValueChange={setFeedName} placeholder="e.g. Work calendars" size="sm" />
+                <div className="flex gap-3">
+                  <Select
+                    label="Mode"
+                    selectedKeys={new Set([feedMode])}
+                    onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFeedMode(s); }}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <SelectItem key="full">Full details</SelectItem>
+                    <SelectItem key="freebusy">Free/busy only</SelectItem>
+                  </Select>
+                  <Select
+                    label="Days in advance"
+                    selectedKeys={new Set([feedDays])}
+                    onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFeedDays(s); }}
+                    size="sm"
+                    className="w-36"
+                  >
+                    <SelectItem key="30">30 days</SelectItem>
+                    <SelectItem key="60">60 days</SelectItem>
+                    <SelectItem key="90">90 days</SelectItem>
+                  </Select>
+                </div>
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm font-medium">Calendars to include</p>
+                    <Button size="sm" variant="flat" onPress={() => {
+                      try {
+                        const stored = localStorage.getItem("visibleCalendarIds");
+                        if (stored) { const ids = JSON.parse(stored) as string[]; if (ids.length > 0) setFeedCalendarIds(ids); }
+                      } catch { /* ignore */ }
+                    }}>Use visible</Button>
+                  </div>
+                  <CheckboxGroup size="sm" value={feedCalendarIds} onChange={(vals) => setFeedCalendarIds(vals as string[])}>
+                    {sources.map((source) => (
+                      <div key={source.id} className="mb-3">
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
+                            {{ google: "G", outlook: "O", proton: "P", ics: "I" }[source.provider] || "?"}
+                          </span>
+                          <span className="text-xs font-medium text-gray-500">{source.label || source.provider}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 pl-1">
+                          {source.calendarEntries.map((entry) => (
+                            <Checkbox key={entry.id} value={entry.id}>
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color || "#3b82f6" }} />
+                                <span className="text-xs">{entry.name}</span>
+                              </div>
+                            </Checkbox>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </CheckboxGroup>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="light" onPress={() => { setShowFeedForm(false); setFeedName(""); setFeedMode("full"); setFeedDays("30"); setFeedCalendarIds([]); }}>Cancel</Button>
+                  <Button size="sm" color="primary" isLoading={feedCreating} isDisabled={!feedName.trim()} onPress={createFeed}>Create</Button>
+                </div>
+              </div>
+            )}
+
+            {icsFeeds.length === 0 && !showFeedForm ? (
               <p className="text-default-400">No feeds yet.</p>
             ) : (
               <div className="space-y-3">
@@ -447,74 +520,6 @@ export default function SyncPage() {
             )}
           </CardBody>
         </Card>
-
-        {/* Create Feed Modal */}
-        <Modal isOpen={showFeedModal} onClose={() => setShowFeedModal(false)} size="2xl" scrollBehavior="inside" placement="center">
-          <ModalContent>
-            <ModalHeader>New ICS Feed</ModalHeader>
-            <ModalBody>
-              <div className="space-y-4">
-                <Input label="Name" isRequired value={feedName} onValueChange={setFeedName} placeholder="e.g. Work calendars" />
-                <Select
-                  label="Mode"
-                  selectedKeys={new Set([feedMode])}
-                  onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFeedMode(s); }}
-                  size="sm"
-                >
-                  <SelectItem key="full">Full details (title, description, location)</SelectItem>
-                  <SelectItem key="freebusy">Free/busy only (shows &quot;Busy&quot; blocks)</SelectItem>
-                </Select>
-                <Select
-                  label="Days in advance"
-                  selectedKeys={new Set([feedDays])}
-                  onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFeedDays(s); }}
-                  size="sm"
-                >
-                  <SelectItem key="30">30 days</SelectItem>
-                  <SelectItem key="60">60 days</SelectItem>
-                  <SelectItem key="90">90 days</SelectItem>
-                </Select>
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-sm font-medium">Calendars to include</p>
-                    <Button size="sm" variant="flat" onPress={() => {
-                      try {
-                        const stored = localStorage.getItem("visibleCalendarIds");
-                        if (stored) { const ids = JSON.parse(stored) as string[]; if (ids.length > 0) setFeedCalendarIds(ids); }
-                      } catch { /* ignore */ }
-                    }}>Use visible</Button>
-                  </div>
-                  <CheckboxGroup size="sm" value={feedCalendarIds} onChange={(vals) => setFeedCalendarIds(vals as string[])}>
-                    {sources.map((source) => (
-                      <div key={source.id} className="mb-3">
-                        <div className="mb-1 flex items-center gap-1.5">
-                          <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
-                            {{ google: "G", outlook: "O", proton: "P", ics: "I" }[source.provider] || "?"}
-                          </span>
-                          <span className="text-xs font-medium text-gray-500">{source.label || source.provider}</span>
-                        </div>
-                        <div className="flex flex-col gap-0.5 pl-1">
-                          {source.calendarEntries.map((entry) => (
-                            <Checkbox key={entry.id} value={entry.id}>
-                              <div className="flex items-center gap-1.5">
-                                <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color || "#3b82f6" }} />
-                                <span className="text-xs">{entry.name}</span>
-                              </div>
-                            </Checkbox>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </CheckboxGroup>
-                </div>
-              </div>
-            </ModalBody>
-            <ModalFooter>
-              <Button variant="light" onPress={() => setShowFeedModal(false)}>Cancel</Button>
-              <Button color="primary" isLoading={feedCreating} onPress={createFeed}>Create</Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
 
         {/* Unset Modal */}
         <Modal isOpen={showUnsetModal} onClose={() => setShowUnsetModal(false)}>
