@@ -223,7 +223,15 @@ export function CalendarView() {
               size="sm"
               variant="flat"
               className="h-8 min-w-0 px-2 text-xs font-medium text-gray-600 md:px-3"
-              onPress={() => calendarRef.current?.getApi().today()}
+              onPress={() => {
+                const api = calendarRef.current?.getApi();
+                if (api) {
+                  api.today();
+                  const now = new Date();
+                  const scrollHour = Math.max(0, now.getHours() - 2);
+                  api.scrollToTime({ hours: scrollHour, minutes: 0, seconds: 0 });
+                }
+              }}
             >
               Today
             </Button>
@@ -301,6 +309,7 @@ export function CalendarView() {
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
           initialView={isMobile ? "listWeek" : "timeGridWeek"}
           nowIndicator={true}
+          scrollTime={`${String(Math.max(0, new Date().getHours() - 2)).padStart(2, "0")}:00:00`}
           locale={deLocale}
           firstDay={1}
           eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
