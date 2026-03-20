@@ -310,35 +310,6 @@ export default function BookingSettingsPage() {
           </CardBody>
         </Card>
 
-        {/* Booking Calendar */}
-        <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Booking Calendar</h2></CardHeader>
-          <CardBody>
-            <p className="mb-3 text-sm text-default-500">
-              Select the calendar where booking events are created. The guest will receive an invitation email from your calendar provider.
-            </p>
-            {allCalendarEntries.length === 0 ? (
-              <p className="text-default-400">Connect a calendar with write access first.</p>
-            ) : (
-              <Select
-                label="Booking Calendar"
-                placeholder="Select a calendar"
-                selectedKeys={bookingCalendarId ? new Set([bookingCalendarId]) : new Set()}
-                onSelectionChange={(keys) => {
-                  const selected = Array.from(keys)[0] as string;
-                  if (selected) handleSetBookingCalendar(selected);
-                }}
-              >
-                {allCalendarEntries.map((entry) => (
-                  <SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>
-                    {entry.name} ({entry.sourceName})
-                  </SelectItem>
-                ))}
-              </Select>
-            )}
-          </CardBody>
-        </Card>
-
         {/* Event Types */}
         <Card>
           <CardHeader className="flex items-center justify-between">
@@ -400,10 +371,42 @@ export default function BookingSettingsPage() {
           </CardBody>
         </Card>
 
-        {/* Availability */}
+        {/* Defaults */}
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Defaults (used when event type has no override)</p>
+
+        {/* Default Booking Calendar */}
+        <Card>
+          <CardHeader><h2 className="text-lg font-semibold">Default Booking Calendar</h2></CardHeader>
+          <CardBody>
+            <p className="mb-3 text-sm text-default-500">
+              Used when an event type has no booking calendar set.
+            </p>
+            {allCalendarEntries.length === 0 ? (
+              <p className="text-default-400">Connect a calendar with write access first.</p>
+            ) : (
+              <Select
+                label="Booking Calendar"
+                placeholder="Select a calendar"
+                selectedKeys={bookingCalendarId ? new Set([bookingCalendarId]) : new Set()}
+                onSelectionChange={(keys) => {
+                  const selected = Array.from(keys)[0] as string;
+                  if (selected) handleSetBookingCalendar(selected);
+                }}
+              >
+                {allCalendarEntries.map((entry) => (
+                  <SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>
+                    {entry.name} ({entry.sourceName})
+                  </SelectItem>
+                ))}
+              </Select>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* Default Working Hours */}
         <Card>
           <CardHeader className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Working Hours</h2>
+            <h2 className="text-lg font-semibold">Default Working Hours</h2>
             <Button size="sm" color="primary" isLoading={savingRules} onPress={saveRules}>
               Save
             </Button>
