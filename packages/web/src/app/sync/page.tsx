@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  Card, CardBody, CardHeader, Button, Select, SelectItem, Switch, Divider,
+  Card, CardBody, CardHeader, Button, Select, SelectItem, Switch, Divider, Input,
   Checkbox, CheckboxGroup,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
 } from "@heroui/react";
@@ -55,15 +55,26 @@ export default function SyncPage() {
   const [cleanupLoading, setCleanupLoading] = useState(false);
   const [cleanupStatus, setCleanupStatus] = useState("");
 
+  // ICS feeds
+  interface IcsFeedItem { id: string; name: string; token: string; mode: string; daysInAdvance: number; calendars: Array<{ id: string; name: string }> }
+  const [icsFeeds, setIcsFeeds] = useState<IcsFeedItem[]>([]);
+  const [showFeedModal, setShowFeedModal] = useState(false);
+  const [feedName, setFeedName] = useState("");
+  const [feedMode, setFeedMode] = useState("full");
+  const [feedDays, setFeedDays] = useState("30");
+  const [feedCalendarIds, setFeedCalendarIds] = useState<string[]>([]);
+  const [feedCreating, setFeedCreating] = useState(false);
+
   useEffect(() => {
     if (accessToken) loadData();
   }, [accessToken]);
 
   async function loadData() {
     if (!accessToken) return;
-    const [sourcesRes, targetRes] = await Promise.all([
+    const [sourcesRes, targetRes, feedsRes] = await Promise.all([
       apiAuthFetch("/api/sources", accessToken),
       apiAuthFetch("/api/target-calendar", accessToken),
+      apiAuthFetch("/api/ics-feeds", accessToken),
     ]);
     if (sourcesRes.ok) {
       const data = await sourcesRes.json();
@@ -84,6 +95,7 @@ export default function SyncPage() {
       setSkipFree(data.targetCalendar?.skipFree ?? false);
       setSourceCalendarIds((data.targetCalendar?.sourceCalendars ?? []).map((c: { id: string }) => c.id));
     }
+    if (feedsRes.ok) setIcsFeeds(await feedsRes.json());
   }
 
   const allWritableEntries = sources.flatMap((s) =>
@@ -141,6 +153,35 @@ export default function SyncPage() {
     setFetchDaysDirty(false);
     loadData();
   }
+
+  async function createFeed() {
+    if (!accessToken || !feedName.trim()) return;
+    setFeedCreating(true);
+    await apiAuthFetch("/api/ics-feeds", accessToken, {
+      method: "POST",
+      body: JSON.stringify({
+        name: feedName,
+        mode: feedMode,
+        daysInAdvance: parseInt(feedDays) || 30,
+        calendarEntryIds: feedCalendarIds,
+      }),
+    });
+    setShowFeedModal(false);
+    setFeedName("");
+    setFeedMode("full");
+    setFeedDays("30");
+    setFeedCalendarIds([]);
+    setFeedCreating(false);
+    loadData();
+  }
+
+  async function deleteFeed(id: string) {
+    if (!accessToken) return;
+    await apiAuthFetch(`/api/ics-feeds/${id}`, accessToken, { method: "DELETE" });
+    loadData();
+  }
+
+  const icsFeedBaseUrl = typeof window !== "undefined" ? `${window.location.origin}/api/ics-feed` : "";
 
   async function handleUnset(deleteSyncedEvents: boolean) {
     if (!accessToken) return;
@@ -350,6 +391,126 @@ export default function SyncPage() {
             {cleanupStatus && <p className="mt-2 text-sm text-primary">{cleanupStatus}</p>}
           </CardBody>
         </Card>
+
+        {/* ICS Feeds */}
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">ICS Feeds</h2>
+            <Button size="sm" color="primary" onPress={() => setShowFeedModal(true)}>
+              New Feed
+            </Button>
+          </CardHeader>
+          <CardBody>
+            <p className="mb-3 text-sm text-default-500">
+              Create subscribable ICS feeds from your calendars. Use the URL in Google Calendar, Apple Calendar, etc.
+            </p>
+            {icsFeeds.length === 0 ? (
+              <p className="text-default-400">No feeds yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {icsFeeds.map((feed) => (
+                  <div key={feed.id} className="rounded-lg border border-default-200 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-medium">{feed.name}</span>
+                        <span className="ml-2 text-xs text-default-400">
+                          {feed.mode === "freebusy" ? "Free/busy only" : "Full details"} &bull; {feed.daysInAdvance} days
+                        </span>
+                      </div>
+                      <Button size="sm" color="danger" variant="light" onPress={() => deleteFeed(feed.id)}>
+                        Delete
+                      </Button>
+                    </div>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <code className="flex-1 rounded bg-default-100 px-2 py-1 text-xs text-default-600 truncate">
+                        {icsFeedBaseUrl}/{feed.token}.ics
+                      </code>
+                      <Button
+                        size="sm" variant="light" isIconOnly className="h-7 w-7 min-w-0"
+                        onPress={() => navigator.clipboard.writeText(`${icsFeedBaseUrl}/${feed.token}.ics`)}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                      </Button>
+                    </div>
+                    {feed.calendars.length > 0 && (
+                      <p className="mt-1 text-xs text-default-400">
+                        {feed.calendars.map((c) => c.name).join(", ")}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* Create Feed Modal */}
+        <Modal isOpen={showFeedModal} onClose={() => setShowFeedModal(false)} size="lg">
+          <ModalContent>
+            <ModalHeader>New ICS Feed</ModalHeader>
+            <ModalBody>
+              <div className="space-y-4">
+                <Input label="Name" isRequired value={feedName} onValueChange={setFeedName} placeholder="e.g. Work calendars" />
+                <Select
+                  label="Mode"
+                  selectedKeys={new Set([feedMode])}
+                  onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFeedMode(s); }}
+                  size="sm"
+                >
+                  <SelectItem key="full">Full details (title, description, location)</SelectItem>
+                  <SelectItem key="freebusy">Free/busy only (shows &quot;Busy&quot; blocks)</SelectItem>
+                </Select>
+                <Select
+                  label="Days in advance"
+                  selectedKeys={new Set([feedDays])}
+                  onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFeedDays(s); }}
+                  size="sm"
+                >
+                  <SelectItem key="30">30 days</SelectItem>
+                  <SelectItem key="60">60 days</SelectItem>
+                  <SelectItem key="90">90 days</SelectItem>
+                </Select>
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm font-medium">Calendars to include</p>
+                    <Button size="sm" variant="flat" onPress={() => {
+                      try {
+                        const stored = localStorage.getItem("visibleCalendarIds");
+                        if (stored) { const ids = JSON.parse(stored) as string[]; if (ids.length > 0) setFeedCalendarIds(ids); }
+                      } catch { /* ignore */ }
+                    }}>Use visible</Button>
+                  </div>
+                  <CheckboxGroup size="sm" value={feedCalendarIds} onChange={(vals) => setFeedCalendarIds(vals as string[])}>
+                    {sources.map((source) => (
+                      <div key={source.id} className="mb-3">
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
+                            {{ google: "G", outlook: "O", proton: "P", ics: "I" }[source.provider] || "?"}
+                          </span>
+                          <span className="text-xs font-medium text-gray-500">{source.label || source.provider}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 pl-1">
+                          {source.calendarEntries.map((entry) => (
+                            <Checkbox key={entry.id} value={entry.id}>
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color || "#3b82f6" }} />
+                                <span className="text-xs">{entry.name}</span>
+                              </div>
+                            </Checkbox>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </CheckboxGroup>
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" onPress={() => setShowFeedModal(false)}>Cancel</Button>
+              <Button color="primary" isLoading={feedCreating} onPress={createFeed}>Create</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
 
         {/* Unset Modal */}
         <Modal isOpen={showUnsetModal} onClose={() => setShowUnsetModal(false)}>

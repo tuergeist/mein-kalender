@@ -25,6 +25,7 @@ interface EventType {
   redirectDelaySecs: number;
   calendars?: Array<{ id: string; name: string }>;
   bookingCalendarEntryId: string | null;
+  shortHash: string | null;
   availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>;
 }
 
@@ -79,6 +80,7 @@ export default function BookingSettingsPage() {
   const [editBookingCalendarId, setEditBookingCalendarId] = useState("");
   const [editCustomHours, setEditCustomHours] = useState(false);
   const [editRules, setEditRules] = useState<Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>>([]);
+  const [editShortLink, setEditShortLink] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
@@ -198,6 +200,7 @@ export default function BookingSettingsPage() {
     setEditRedirectDelay(String(et.redirectDelaySecs));
     setEditCalendarIds((et.calendars ?? []).map((c: { id: string }) => c.id));
     setEditBookingCalendarId(et.bookingCalendarEntryId || "");
+    setEditShortLink(!!et.shortHash);
     const hasCustomRules = (et.availabilityRules ?? []).length > 0;
     setEditCustomHours(hasCustomRules);
     setEditRules(hasCustomRules
@@ -222,6 +225,7 @@ export default function BookingSettingsPage() {
         calendarEntryIds: editCalendarIds,
         bookingCalendarEntryId: editBookingCalendarId || null,
         availabilityRules: editCustomHours ? editRules : undefined,
+        enableShortLink: editShortLink,
       }),
     });
     setEditingType(null);
@@ -334,21 +338,25 @@ export default function BookingSettingsPage() {
                         </div>
                       </div>
                       {savedUsername && et.enabled && (
-                        <div className="ml-6 mt-2 flex items-center gap-1.5">
-                          <code className="rounded bg-default-100 px-2 py-1 text-xs text-default-600">
-                            {bookingBaseUrl}/{et.slug}
-                          </code>
-                          <Button
-                            size="sm"
-                            variant="light"
-                            isIconOnly
-                            className="h-7 w-7 min-w-0"
-                            onPress={() => {
-                              navigator.clipboard.writeText(`${bookingBaseUrl}/${et.slug}`);
-                            }}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                          </Button>
+                        <div className="ml-6 mt-2 space-y-1">
+                          <div className="flex items-center gap-1.5">
+                            <code className="rounded bg-default-100 px-2 py-1 text-xs text-default-600">
+                              {bookingBaseUrl}/{et.slug}
+                            </code>
+                            <Button size="sm" variant="light" isIconOnly className="h-7 w-7 min-w-0" onPress={() => navigator.clipboard.writeText(`${bookingBaseUrl}/${et.slug}`)}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                            </Button>
+                          </div>
+                          {et.shortHash && (
+                            <div className="flex items-center gap-1.5">
+                              <code className="rounded bg-primary/10 px-2 py-1 text-xs text-primary">
+                                {typeof window !== "undefined" ? window.location.origin : ""}/B/{et.shortHash}
+                              </code>
+                              <Button size="sm" variant="light" isIconOnly className="h-7 w-7 min-w-0" onPress={() => navigator.clipboard.writeText(`${window.location.origin}/B/${et.shortHash}`)}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -487,6 +495,27 @@ export default function BookingSettingsPage() {
                     <Input label="Redirect delay (seconds)" type="number" value={editRedirectDelay} onValueChange={setEditRedirectDelay} />
                   </>
                 )}
+                <Divider />
+                <div>
+                  <div className="mb-2 flex items-center gap-2">
+                    <Switch size="sm" isSelected={editShortLink} onValueChange={setEditShortLink} />
+                    <span className="text-sm font-medium">Short booking link</span>
+                  </div>
+                  {editShortLink && editingType?.shortHash && (
+                    <div className="flex items-center gap-1.5">
+                      <code className="rounded bg-default-100 px-2 py-1 text-xs text-default-600">
+                        {typeof window !== "undefined" ? window.location.origin : ""}/B/{editingType.shortHash}
+                      </code>
+                      <Button size="sm" variant="light" isIconOnly className="h-7 w-7 min-w-0" onPress={() => navigator.clipboard.writeText(`${window.location.origin}/B/${editingType.shortHash}`)}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                      </Button>
+                    </div>
+                  )}
+                  {editShortLink && !editingType?.shortHash && (
+                    <p className="text-xs text-default-400">Short link will be generated on save.</p>
+                  )}
+                </div>
+
                 <Divider />
                 <Select
                   label="Booking calendar"

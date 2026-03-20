@@ -310,6 +310,15 @@ export function CalendarView() {
         <Switch size="sm" isSelected={hideSyncEvents} onValueChange={setHideSyncEvents}>
           <span className="text-xs text-gray-500">Hide [Sync]</span>
         </Switch>
+        <Button
+          size="sm"
+          variant="flat"
+          onPress={() => {
+            window.location.href = "/sync#ics-feeds";
+          }}
+        >
+          Export ICS
+        </Button>
       </div>
 
       <div className="flex-1">
