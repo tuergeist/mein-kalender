@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   Card, CardBody, CardHeader, Button, Select, SelectItem, Switch, Divider, Input,
@@ -29,7 +28,6 @@ interface CalendarSource {
 
 export default function SyncPage() {
   const { data: session } = useSession();
-  const searchParams = useSearchParams();
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
   const [sources, setSources] = useState<CalendarSource[]>([]);
@@ -102,9 +100,6 @@ export default function SyncPage() {
 
   const allWritableEntries = sources.flatMap((s) =>
     s.calendarEntries.filter((e) => !e.readOnly).map((e) => ({ ...e, sourceName: s.label || s.provider }))
-  );
-  const allEntries = sources.flatMap((s) =>
-    s.calendarEntries.map((e) => ({ ...e, sourceName: s.label || s.provider }))
   );
 
   async function saveTargetSettings() {
