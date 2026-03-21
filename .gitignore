@@ -5,5 +5,7 @@ dist/
 .env
 .env.local
 *.tsbuildinfo
-.claude/
+.claude/*
+!.claude/commands/
+.claude/commands/opsx/
 .microsoft.md
