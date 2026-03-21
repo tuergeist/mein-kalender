@@ -108,7 +108,7 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
   const readOnly = event.extendedProps.readOnly;
 
   return (
-    <Modal isOpen={!!event} onClose={onClose} size="lg">
+    <Modal isOpen={!!event} onClose={onClose} size="lg" scrollBehavior="inside">
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <span
