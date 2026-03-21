@@ -7,5 +7,4 @@ dist/
 *.tsbuildinfo
 .claude/*
 !.claude/commands/
-.claude/commands/opsx/
 .microsoft.md
