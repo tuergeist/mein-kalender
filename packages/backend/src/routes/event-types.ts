@@ -41,6 +41,24 @@ export async function eventTypesRoutes(app: FastifyInstance) {
     return eventTypes;
   });
 
+  // Get single event type
+  app.get<{ Params: { id: string } }>(
+    "/api/event-types/:id",
+    async (request, reply) => {
+      const { user } = request as unknown as AuthenticatedRequest;
+      const { id } = request.params;
+      const eventType = await prisma.eventType.findFirst({
+        where: { id, userId: user.id },
+        include: {
+          calendars: { select: { id: true, name: true } },
+          availabilityRules: { orderBy: { dayOfWeek: "asc" } },
+        },
+      });
+      if (!eventType) return reply.code(404).send({ error: "Event type not found" });
+      return eventType;
+    }
+  );
+
   // Create event type
   app.post<{ Body: { name: string; durationMinutes: number; description?: string; location?: string; color?: string; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; bookingCalendarEntryId?: string } }>(
     "/api/event-types",
