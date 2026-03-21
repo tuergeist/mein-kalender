@@ -16,6 +16,22 @@ import {
 import { apiAuthFetch } from "@/lib/api";
 import { LocationMap } from "./LocationMap";
 
+function stripHtml(html: string): string {
+  // Convert <br>, <p>, <div> endings to newlines, then strip all tags
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|tr)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 interface CalendarEvent {
   id: string;
   title: string;
@@ -52,7 +68,7 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
 
   function startEditing() {
     setTitle(event!.title);
-    setDescription(event!.extendedProps.description || "");
+    setDescription(stripHtml(event!.extendedProps.description || ""));
     setLocation(event!.extendedProps.location || "");
     setStartTime(event!.start?.slice(0, 16) || "");
     setEndTime(event!.end?.slice(0, 16) || "");
@@ -152,7 +168,7 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
 
               {event.extendedProps.description && (
                 <p className="mt-2 text-sm whitespace-pre-wrap">
-                  {event.extendedProps.description}
+                  {stripHtml(event.extendedProps.description)}
                 </p>
               )}
             </div>
