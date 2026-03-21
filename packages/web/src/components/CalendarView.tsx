@@ -314,7 +314,7 @@ export function CalendarView() {
           size="sm"
           variant="flat"
           onPress={() => {
-            window.location.href = "/sync#ics-feeds";
+            window.location.href = "/sync?openFeed=1";
           }}
         >
           Export ICS
