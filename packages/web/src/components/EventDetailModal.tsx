@@ -17,10 +17,16 @@ import { apiAuthFetch } from "@/lib/api";
 import { LocationMap } from "./LocationMap";
 
 function stripHtml(html: string): string {
-  // Convert <br>, <p>, <div> endings to newlines, then strip all tags
   return html
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|li|tr)>/gi, "\n")
+    // Preserve link URLs: <a href="url">text</a> -> text (url)
+    .replace(/<a\s[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, (_, url, text) => {
+      const cleanText = text.trim();
+      // If the link text is the URL itself, don't duplicate
+      if (cleanText === url || cleanText.replace(/^https?:\/\//, "") === url.replace(/^https?:\/\//, "")) return url;
+      return `${cleanText} (${url})`;
+    })
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")

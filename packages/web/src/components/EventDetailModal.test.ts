@@ -5,6 +5,11 @@ function stripHtml(html: string): string {
   return html
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|li|tr)>/gi, "\n")
+    .replace(/<a\s[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, (_, url, text) => {
+      const cleanText = text.trim();
+      if (cleanText === url || cleanText.replace(/^https?:\/\//, "") === url.replace(/^https?:\/\//, "")) return url;
+      return `${cleanText} (${url})`;
+    })
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
@@ -37,22 +42,39 @@ describe("stripHtml", () => {
     expect(stripHtml("&amp; &lt; &gt; &quot; &#39; &nbsp;")).toBe('& < > " \'');
   });
 
-  it("handles Microsoft Teams HTML description", () => {
+  it("preserves link URLs with different text", () => {
+    expect(stripHtml('<a href="https://example.com">Click here</a>')).toBe(
+      "Click here (https://example.com)"
+    );
+  });
+
+  it("does not duplicate URL when link text matches href", () => {
+    expect(stripHtml('<a href="https://example.com">https://example.com</a>')).toBe(
+      "https://example.com"
+    );
+  });
+
+  it("preserves Teams meeting join link", () => {
+    const teamsLink = '<a href="https://teams.microsoft.com/meet/123" title="Meeting join">https://teams.microsoft.com/meet/123</a>';
+    const result = stripHtml(teamsLink);
+    expect(result).toContain("https://teams.microsoft.com/meet/123");
+  });
+
+  it("handles Microsoft Teams HTML description with links", () => {
     const teamsHtml = `<div style="margin-bottom:18.0pt; overflow:hidden">
-<p class="MsoNormal"><span class="me-email-text"><b><span lang="EN-GB" style="font-size:15.0pt; font-family:&quot;Segoe UI&quot;,sans-serif; color:#242424">Microsoft Teams meeting</span></b></span></p>
+<p class="MsoNormal"><b>Microsoft Teams meeting</b></p>
 </div>
 <div style="margin-bottom:4.5pt">
-<p class="MsoNormal"><span class="me-email-text"><b><span lang="EN-GB" style="font-size:15.0pt; font-family:&quot;Segoe UI&quot;,sans-serif; color:#242424">Join:</span></b></span></p>
+<p class="MsoNormal"><b>Join:</b> <a href="https://teams.microsoft.com/meet/123" title="Meeting join">https://teams.microsoft.com/meet/123</a></p>
 </div>`;
     const result = stripHtml(teamsHtml);
     expect(result).toContain("Microsoft Teams meeting");
-    expect(result).toContain("Join:");
+    expect(result).toContain("https://teams.microsoft.com/meet/123");
     expect(result).not.toContain("<");
     expect(result).not.toContain(">");
   });
 
   it("collapses excessive newlines", () => {
-    // </p> adds \n, plus 3 literal \n, plus <p> stripped = 4 newlines -> collapsed to 2
     expect(stripHtml("<p>a</p>\n\n\n<p>b</p>")).toBe("a\n\nb");
   });
 
