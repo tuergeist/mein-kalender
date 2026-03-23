@@ -333,7 +333,44 @@ async function cloneToTarget(
     return true;
   });
 
+  // Build a fingerprint set from already-mapped events to avoid duplicating
+  // events that appear across multiple source calendars
+  const existingMappings = await prisma.targetEventMapping.findMany({
+    where: { targetCalendarEntryId: targetEntry.id },
+    include: { sourceEvent: { select: { title: true, startTime: true, endTime: true } } },
+  });
+
+  const eventFingerprint = (title: string, start: Date, end: Date) =>
+    `${title}|${new Date(start).toISOString()}|${new Date(end).toISOString()}`;
+
+  // Map fingerprint → existing target event ID (for reuse when same event comes from another source)
+  const fingerprintToTargetId = new Map<string, string>();
+  for (const m of existingMappings) {
+    const fp = eventFingerprint(m.sourceEvent.title, m.sourceEvent.startTime, m.sourceEvent.endTime);
+    fingerprintToTargetId.set(fp, m.targetEventId);
+  }
+
   for (const event of filteredEvents) {
+    const fp = eventFingerprint(event.title, event.startTime, event.endTime);
+    const existingTargetId = fingerprintToTargetId.get(fp);
+
+    if (existingTargetId) {
+      // Same event already synced (from another source calendar) — just create the mapping
+      try {
+        await prisma.targetEventMapping.create({
+          data: {
+            sourceEventId: event.id,
+            targetEventId: existingTargetId,
+            targetCalendarEntryId: targetEntry.id,
+          },
+        });
+        console.log(`[sync] Reused existing target event for "${event.title}" (dedup by fingerprint)`);
+      } catch (dupErr) {
+        // Mapping already exists, skip
+      }
+      continue;
+    }
+
     try {
       const cloned = await targetProvider.createEvent(
         targetToken,
@@ -357,8 +394,17 @@ async function cloneToTarget(
           },
         });
       } catch (dupErr) {
-        console.log(`[sync] Duplicate mapping for event ${event.id}, skipping`);
+        // Mapping already exists — delete the orphaned target event we just created
+        try {
+          await targetProvider.deleteEvent(targetToken, targetEntry.providerCalendarId, cloned.sourceEventId);
+          console.log(`[sync] Cleaned up duplicate target event for "${event.title}"`);
+        } catch {
+          console.error(`[sync] Failed to clean up duplicate target event ${cloned.sourceEventId}`);
+        }
       }
+
+      // Track this fingerprint so subsequent events with the same content reuse it
+      fingerprintToTargetId.set(fp, cloned.sourceEventId);
     } catch (err) {
       console.error(`[sync] Failed to clone event ${event.id} to target:`, err);
       // Continue with other events
