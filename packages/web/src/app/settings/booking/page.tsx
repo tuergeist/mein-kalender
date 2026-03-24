@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   Card, CardBody, CardHeader, Button, Input, Switch, Select, SelectItem, Tooltip,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
 } from "@heroui/react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
@@ -52,6 +53,7 @@ export default function BookingSettingsPage() {
   const [backgroundUrl, setBackgroundUrl] = useState("");
   const [brandingSaving, setBrandingSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [showUsernameWarning, setShowUsernameWarning] = useState(false);
 
   useEffect(() => {
     if (accessToken) { loadProfile(); loadEventTypes(); loadAvailability(); loadCalendars(); }
@@ -96,8 +98,18 @@ export default function BookingSettingsPage() {
     if (res.ok) setRules(await res.json());
   }
 
-  async function saveUsername() {
+  function saveUsername() {
     if (!accessToken) return;
+    if (savedUsername && eventTypes.length > 0 && username !== savedUsername) {
+      setShowUsernameWarning(true);
+      return;
+    }
+    doSaveUsername();
+  }
+
+  async function doSaveUsername() {
+    if (!accessToken) return;
+    setShowUsernameWarning(false);
     setUsernameSaving(true); setUsernameError("");
     const res = await apiAuthFetch("/api/profile/username", accessToken, { method: "PUT", body: JSON.stringify({ username }) });
     if (res.ok) { const data = await res.json(); setSavedUsername(data.username); }
@@ -354,6 +366,20 @@ export default function BookingSettingsPage() {
             </div>
           </CardBody>
         </Card>
+        {/* Username change warning modal */}
+        <Modal isOpen={showUsernameWarning} onClose={() => setShowUsernameWarning(false)}>
+          <ModalContent>
+            <ModalHeader>Change Booking URL?</ModalHeader>
+            <ModalBody>
+              <p>You have {eventTypes.length} event type{eventTypes.length > 1 ? "s" : ""}. Changing your username will break all existing booking links.</p>
+              <p className="mt-2 text-sm text-default-500">Anyone with the old URL will get a &quot;not found&quot; page. Short links (if any) will still work.</p>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" onPress={() => setShowUsernameWarning(false)}>Cancel</Button>
+              <Button color="danger" onPress={doSaveUsername}>Change Username</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </div>
     </AppShell>
   );
