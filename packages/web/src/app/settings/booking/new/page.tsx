@@ -80,7 +80,7 @@ export default function NewEventTypePage() {
   }
 
   return (
-    <AppShell section="bookings">
+    <AppShell section="settings" settingsSection="booking">
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

@@ -84,7 +84,7 @@ export default function AvailabilityPreviewPage() {
   }
 
   return (
-    <AppShell section="bookings">
+    <AppShell section="settings" settingsSection="booking">
       <div className="mx-auto max-w-6xl space-y-4">
         <div className="flex items-center gap-3">
           <Link href="/settings/booking">

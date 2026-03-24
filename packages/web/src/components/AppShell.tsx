@@ -13,12 +13,21 @@ import {
 import Link from "next/link";
 
 export type AppSection = "calendar" | "bookings" | "sync" | "settings";
+export type SettingsSubSection = "sources" | "booking" | "profile" | "other";
 
 interface AppShellProps {
   children: React.ReactNode;
   section?: AppSection;
+  settingsSection?: SettingsSubSection;
   sidebarContent?: React.ReactNode;
 }
+
+const SETTINGS_NAV: { key: SettingsSubSection; label: string; href: string; icon: string }[] = [
+  { key: "sources", label: "Calendar Sources", href: "/settings", icon: "M4 4v5h5M20 20v-5h-5M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" },
+  { key: "booking", label: "Booking", href: "/settings/booking", icon: "M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2M9 14l2 2 4-4M12 2v4" },
+  { key: "profile", label: "Profile", href: "/settings/profile", icon: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z" },
+  { key: "other", label: "Preferences", href: "/settings/preferences", icon: "M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" },
+];
 
 const NAV_ITEMS: { key: AppSection; label: string; href: string; icon: string }[] = [
   { key: "calendar", label: "Calendar", href: "/calendar", icon: "M6 2v2M18 2v2M3 8h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" },
@@ -27,7 +36,7 @@ const NAV_ITEMS: { key: AppSection; label: string; href: string; icon: string }[
   { key: "settings", label: "Settings", href: "/settings", icon: "M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" },
 ];
 
-export function AppShell({ children, section, sidebarContent }: AppShellProps) {
+export function AppShell({ children, section, settingsSection, sidebarContent }: AppShellProps) {
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -72,7 +81,7 @@ export function AppShell({ children, section, sidebarContent }: AppShellProps) {
               />
             </DropdownTrigger>
             <DropdownMenu>
-              <DropdownItem key="profile" href="/profile">
+              <DropdownItem key="profile" href="/settings/profile">
                 Profile
               </DropdownItem>
               <DropdownItem
@@ -122,6 +131,32 @@ export function AppShell({ children, section, sidebarContent }: AppShellProps) {
               </Link>
             ))}
           </nav>
+
+          {/* Settings sub-navigation */}
+          {section === "settings" && (
+            <div className="border-t border-gray-100 px-3 py-2">
+              <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Settings</p>
+              <nav className="flex flex-col gap-0.5">
+                {SETTINGS_NAV.map((item) => (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                      settingsSection === item.key
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                    }`}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d={item.icon} />
+                    </svg>
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
 
           {/* Contextual sidebar content (e.g. calendar list) */}
           {sidebarContent && (

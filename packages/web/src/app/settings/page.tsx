@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  Card, CardBody, CardHeader, Button, Input, Select, SelectItem, Divider,
+  Card, CardBody, CardHeader, Button, Input, Divider,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip,
 } from "@heroui/react";
-import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { apiAuthFetch } from "@/lib/api";
 
@@ -30,14 +29,9 @@ export default function SettingsPage() {
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState<string | null>(null);
-  const [mapProvider, setMapProvider] = useState<string>("google");
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState("");
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
-
-  useEffect(() => {
-    setMapProvider(localStorage.getItem("mapProvider") || "google");
-  }, []);
 
   useEffect(() => {
     if (accessToken) loadData();
@@ -74,9 +68,9 @@ export default function SettingsPage() {
   }
 
   return (
-    <AppShell section="settings">
+    <AppShell section="settings" settingsSection="sources">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-2xl font-bold">Settings</h1>
+        <h1 className="text-2xl font-bold">Calendar Sources</h1>
 
         {/* Connected Sources */}
         <Card>
@@ -135,48 +129,6 @@ export default function SettingsPage() {
           </CardBody>
         </Card>
 
-        {/* Booking Settings */}
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-semibold">Booking Page</h2>
-          </CardHeader>
-          <CardBody>
-            <p className="mb-3 text-sm text-default-500">
-              Set up event types, working hours, and your public booking URL.
-            </p>
-            <Link href="/settings/booking">
-              <Button size="sm" color="primary">Configure Booking</Button>
-            </Link>
-          </CardBody>
-        </Card>
-
-        {/* Map Provider */}
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-semibold">Map Provider</h2>
-          </CardHeader>
-          <CardBody>
-            <p className="mb-4 text-sm text-default-500">
-              Choose which map service to use for event locations.
-            </p>
-            <Select
-              label="Map Provider"
-              selectedKeys={[mapProvider]}
-              onSelectionChange={(keys) => {
-                const selected = Array.from(keys)[0] as string;
-                if (selected) {
-                  setMapProvider(selected);
-                  localStorage.setItem("mapProvider", selected);
-                }
-              }}
-            >
-              <SelectItem key="google">Google Maps</SelectItem>
-              <SelectItem key="osm">OpenStreetMap</SelectItem>
-              <SelectItem key="apple">Apple Maps</SelectItem>
-              <SelectItem key="none">No map</SelectItem>
-            </Select>
-          </CardBody>
-        </Card>
 
         {/* Add Calendar Modal */}
         <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)}>
