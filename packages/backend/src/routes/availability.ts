@@ -24,7 +24,7 @@ export async function availabilityRoutes(app: FastifyInstance) {
     const { user } = request as unknown as AuthenticatedRequest;
 
     let rules = await prisma.availabilityRule.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, eventTypeId: null },
       orderBy: { dayOfWeek: "asc" },
     });
 
@@ -33,7 +33,7 @@ export async function availabilityRoutes(app: FastifyInstance) {
         data: DEFAULT_RULES.map((r) => ({ ...r, userId: user.id })),
       });
       rules = await prisma.availabilityRule.findMany({
-        where: { userId: user.id },
+        where: { userId: user.id, eventTypeId: null },
         orderBy: { dayOfWeek: "asc" },
       });
     }
