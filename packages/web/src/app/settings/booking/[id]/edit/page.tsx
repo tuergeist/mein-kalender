@@ -64,8 +64,7 @@ export default function EditEventTypePage() {
 
   useEffect(() => {
     if (accessToken) {
-      loadCalendars();
-      loadEventType();
+      Promise.all([loadCalendars(), loadEventType()]).then(() => setLoading(false));
     }
   }, [accessToken]);
 
@@ -100,7 +99,6 @@ export default function EditEventTypePage() {
       setFormCustomHours(hasCustomRules);
       setFormRules(hasCustomRules ? (et.availabilityRules ?? []) : DEFAULT_RULES.map((r) => ({ ...r })));
     }
-    setLoading(false);
   }
 
   async function handleSave() {
