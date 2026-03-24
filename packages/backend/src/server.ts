@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import compress from "@fastify/compress";
+import multipart from "@fastify/multipart";
 import bcrypt from "bcrypt";
 import { validateEnv } from "./lib/env";
 import { prisma } from "./lib/prisma";
@@ -20,6 +21,7 @@ import { profileRoutes } from "./routes/profile";
 import { publicBookingRoutes } from "./routes/public-booking";
 import { icsFeedsRoutes } from "./routes/ics-feeds";
 import { icsServeRoutes } from "./routes/ics-serve";
+import { userImageRoutes } from "./routes/user-images";
 
 validateEnv();
 
@@ -27,6 +29,7 @@ const server = Fastify({ logger: true });
 
 server.register(cors, { origin: true });
 server.register(compress);
+server.register(multipart, { limits: { fileSize: 5 * 1024 * 1024 } });
 server.register(healthRoutes);
 server.register(sourcesRoutes);
 server.register(eventsRoutes);
@@ -43,6 +46,7 @@ server.register(profileRoutes);
 server.register(publicBookingRoutes);
 server.register(icsFeedsRoutes);
 server.register(icsServeRoutes);
+server.register(userImageRoutes);
 
 async function seedAdminUser() {
   const email = "admin@admin.local";

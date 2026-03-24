@@ -29,6 +29,7 @@ model User {
   availabilityRules  AvailabilityRule[]
   bookings           Booking[]
   icsFeeds           IcsFeed[]
+  images             UserImage[]
 
   @@map("users")
 }
@@ -221,4 +222,18 @@ model IcsFeed {
 
   @@index([userId])
   @@map("ics_feeds")
+}
+
+model UserImage {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "avatar" or "background"
+  data      Bytes
+  mimeType  String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("user_images")
 }
