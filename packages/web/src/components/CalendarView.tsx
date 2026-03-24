@@ -37,7 +37,7 @@ export function CalendarView() {
   const calendarRef = useRef<FullCalendar>(null);
   const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
   const [visibleCalendarIds, setVisibleCalendarIds] = useState<Set<string> | null>(null);
-  const [currentView, setCurrentView] = useState("dayGridMonth");
+  const [currentView, setCurrentView] = useState("timeGridWeek");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null);

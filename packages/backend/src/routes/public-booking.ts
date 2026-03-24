@@ -18,7 +18,10 @@ export async function publicBookingRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { username, slug } = request.params;
 
-      const user = await prisma.user.findUnique({ where: { username } });
+      const user = await prisma.user.findUnique({
+        where: { username },
+        select: { id: true, email: true, username: true, displayName: true, avatarUrl: true, brandColor: true, accentColor: true, backgroundUrl: true },
+      });
       if (!user) return reply.code(404).send({ error: "Not found" });
 
       const eventType = await prisma.eventType.findFirst({
@@ -33,6 +36,12 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       return {
         eventType,
         host: { displayName: user.displayName || user.email, username: user.username },
+        branding: {
+          brandColor: user.brandColor || null,
+          accentColor: user.accentColor || null,
+          avatarUrl: user.avatarUrl || null,
+          backgroundUrl: user.backgroundUrl || null,
+        },
       };
     }
   );
@@ -196,7 +205,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const user = await prisma.user.findUnique({
         where: { id: eventType.userId },
-        select: { username: true, displayName: true, email: true },
+        select: { username: true, displayName: true, email: true, avatarUrl: true, brandColor: true, accentColor: true, backgroundUrl: true },
       });
 
       if (!user || !user.username) {
@@ -206,6 +215,12 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       return {
         eventType: { ...eventType, userId: undefined },
         host: { displayName: user.displayName || user.email, username: user.username },
+        branding: {
+          brandColor: user.brandColor || null,
+          accentColor: user.accentColor || null,
+          avatarUrl: user.avatarUrl || null,
+          backgroundUrl: user.backgroundUrl || null,
+        },
       };
     }
   );

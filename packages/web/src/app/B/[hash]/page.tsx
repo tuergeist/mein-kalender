@@ -22,6 +22,13 @@ interface HostInfo {
   username: string;
 }
 
+interface BrandingInfo {
+  brandColor: string | null;
+  accentColor: string | null;
+  avatarUrl: string | null;
+  backgroundUrl: string | null;
+}
+
 type Step = "loading" | "error" | "date" | "time" | "form" | "confirmed";
 
 export default function ShortBookingPage() {
@@ -30,6 +37,7 @@ export default function ShortBookingPage() {
 
   const [eventType, setEventType] = useState<EventTypeInfo | null>(null);
   const [host, setHost] = useState<HostInfo | null>(null);
+  const [branding, setBranding] = useState<BrandingInfo | null>(null);
   const [step, setStep] = useState<Step>("loading");
 
   const [currentMonth, setCurrentMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
@@ -53,6 +61,7 @@ export default function ShortBookingPage() {
       const data = await res.json();
       setEventType(data.eventType);
       setHost(data.host);
+      setBranding(data.branding || null);
       setStep("date");
     });
   }, [hash]);
@@ -111,12 +120,23 @@ export default function ShortBookingPage() {
   if (step === "error") return <div className="flex min-h-screen items-center justify-center bg-gray-50"><Card className="max-w-md"><CardBody className="text-center"><p className="text-lg font-medium text-gray-600">Booking page not found</p></CardBody></Card></div>;
   if (!eventType || !host) return null;
 
+  const brandColor = branding?.brandColor || undefined;
+  const accentColor = branding?.accentColor || undefined;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+    <div
+      className="flex min-h-screen items-center justify-center bg-gray-50 p-4"
+      style={branding?.backgroundUrl ? { backgroundImage: `linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url(${branding.backgroundUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+    >
       <Card className="w-full max-w-3xl">
         <CardBody className="flex flex-col gap-0 p-0 md:flex-row">
           <div className="border-b border-gray-200 p-6 md:w-64 md:border-b-0 md:border-r">
-            <p className="text-sm text-gray-500">{host.displayName}</p>
+            <div className="flex items-center gap-2">
+              {branding?.avatarUrl && (
+                <img src={branding.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              )}
+              <p className="text-sm text-gray-500">{host.displayName}</p>
+            </div>
             <h1 className="mt-1 text-xl font-bold" style={{ color: eventType.color }}>{eventType.name}</h1>
             <p className="mt-2 text-sm text-gray-500">{eventType.durationMinutes} min</p>
             {eventType.location && <p className="mt-1 text-sm text-gray-500">{eventType.location}</p>}
@@ -135,7 +155,7 @@ export default function ShortBookingPage() {
                 <p className="mt-1 text-sm text-gray-500">You will receive a calendar invitation by email.</p>
                 {eventType.redirectUrl && (
                   <div className="mt-6">
-                    <a href={eventType.redirectUrl} className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90">
+                    <a href={eventType.redirectUrl} className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90" style={{ backgroundColor: brandColor || "var(--heroui-primary)" }}>
                       {eventType.redirectTitle || "Continue"}
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </a>
@@ -152,7 +172,7 @@ export default function ShortBookingPage() {
                   <Input label="Email" type="email" isRequired value={guestEmail} onValueChange={setGuestEmail} />
                   <Textarea label="Notes (optional)" value={notes} onValueChange={setNotes} minRows={2} />
                   {formError && <p className="text-sm text-red-500">{formError}</p>}
-                  <Button color="primary" className="w-full" isLoading={submitting} onPress={handleSubmit}>Book appointment</Button>
+                  <Button color={brandColor ? undefined : "primary"} className="w-full text-white" style={brandColor ? { backgroundColor: brandColor } : undefined} isLoading={submitting} onPress={handleSubmit}>Book appointment</Button>
                 </div>
               </div>
             )}
@@ -177,7 +197,7 @@ export default function ShortBookingPage() {
                         const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                         const isPast = dateObj < today;
                         const isSelected = dateStr === selectedDate;
-                        return <button key={day} disabled={isPast} onClick={() => { setSelectedDate(dateStr); setSelectedSlot(null); }} className={`rounded-full py-1.5 text-sm transition-colors ${isPast ? "cursor-not-allowed text-gray-300" : isSelected ? "bg-primary text-white font-bold" : "hover:bg-gray-100 text-gray-700 font-medium"}`}>{day}</button>;
+                        return <button key={day} disabled={isPast} onClick={() => { setSelectedDate(dateStr); setSelectedSlot(null); }} className={`rounded-full py-1.5 text-sm transition-colors ${isPast ? "cursor-not-allowed text-gray-300" : isSelected ? `${!brandColor ? "bg-primary" : ""} text-white font-bold` : "hover:bg-gray-100 text-gray-700 font-medium"}`} style={isSelected && brandColor ? { backgroundColor: brandColor } : undefined}>{day}</button>;
                       })}
                     </div>
                   </div>
@@ -185,7 +205,7 @@ export default function ShortBookingPage() {
                     <div className="w-36 shrink-0">
                       <p className="mb-2 text-center text-sm font-medium text-gray-500">{new Date(selectedDate + "T00:00:00").toLocaleDateString("de-DE", { day: "numeric", month: "short" })}</p>
                       <div className="max-h-72 space-y-1.5 overflow-y-auto">
-                        {slotsLoading ? <p className="text-center text-xs text-gray-400">Loading...</p> : slots.length === 0 ? <p className="text-center text-xs text-gray-400">No available slots</p> : slots.map((slot) => <Button key={slot} size="sm" variant="bordered" className="w-full" onPress={() => setSelectedSlot(slot)}>{formatTime(slot)}</Button>)}
+                        {slotsLoading ? <p className="text-center text-xs text-gray-400">Loading...</p> : slots.length === 0 ? <p className="text-center text-xs text-gray-400">No available slots</p> : slots.map((slot) => <Button key={slot} size="sm" variant="bordered" className="w-full" style={accentColor ? { borderColor: accentColor, color: accentColor } : undefined} onPress={() => setSelectedSlot(slot)}>{formatTime(slot)}</Button>)}
                       </div>
                     </div>
                   )}

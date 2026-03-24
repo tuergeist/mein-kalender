@@ -15,7 +15,11 @@ export async function profileRoutes(app: FastifyInstance) {
 
     const profile = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { id: true, email: true, username: true, displayName: true, avatarUrl: true, bookingCalendarEntryId: true },
+      select: {
+        id: true, email: true, username: true, displayName: true, avatarUrl: true,
+        brandColor: true, accentColor: true, backgroundUrl: true,
+        bookingCalendarEntryId: true,
+      },
     });
 
     return profile;
@@ -46,6 +50,37 @@ export async function profileRoutes(app: FastifyInstance) {
         where: { id: user.id },
         data: { username },
         select: { id: true, email: true, username: true, displayName: true },
+      });
+
+      return updated;
+    }
+  );
+
+  // Update branding
+  app.put<{ Body: { brandColor?: string | null; accentColor?: string | null; avatarUrl?: string | null; backgroundUrl?: string | null } }>(
+    "/api/profile/branding",
+    async (request, reply) => {
+      const { user } = request as unknown as AuthenticatedRequest;
+      const { brandColor, accentColor, avatarUrl, backgroundUrl } = request.body;
+
+      const hexPattern = /^#[0-9a-fA-F]{6}$/;
+      if (brandColor !== undefined && brandColor !== null && !hexPattern.test(brandColor)) {
+        return reply.code(400).send({ error: "brandColor must be a valid hex color (e.g. #e11d48)" });
+      }
+      if (accentColor !== undefined && accentColor !== null && !hexPattern.test(accentColor)) {
+        return reply.code(400).send({ error: "accentColor must be a valid hex color (e.g. #3b82f6)" });
+      }
+
+      const data: Record<string, string | null> = {};
+      if (brandColor !== undefined) data.brandColor = brandColor;
+      if (accentColor !== undefined) data.accentColor = accentColor;
+      if (avatarUrl !== undefined) data.avatarUrl = avatarUrl;
+      if (backgroundUrl !== undefined) data.backgroundUrl = backgroundUrl;
+
+      const updated = await prisma.user.update({
+        where: { id: user.id },
+        data,
+        select: { brandColor: true, accentColor: true, avatarUrl: true, backgroundUrl: true },
       });
 
       return updated;

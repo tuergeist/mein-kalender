@@ -23,6 +23,13 @@ interface HostInfo {
   username: string;
 }
 
+interface BrandingInfo {
+  brandColor: string | null;
+  accentColor: string | null;
+  avatarUrl: string | null;
+  backgroundUrl: string | null;
+}
+
 type Step = "date" | "time" | "form" | "confirmed";
 
 export default function BookingPage() {
@@ -32,6 +39,7 @@ export default function BookingPage() {
 
   const [eventType, setEventType] = useState<EventTypeInfo | null>(null);
   const [host, setHost] = useState<HostInfo | null>(null);
+  const [branding, setBranding] = useState<BrandingInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -75,6 +83,7 @@ export default function BookingPage() {
         const data = await res.json();
         setEventType(data.eventType);
         setHost(data.host);
+        setBranding(data.branding || null);
       })
       .finally(() => setLoading(false));
   }, [username, slug]);
@@ -189,13 +198,33 @@ export default function BookingPage() {
     );
   }
 
+  const brandColor = branding?.brandColor || undefined;
+  const accentColor = branding?.accentColor || undefined;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+    <div
+      className="flex min-h-screen items-center justify-center bg-gray-50 p-4"
+      style={{
+        ...(branding?.backgroundUrl
+          ? { backgroundImage: `linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url(${branding.backgroundUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+          : {}),
+      }}
+    >
       <Card className="w-full max-w-3xl">
         <CardBody className="flex flex-col gap-0 p-0 md:flex-row">
           {/* Left panel — event info */}
           <div className="border-b border-gray-200 p-6 md:w-64 md:border-b-0 md:border-r">
-            <p className="text-sm text-gray-500">{host.displayName}</p>
+            <div className="flex items-center gap-2">
+              {branding?.avatarUrl && (
+                <img
+                  src={branding.avatarUrl}
+                  alt=""
+                  className="h-8 w-8 rounded-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+              )}
+              <p className="text-sm text-gray-500">{host.displayName}</p>
+            </div>
             <h1 className="mt-1 text-xl font-bold" style={{ color: eventType.color }}>
               {eventType.name}
             </h1>
@@ -236,7 +265,8 @@ export default function BookingPage() {
                   <div className="mt-6">
                     <a
                       href={eventType.redirectUrl}
-                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                      className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                      style={{ backgroundColor: brandColor || "var(--heroui-primary)" }}
                     >
                       {eventType.redirectTitle || "Continue"}
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -281,8 +311,9 @@ export default function BookingPage() {
                   />
                   {formError && <p className="text-sm text-red-500">{formError}</p>}
                   <Button
-                    color="primary"
-                    className="w-full"
+                    color={brandColor ? undefined : "primary"}
+                    className="w-full text-white"
+                    style={brandColor ? { backgroundColor: brandColor } : undefined}
                     isLoading={submitting}
                     onPress={handleSubmit}
                   >
@@ -354,9 +385,10 @@ export default function BookingPage() {
                               isPast
                                 ? "cursor-not-allowed text-gray-300"
                                 : isSelected
-                                  ? "bg-primary text-white font-bold"
+                                  ? `${!brandColor ? "bg-primary" : ""} text-white font-bold`
                                   : "hover:bg-gray-100 text-gray-700 font-medium"
                             }`}
+                            style={isSelected && brandColor ? { backgroundColor: brandColor } : undefined}
                           >
                             {day}
                           </button>
@@ -383,6 +415,7 @@ export default function BookingPage() {
                               size="sm"
                               variant="bordered"
                               className="w-full"
+                              style={accentColor ? { borderColor: accentColor, color: accentColor } : undefined}
                               onPress={() => setSelectedSlot(slot)}
                             >
                               {formatTime(slot)}
