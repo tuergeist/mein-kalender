@@ -155,7 +155,6 @@ export async function publicBookingRoutes(app: FastifyInstance) {
             startTime: start,
             endTime: end,
             allDay: false,
-            attendees: [{ email: guestEmail, name: guestName }],
           });
           providerEventId = calEvent.sourceEventId;
         }
