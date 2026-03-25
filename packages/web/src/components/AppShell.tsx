@@ -13,7 +13,7 @@ import {
 import Link from "next/link";
 
 export type AppSection = "calendar" | "bookings" | "sync" | "settings";
-export type SettingsSubSection = "sources" | "booking" | "profile" | "other";
+export type SettingsSubSection = "sources" | "events" | "booking" | "profile" | "other";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -24,6 +24,7 @@ interface AppShellProps {
 
 const SETTINGS_NAV: { key: SettingsSubSection; label: string; href: string; icon: string }[] = [
   { key: "sources", label: "Calendar Sources", href: "/settings", icon: "M4 4v5h5M20 20v-5h-5M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" },
+  { key: "events", label: "Event Types", href: "/settings/events", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
   { key: "booking", label: "Booking", href: "/settings/booking", icon: "M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2M9 14l2 2 4-4M12 2v4" },
   { key: "profile", label: "Profile", href: "/settings/profile", icon: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z" },
   { key: "other", label: "Preferences", href: "/settings/preferences", icon: "M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" },
