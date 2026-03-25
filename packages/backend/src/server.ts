@@ -22,6 +22,7 @@ import { publicBookingRoutes } from "./routes/public-booking";
 import { icsFeedsRoutes } from "./routes/ics-feeds";
 import { icsServeRoutes } from "./routes/ics-serve";
 import { userImageRoutes } from "./routes/user-images";
+import { syncTargetsRoutes } from "./routes/sync-targets";
 
 validateEnv();
 
@@ -47,6 +48,7 @@ server.register(publicBookingRoutes);
 server.register(icsFeedsRoutes);
 server.register(icsServeRoutes);
 server.register(userImageRoutes);
+server.register(syncTargetsRoutes);
 
 async function seedAdminUser() {
   const email = "admin@admin.local";

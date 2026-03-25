@@ -26,29 +26,47 @@ interface CalendarSource {
   calendarEntries: CalendarEntry[];
 }
 
+interface SyncTarget {
+  id: string;
+  name: string;
+  syncMode: string;
+  syncDaysInAdvance: number;
+  skipWorkLocation: boolean;
+  skipSingleDayAllDay: boolean;
+  skipDeclined: boolean;
+  skipFree: boolean;
+  source: { id: string; provider: string; label: string | null };
+  sourceCalendars: Array<{ id: string; name: string }>;
+}
+
 export default function SyncPage() {
   const { data: session } = useSession();
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
   const [sources, setSources] = useState<CalendarSource[]>([]);
-  const [targetCalendarId, setTargetCalendarId] = useState("");
-  const [syncDaysInAdvance, setSyncDaysInAdvance] = useState(30);
-  const [skipWorkLocation, setSkipWorkLocation] = useState(true);
-  const [skipSingleDayAllDay, setSkipSingleDayAllDay] = useState(false);
-  const [skipDeclined, setSkipDeclined] = useState(true);
-  const [skipFree, setSkipFree] = useState(false);
-  const [sourceCalendarIds, setSourceCalendarIds] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
+  const [syncTargets, setSyncTargets] = useState<SyncTarget[]>([]);
 
   // Fetch days in advance (source-level)
   const [fetchDays, setFetchDays] = useState(90);
   const [fetchDaysDirty, setFetchDaysDirty] = useState(false);
   const [fetchDaysSaving, setFetchDaysSaving] = useState(false);
 
-  // Unset target
-  const [showUnsetModal, setShowUnsetModal] = useState(false);
-  const [unsetLoading, setUnsetLoading] = useState(false);
+  // Add/edit target form
+  const [showTargetForm, setShowTargetForm] = useState(false);
+  const [editingTargetId, setEditingTargetId] = useState<string | null>(null);
+  const [formTargetCalendarId, setFormTargetCalendarId] = useState("");
+  const [formSyncMode, setFormSyncMode] = useState("full");
+  const [formSyncDays, setFormSyncDays] = useState(30);
+  const [formSkipWorkLocation, setFormSkipWorkLocation] = useState(true);
+  const [formSkipSingleDayAllDay, setFormSkipSingleDayAllDay] = useState(false);
+  const [formSkipDeclined, setFormSkipDeclined] = useState(true);
+  const [formSkipFree, setFormSkipFree] = useState(false);
+  const [formSourceCalendarIds, setFormSourceCalendarIds] = useState<string[]>([]);
+  const [formSaving, setFormSaving] = useState(false);
+
+  // Delete target
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Cleanup
   const [cleanupCalendarId, setCleanupCalendarId] = useState("");
@@ -71,29 +89,22 @@ export default function SyncPage() {
 
   async function loadData() {
     if (!accessToken) return;
-    const [sourcesRes, targetRes, feedsRes] = await Promise.all([
+    const [sourcesRes, targetsRes, feedsRes] = await Promise.all([
       apiAuthFetch("/api/sources", accessToken),
-      apiAuthFetch("/api/target-calendar", accessToken),
+      apiAuthFetch("/api/sync-targets", accessToken),
       apiAuthFetch("/api/ics-feeds", accessToken),
     ]);
     if (sourcesRes.ok) {
       const data = await sourcesRes.json();
       setSources(data);
-      // Use the max fetchDaysInAdvance across sources as the display value
       if (data.length > 0) {
         const maxFetch = Math.max(...data.map((s: CalendarSource) => s.fetchDaysInAdvance || 90));
         setFetchDays(maxFetch);
       }
     }
-    if (targetRes.ok) {
-      const data = await targetRes.json();
-      setTargetCalendarId(data.targetCalendar?.id || "");
-      setSyncDaysInAdvance(data.targetCalendar?.syncDaysInAdvance ?? 30);
-      setSkipWorkLocation(data.targetCalendar?.skipWorkLocation ?? true);
-      setSkipSingleDayAllDay(data.targetCalendar?.skipSingleDayAllDay ?? false);
-      setSkipDeclined(data.targetCalendar?.skipDeclined ?? true);
-      setSkipFree(data.targetCalendar?.skipFree ?? false);
-      setSourceCalendarIds((data.targetCalendar?.sourceCalendars ?? []).map((c: { id: string }) => c.id));
+    if (targetsRes.ok) {
+      const data = await targetsRes.json();
+      setSyncTargets(data.targets || []);
     }
     if (feedsRes.ok) setIcsFeeds(await feedsRes.json());
   }
@@ -102,33 +113,77 @@ export default function SyncPage() {
     s.calendarEntries.filter((e) => !e.readOnly).map((e) => ({ ...e, sourceName: s.label || s.provider }))
   );
 
-  async function saveTargetSettings() {
-    if (!accessToken || !targetCalendarId) return;
-    setSaving(true);
-    await apiAuthFetch("/api/target-calendar", accessToken, {
-      method: "PUT",
-      body: JSON.stringify({
-        calendarEntryId: targetCalendarId,
-        syncDaysInAdvance,
-        skipWorkLocation,
-        skipSingleDayAllDay,
-        skipDeclined,
-        skipFree,
-        sourceCalendarEntryIds: sourceCalendarIds,
-      }),
-    });
-    setSaving(false);
-    setDirty(false);
+  const targetCalendarIds = new Set(syncTargets.map((t) => t.id));
 
-    // Warn if fetch window is smaller than sync window
-    if (fetchDays < syncDaysInAdvance) {
-      const raise = confirm(
-        `Your source calendars only fetch ${fetchDays} days ahead, but sync is set to ${syncDaysInAdvance} days. Raise the fetch window to ${syncDaysInAdvance} days?`
-      );
-      if (raise) {
-        await saveFetchDays(syncDaysInAdvance);
-      }
+  function openAddTarget() {
+    setEditingTargetId(null);
+    setFormTargetCalendarId("");
+    setFormSyncMode("full");
+    setFormSyncDays(30);
+    setFormSkipWorkLocation(true);
+    setFormSkipSingleDayAllDay(false);
+    setFormSkipDeclined(true);
+    setFormSkipFree(false);
+    setFormSourceCalendarIds([]);
+    setShowTargetForm(true);
+  }
+
+  function openEditTarget(t: SyncTarget) {
+    setEditingTargetId(t.id);
+    setFormTargetCalendarId(t.id);
+    setFormSyncMode(t.syncMode);
+    setFormSyncDays(t.syncDaysInAdvance);
+    setFormSkipWorkLocation(t.skipWorkLocation);
+    setFormSkipSingleDayAllDay(t.skipSingleDayAllDay);
+    setFormSkipDeclined(t.skipDeclined);
+    setFormSkipFree(t.skipFree);
+    setFormSourceCalendarIds(t.sourceCalendars.map((c) => c.id));
+    setShowTargetForm(true);
+  }
+
+  async function saveTarget() {
+    if (!accessToken) return;
+    setFormSaving(true);
+    if (editingTargetId) {
+      await apiAuthFetch(`/api/sync-targets/${editingTargetId}`, accessToken, {
+        method: "PUT",
+        body: JSON.stringify({
+          syncMode: formSyncMode,
+          syncDaysInAdvance: formSyncDays,
+          skipWorkLocation: formSkipWorkLocation,
+          skipSingleDayAllDay: formSkipSingleDayAllDay,
+          skipDeclined: formSkipDeclined,
+          skipFree: formSkipFree,
+          sourceCalendarEntryIds: formSourceCalendarIds,
+        }),
+      });
+    } else {
+      await apiAuthFetch("/api/sync-targets", accessToken, {
+        method: "POST",
+        body: JSON.stringify({
+          calendarEntryId: formTargetCalendarId,
+          syncMode: formSyncMode,
+          syncDaysInAdvance: formSyncDays,
+          skipWorkLocation: formSkipWorkLocation,
+          skipSingleDayAllDay: formSkipSingleDayAllDay,
+          skipDeclined: formSkipDeclined,
+          skipFree: formSkipFree,
+          sourceCalendarEntryIds: formSourceCalendarIds,
+        }),
+      });
     }
+    setFormSaving(false);
+    setShowTargetForm(false);
+    loadData();
+  }
+
+  async function handleDeleteTarget(deleteSyncedEvents: boolean) {
+    if (!accessToken || !deleteTargetId) return;
+    setDeleteLoading(true);
+    await apiAuthFetch(`/api/sync-targets/${deleteTargetId}?deleteSyncedEvents=${deleteSyncedEvents}`, accessToken, { method: "DELETE" });
+    setDeleteLoading(false);
+    setDeleteTargetId(null);
+    loadData();
   }
 
   async function saveFetchDays(days?: number) {
@@ -179,16 +234,6 @@ export default function SyncPage() {
   }
 
   const icsFeedBaseUrl = typeof window !== "undefined" ? `${window.location.origin}/api/ics-feed` : "";
-
-  async function handleUnset(deleteSyncedEvents: boolean) {
-    if (!accessToken) return;
-    setUnsetLoading(true);
-    await apiAuthFetch(`/api/target-calendar?deleteSyncedEvents=${deleteSyncedEvents}`, accessToken, { method: "DELETE" });
-    setTargetCalendarId("");
-    setUnsetLoading(false);
-    setShowUnsetModal(false);
-    loadData();
-  }
 
   async function handleCleanup() {
     if (!accessToken || !cleanupCalendarId) return;
@@ -241,102 +286,109 @@ export default function SyncPage() {
           </CardBody>
         </Card>
 
-        {/* Target Calendar */}
+        {/* Sync Targets */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Target Calendar</h2></CardHeader>
+          <CardHeader className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Sync Targets</h2>
+            <Button size="sm" color="primary" onPress={openAddTarget}>New Sync Target</Button>
+          </CardHeader>
           <CardBody>
             <p className="mb-4 text-sm text-default-500">
-              Clone events from source calendars into a target calendar.
+              Clone events from source calendars into target calendars. Each target syncs independently.
             </p>
 
-            {allWritableEntries.length === 0 ? (
-              <p className="text-default-400">Connect a calendar with write access first.</p>
+            {syncTargets.length === 0 && !showTargetForm ? (
+              <p className="text-default-400">No sync targets configured yet.</p>
             ) : (
-              <div className="flex items-end gap-2">
-                <Select
-                  label="Target Calendar"
-                  placeholder="Select a calendar"
-                  selectedKeys={targetCalendarId ? new Set([targetCalendarId]) : new Set()}
-                  onSelectionChange={(keys) => {
-                    const selected = Array.from(keys)[0] as string;
-                    if (selected) { setTargetCalendarId(selected); setDirty(true); }
-                  }}
-                  className="flex-1"
-                >
-                  {allWritableEntries.map((entry) => (
-                    <SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>
-                      {entry.name} ({entry.sourceName})
-                    </SelectItem>
-                  ))}
-                </Select>
-                {targetCalendarId && (
-                  <Button size="sm" color="danger" variant="light" onPress={() => setShowUnsetModal(true)}>
-                    Unset
-                  </Button>
-                )}
+              <div className="space-y-3">
+                {syncTargets.map((t) => (
+                  <div key={t.id} className="rounded-lg border border-default-200 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{t.name}</span>
+                        <span className="rounded bg-default-100 px-1.5 py-0.5 text-xs font-medium text-default-600">
+                          {t.syncMode === "blocked" ? "Blocked" : "Full"}
+                        </span>
+                        <span className="text-xs text-default-400">{t.source.label || t.source.provider}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="light" onPress={() => openEditTarget(t)}>Edit</Button>
+                        <Button size="sm" color="danger" variant="light" onPress={() => setDeleteTargetId(t.id)}>Remove</Button>
+                      </div>
+                    </div>
+                    <p className="mt-1 text-xs text-default-400">
+                      {t.sourceCalendars.length === 0 ? "All source calendars" : `Sources: ${t.sourceCalendars.map((c) => c.name).join(", ")}`}
+                      {" "}&bull; {t.syncDaysInAdvance} days
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
 
-            {targetCalendarId && (
-              <div className="mt-4 space-y-4">
-                <Select
-                  label="Sync period"
-                  selectedKeys={new Set([String(syncDaysInAdvance)])}
-                  onSelectionChange={(keys) => {
-                    const d = Number(Array.from(keys)[0]);
-                    if (d) { setSyncDaysInAdvance(d); setDirty(true); }
-                  }}
-                  size="sm"
-                  className="max-w-xs"
-                >
-                  <SelectItem key="30">30 days in advance</SelectItem>
-                  <SelectItem key="60">60 days in advance</SelectItem>
-                  <SelectItem key="90">90 days in advance</SelectItem>
-                </Select>
+            {/* Add/Edit target form */}
+            {showTargetForm && (
+              <div className="mt-4 space-y-4 rounded-lg border border-primary-200 bg-primary-50/30 p-4">
+                <p className="text-sm font-semibold">{editingTargetId ? "Edit Sync Target" : "New Sync Target"}</p>
+                {!editingTargetId && (
+                  <Select
+                    label="Target Calendar"
+                    placeholder="Select a calendar"
+                    selectedKeys={formTargetCalendarId ? new Set([formTargetCalendarId]) : new Set()}
+                    onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFormTargetCalendarId(s); }}
+                    size="sm"
+                  >
+                    {allWritableEntries.filter((e) => !targetCalendarIds.has(e.id)).map((entry) => (
+                      <SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>
+                        {entry.name} ({entry.sourceName})
+                      </SelectItem>
+                    ))}
+                  </Select>
+                )}
+                <div className="flex gap-3">
+                  <Select
+                    label="Sync mode"
+                    selectedKeys={new Set([formSyncMode])}
+                    onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFormSyncMode(s); }}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <SelectItem key="full">Full details</SelectItem>
+                    <SelectItem key="blocked">Blocked only (Busy)</SelectItem>
+                  </Select>
+                  <Select
+                    label="Sync period"
+                    selectedKeys={new Set([String(formSyncDays)])}
+                    onSelectionChange={(keys) => { const d = Number(Array.from(keys)[0]); if (d) setFormSyncDays(d); }}
+                    size="sm"
+                    className="w-44"
+                  >
+                    <SelectItem key="30">30 days</SelectItem>
+                    <SelectItem key="60">60 days</SelectItem>
+                    <SelectItem key="90">90 days</SelectItem>
+                  </Select>
+                </div>
                 <div className="space-y-2">
-                  <Switch size="sm" isSelected={skipWorkLocation} onValueChange={(v) => { setSkipWorkLocation(v); setDirty(true); }}>
+                  <Switch size="sm" isSelected={formSkipWorkLocation} onValueChange={setFormSkipWorkLocation}>
                     <span className="text-sm">Skip work location events</span>
                   </Switch>
-                  <Switch size="sm" isSelected={skipSingleDayAllDay} onValueChange={(v) => { setSkipSingleDayAllDay(v); setDirty(true); }}>
-                    <span className="text-sm">Skip single-day all-day events (birthdays, holidays)</span>
+                  <Switch size="sm" isSelected={formSkipSingleDayAllDay} onValueChange={setFormSkipSingleDayAllDay}>
+                    <span className="text-sm">Skip single-day all-day events</span>
                   </Switch>
-                  <Switch size="sm" isSelected={skipDeclined} onValueChange={(v) => { setSkipDeclined(v); setDirty(true); }}>
+                  <Switch size="sm" isSelected={formSkipDeclined} onValueChange={setFormSkipDeclined}>
                     <span className="text-sm">Skip declined events</span>
                   </Switch>
-                  <Switch size="sm" isSelected={skipFree} onValueChange={(v) => { setSkipFree(v); setDirty(true); }}>
+                  <Switch size="sm" isSelected={formSkipFree} onValueChange={setFormSkipFree}>
                     <span className="text-sm">Skip free/tentative events</span>
                   </Switch>
                 </div>
-
-                <Divider />
                 <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-sm font-medium">Source calendars to sync</p>
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      onPress={() => {
-                        try {
-                          const stored = localStorage.getItem("visibleCalendarIds");
-                          if (stored) {
-                            const ids = JSON.parse(stored) as string[];
-                            if (ids.length > 0) {
-                              setSourceCalendarIds(ids);
-                              setDirty(true);
-                            }
-                          }
-                        } catch { /* ignore */ }
-                      }}
-                    >
-                      Use visible calendars
-                    </Button>
-                  </div>
+                  <p className="mb-2 text-sm font-medium">Source calendars</p>
                   <p className="mb-2 text-xs text-default-400">
-                    {sourceCalendarIds.length === 0 ? "All calendars (default)" : `${sourceCalendarIds.length} selected`}
+                    {formSourceCalendarIds.length === 0 ? "All calendars (default)" : `${formSourceCalendarIds.length} selected`}
                   </p>
-                  <CheckboxGroup size="sm" value={sourceCalendarIds} onChange={(vals) => { setSourceCalendarIds(vals as string[]); setDirty(true); }}>
+                  <CheckboxGroup size="sm" value={formSourceCalendarIds} onChange={(vals) => setFormSourceCalendarIds(vals as string[])}>
                     {sources.map((source) => {
-                      const entries = source.calendarEntries.filter((e) => e.id !== targetCalendarId);
+                      const entries = source.calendarEntries.filter((e) => e.id !== formTargetCalendarId);
                       if (entries.length === 0) return null;
                       return (
                         <div key={source.id} className="mb-3">
@@ -361,10 +413,12 @@ export default function SyncPage() {
                     })}
                   </CheckboxGroup>
                 </div>
-
-                <Button size="sm" color="primary" isLoading={saving} isDisabled={!dirty} onPress={saveTargetSettings}>
-                  Save
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="light" onPress={() => setShowTargetForm(false)}>Cancel</Button>
+                  <Button size="sm" color="primary" isLoading={formSaving} isDisabled={!editingTargetId && !formTargetCalendarId} onPress={saveTarget}>
+                    {editingTargetId ? "Save" : "Create"}
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -516,17 +570,17 @@ export default function SyncPage() {
           </CardBody>
         </Card>
 
-        {/* Unset Modal */}
-        <Modal isOpen={showUnsetModal} onClose={() => setShowUnsetModal(false)}>
+        {/* Delete Target Modal */}
+        <Modal isOpen={!!deleteTargetId} onClose={() => setDeleteTargetId(null)}>
           <ModalContent>
-            <ModalHeader>Unset Target Calendar</ModalHeader>
+            <ModalHeader>Remove Sync Target</ModalHeader>
             <ModalBody>
               <p>Delete synced [Sync] events from the target calendar?</p>
             </ModalBody>
             <ModalFooter>
-              <Button variant="light" onPress={() => setShowUnsetModal(false)} isDisabled={unsetLoading}>Cancel</Button>
-              <Button variant="flat" isLoading={unsetLoading} onPress={() => handleUnset(false)}>Keep events</Button>
-              <Button color="danger" isLoading={unsetLoading} onPress={() => handleUnset(true)}>Delete synced events</Button>
+              <Button variant="light" onPress={() => setDeleteTargetId(null)} isDisabled={deleteLoading}>Cancel</Button>
+              <Button variant="flat" isLoading={deleteLoading} onPress={() => handleDeleteTarget(false)}>Keep events</Button>
+              <Button color="danger" isLoading={deleteLoading} onPress={() => handleDeleteTarget(true)}>Delete synced events</Button>
             </ModalFooter>
           </ModalContent>
         </Modal>

@@ -234,8 +234,8 @@ async function cloneToTarget(
   token: TokenSet,
   userId: string
 ): Promise<void> {
-  // Find the user's target calendar
-  const targetEntry = await prisma.calendarEntry.findFirst({
+  // Find ALL target calendars for this user
+  const targetEntries = await prisma.calendarEntry.findMany({
     where: {
       isTarget: true,
       source: { userId },
@@ -243,9 +243,31 @@ async function cloneToTarget(
     include: { source: true, sourceCalendars: { select: { id: true } } },
   });
 
-  if (!targetEntry) return; // No target configured, skip
+  if (targetEntries.length === 0) return;
 
-  const sourceCalendarIds = (targetEntry as any).sourceCalendars?.map((c: { id: string }) => c.id) as string[] | undefined;
+  for (const targetEntry of targetEntries) {
+    await cloneToSingleTarget(prisma, userId, targetEntry);
+  }
+}
+
+async function cloneToSingleTarget(
+  prisma: PrismaClient,
+  userId: string,
+  targetEntry: {
+    id: string;
+    providerCalendarId: string;
+    syncMode: string;
+    syncDaysInAdvance: number;
+    skipWorkLocation: boolean;
+    skipSingleDayAllDay: boolean;
+    skipDeclined: boolean;
+    skipFree: boolean;
+    source: { provider: string; credentials: string };
+    sourceCalendars: Array<{ id: string }>;
+  }
+): Promise<void> {
+  const sourceCalendarIds = targetEntry.sourceCalendars?.map((c) => c.id);
+  const isBlocked = targetEntry.syncMode === "blocked";
 
   const targetProvider = getProvider(targetEntry.source.provider);
   const targetCredentials = JSON.parse(
@@ -307,6 +329,8 @@ async function cloneToTarget(
           ? { id: { in: sourceCalendarIds } }
           : { enabled: true }),
       },
+      // Loop prevention: skip events that were synced in from another target
+      title: { not: { startsWith: "[Sync]" } },
       startTime: { lte: syncCutoff },
       sourceMappings: {
         none: { targetCalendarEntryId: targetEntry.id },
@@ -343,11 +367,22 @@ async function cloneToTarget(
   const eventFingerprint = (title: string, start: Date, end: Date) =>
     `${title}|${new Date(start).toISOString()}|${new Date(end).toISOString()}`;
 
-  // Map fingerprint → existing target event ID (for reuse when same event comes from another source)
   const fingerprintToTargetId = new Map<string, string>();
   for (const m of existingMappings) {
     const fp = eventFingerprint(m.sourceEvent.title, m.sourceEvent.startTime, m.sourceEvent.endTime);
     fingerprintToTargetId.set(fp, m.targetEventId);
+  }
+
+  // Helper: build event payload respecting syncMode
+  function buildEventPayload(event: { title: string; description: string | null; location: string | null; startTime: Date; endTime: Date; allDay: boolean }) {
+    return {
+      title: isBlocked ? "[Sync] Busy" : `[Sync] ${event.title}`,
+      description: isBlocked ? null : event.description,
+      location: isBlocked ? null : event.location,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      allDay: event.allDay,
+    };
   }
 
   for (const event of filteredEvents) {
@@ -355,7 +390,6 @@ async function cloneToTarget(
     const existingTargetId = fingerprintToTargetId.get(fp);
 
     if (existingTargetId) {
-      // Same event already synced (from another source calendar) — just create the mapping
       try {
         await prisma.targetEventMapping.create({
           data: {
@@ -375,14 +409,7 @@ async function cloneToTarget(
       const cloned = await targetProvider.createEvent(
         targetToken,
         targetEntry.providerCalendarId,
-        {
-          title: `[Sync] ${event.title}`,
-          description: event.description,
-          location: event.location,
-          startTime: event.startTime,
-          endTime: event.endTime,
-          allDay: event.allDay,
-        }
+        buildEventPayload(event)
       );
 
       try {
@@ -394,7 +421,6 @@ async function cloneToTarget(
           },
         });
       } catch (dupErr) {
-        // Mapping already exists — delete the orphaned target event we just created
         try {
           await targetProvider.deleteEvent(targetToken, targetEntry.providerCalendarId, cloned.sourceEventId);
           console.log(`[sync] Cleaned up duplicate target event for "${event.title}"`);
@@ -403,11 +429,9 @@ async function cloneToTarget(
         }
       }
 
-      // Track this fingerprint so subsequent events with the same content reuse it
       fingerprintToTargetId.set(fp, cloned.sourceEventId);
     } catch (err) {
       console.error(`[sync] Failed to clone event ${event.id} to target:`, err);
-      // Continue with other events
     }
   }
 
@@ -432,14 +456,7 @@ async function cloneToTarget(
             targetToken,
             targetEntry.providerCalendarId,
             mapping.targetEventId,
-            {
-              title: `[Sync] ${mapping.sourceEvent.title}`,
-              description: mapping.sourceEvent.description,
-              location: mapping.sourceEvent.location,
-              startTime: mapping.sourceEvent.startTime,
-              endTime: mapping.sourceEvent.endTime,
-              allDay: mapping.sourceEvent.allDay,
-            }
+            buildEventPayload(mapping.sourceEvent)
           );
           await prisma.targetEventMapping.update({
             where: { id: mapping.id },

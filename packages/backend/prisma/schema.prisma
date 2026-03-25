@@ -83,6 +83,7 @@ model CalendarEntry {
   color              String  @default("#3b82f6")
   providerCalendarId String
   isTarget           Boolean @default(false)
+  syncMode           String  @default("full") // "full" or "blocked"
   syncDaysInAdvance  Int     @default(30)
   skipWorkLocation       Boolean @default(true)
   skipSingleDayAllDay   Boolean @default(false)
