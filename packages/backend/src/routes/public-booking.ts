@@ -26,7 +26,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const eventType = await prisma.eventType.findFirst({
         where: { userId: user.id, slug },
-        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true, redirectUrl: true, redirectTitle: true, redirectDelaySecs: true },
+        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true, redirectUrl: true, redirectTitle: true, redirectDelaySecs: true, brandColor: true, accentColor: true, avatarUrl: true, backgroundUrl: true },
       });
 
       if (!eventType || !eventType.enabled) {
@@ -34,13 +34,13 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       }
 
       return {
-        eventType,
+        eventType: { id: eventType.id, name: eventType.name, slug: eventType.slug, durationMinutes: eventType.durationMinutes, description: eventType.description, location: eventType.location, color: eventType.color, enabled: eventType.enabled, redirectUrl: eventType.redirectUrl, redirectTitle: eventType.redirectTitle, redirectDelaySecs: eventType.redirectDelaySecs },
         host: { displayName: user.displayName || user.email, username: user.username },
         branding: {
-          brandColor: user.brandColor || null,
-          accentColor: user.accentColor || null,
-          avatarUrl: user.avatarUrl || null,
-          backgroundUrl: user.backgroundUrl || null,
+          brandColor: eventType.brandColor || user.brandColor || null,
+          accentColor: eventType.accentColor || user.accentColor || null,
+          avatarUrl: eventType.avatarUrl || user.avatarUrl || null,
+          backgroundUrl: eventType.backgroundUrl || user.backgroundUrl || null,
         },
       };
     }
@@ -195,7 +195,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const eventType = await prisma.eventType.findUnique({
         where: { shortHash: hash },
-        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true, redirectUrl: true, redirectTitle: true, redirectDelaySecs: true, userId: true },
+        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true, redirectUrl: true, redirectTitle: true, redirectDelaySecs: true, userId: true, brandColor: true, accentColor: true, avatarUrl: true, backgroundUrl: true },
       });
 
       if (!eventType || !eventType.enabled) {
@@ -212,13 +212,13 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       }
 
       return {
-        eventType: { ...eventType, userId: undefined },
+        eventType: { ...eventType, userId: undefined, brandColor: undefined, accentColor: undefined, avatarUrl: undefined, backgroundUrl: undefined },
         host: { displayName: user.displayName || user.email, username: user.username },
         branding: {
-          brandColor: user.brandColor || null,
-          accentColor: user.accentColor || null,
-          avatarUrl: user.avatarUrl || null,
-          backgroundUrl: user.backgroundUrl || null,
+          brandColor: eventType.brandColor || user.brandColor || null,
+          accentColor: eventType.accentColor || user.accentColor || null,
+          avatarUrl: eventType.avatarUrl || user.avatarUrl || null,
+          backgroundUrl: eventType.backgroundUrl || user.backgroundUrl || null,
         },
       };
     }

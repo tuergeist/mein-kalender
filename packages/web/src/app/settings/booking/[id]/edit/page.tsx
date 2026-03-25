@@ -35,6 +35,10 @@ interface EventType {
   bookingCalendarEntryId: string | null;
   shortHash: string | null;
   availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>;
+  brandColor: string | null;
+  accentColor: string | null;
+  avatarUrl: string | null;
+  backgroundUrl: string | null;
 }
 
 export default function EditEventTypePage() {
@@ -60,6 +64,10 @@ export default function EditEventTypePage() {
   const [formRules, setFormRules] = useState(DEFAULT_RULES.map((r) => ({ ...r })));
   const [formShortLink, setFormShortLink] = useState(false);
   const [shortHash, setShortHash] = useState<string | null>(null);
+  const [formBrandColor, setFormBrandColor] = useState("");
+  const [formAccentColor, setFormAccentColor] = useState("");
+  const [formAvatarUrl, setFormAvatarUrl] = useState("");
+  const [formBackgroundUrl, setFormBackgroundUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -98,6 +106,10 @@ export default function EditEventTypePage() {
       const hasCustomRules = (et.availabilityRules ?? []).length > 0;
       setFormCustomHours(hasCustomRules);
       setFormRules(hasCustomRules ? (et.availabilityRules ?? []) : DEFAULT_RULES.map((r) => ({ ...r })));
+      setFormBrandColor(et.brandColor || "");
+      setFormAccentColor(et.accentColor || "");
+      setFormAvatarUrl(et.avatarUrl || "");
+      setFormBackgroundUrl(et.backgroundUrl || "");
     }
   }
 
@@ -116,6 +128,10 @@ export default function EditEventTypePage() {
       bookingCalendarEntryId: formBookingCalendarId || null,
       availabilityRules: formCustomHours ? formRules : undefined,
       enableShortLink: formShortLink,
+      brandColor: formBrandColor || null,
+      accentColor: formAccentColor || null,
+      avatarUrl: formAvatarUrl || null,
+      backgroundUrl: formBackgroundUrl || null,
     };
     const res = await apiAuthFetch(`/api/event-types/${id}`, accessToken, { method: "PUT", body: JSON.stringify(body) });
     setSaving(false);
@@ -223,6 +239,36 @@ export default function EditEventTypePage() {
                 ))}
               </div>
             )}
+          </CardBody>
+        </Card>
+
+        {/* Branding Override */}
+        <Card>
+          <CardHeader><h2 className="text-lg font-semibold">Branding Override</h2></CardHeader>
+          <CardBody>
+            <p className="mb-4 text-xs text-default-400">Override your default branding for this event type. Leave empty to use defaults.</p>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium">Brand Color</label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={formBrandColor || "#3b82f6"} onChange={(e) => setFormBrandColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
+                    <Input size="sm" placeholder="Use default" value={formBrandColor} onValueChange={setFormBrandColor} className="flex-1" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium">Accent Color</label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={formAccentColor || "#6366f1"} onChange={(e) => setFormAccentColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
+                    <Input size="sm" placeholder="Use default" value={formAccentColor} onValueChange={setFormAccentColor} className="flex-1" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <Input label="Profile Photo URL" size="sm" value={formAvatarUrl} onValueChange={setFormAvatarUrl} placeholder="Use default" className="flex-1" />
+                <Input label="Background Image URL" size="sm" value={formBackgroundUrl} onValueChange={setFormBackgroundUrl} placeholder="Use default" className="flex-1" />
+              </div>
+            </div>
           </CardBody>
         </Card>
 
