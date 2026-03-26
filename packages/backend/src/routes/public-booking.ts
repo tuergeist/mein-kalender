@@ -47,6 +47,41 @@ export async function publicBookingRoutes(app: FastifyInstance) {
     }
   );
 
+  // Get which days in a month have at least one available slot
+  app.get<{ Params: SlotParams; Querystring: { month: string } }>(
+    "/api/public/book/:username/:slug/available-days",
+    async (request, reply) => {
+      const { username, slug } = request.params;
+      const { month } = request.query;
+
+      if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+        return reply.code(400).send({ error: "month query param required (YYYY-MM)" });
+      }
+
+      const user = await prisma.user.findUnique({ where: { username } });
+      if (!user) return reply.code(404).send({ error: "Not found" });
+
+      const eventType = await prisma.eventType.findFirst({
+        where: { userId: user.id, slug, enabled: true },
+        include: { calendars: { select: { id: true } }, availabilityRules: true },
+      });
+      if (!eventType) return reply.code(404).send({ error: "Event type not available" });
+
+      const calendarIds = eventType.calendars.map((c) => c.id);
+      const [year, mon] = month.split("-").map(Number);
+      const daysInMonth = new Date(year, mon, 0).getDate();
+      const availableDays: string[] = [];
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(mon).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const slots = await computeSlots(user.id, eventType.durationMinutes, dateStr, calendarIds, eventType.id);
+        if (slots.length > 0) availableDays.push(dateStr);
+      }
+
+      return { month, availableDays };
+    }
+  );
+
   // Get available slots for a date
   app.get<{ Params: SlotParams; Querystring: { date: string } }>(
     "/api/public/book/:username/:slug/slots",

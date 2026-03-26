@@ -53,6 +53,8 @@ export default function BookingPage() {
   const [slots, setSlots] = useState<string[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [availableDays, setAvailableDays] = useState<Set<string>>(new Set());
+  const [availableDaysLoading, setAvailableDaysLoading] = useState(false);
 
   // Form state
   const [guestName, setGuestName] = useState("");
@@ -107,6 +109,21 @@ export default function BookingPage() {
   useEffect(() => {
     if (selectedDate) loadSlots(selectedDate);
   }, [selectedDate, loadSlots]);
+
+  // Load available days for the visible month
+  useEffect(() => {
+    if (!eventType) return;
+    const monthStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;
+    setAvailableDaysLoading(true);
+    apiFetch(`/api/public/book/${username}/${slug}/available-days?month=${monthStr}`)
+      .then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          setAvailableDays(new Set(data.availableDays));
+        }
+      })
+      .finally(() => setAvailableDaysLoading(false));
+  }, [currentMonth, eventType, username, slug]);
 
   // Submit booking
   async function handleSubmit() {
@@ -373,17 +390,19 @@ export default function BookingPage() {
                         const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                         const isPast = dateObj < today;
                         const isSelected = dateStr === selectedDate;
+                        const hasSlots = availableDays.has(dateStr);
+                        const isDisabled = isPast || (!availableDaysLoading && !hasSlots);
 
                         return (
                           <button
                             key={day}
-                            disabled={isPast}
+                            disabled={isDisabled}
                             onClick={() => {
                               setSelectedDate(dateStr);
                               setSelectedSlot(null);
                             }}
                             className={`rounded-full py-1.5 text-sm transition-colors ${
-                              isPast
+                              isDisabled
                                 ? "cursor-not-allowed text-gray-300"
                                 : isSelected
                                   ? `${!brandColor ? "bg-primary" : ""} text-white font-bold`

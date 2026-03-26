@@ -46,6 +46,8 @@ export default function ShortBookingPage() {
   const [slots, setSlots] = useState<string[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [availableDays, setAvailableDays] = useState<Set<string>>(new Set());
+  const [availableDaysLoading, setAvailableDaysLoading] = useState(false);
 
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
@@ -78,6 +80,16 @@ export default function ShortBookingPage() {
   }, [host, eventType]);
 
   useEffect(() => { if (selectedDate && host) loadSlots(selectedDate); }, [selectedDate, loadSlots, host]);
+
+  // Load available days for visible month
+  useEffect(() => {
+    if (!host || !eventType) return;
+    const monthStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;
+    setAvailableDaysLoading(true);
+    apiFetch(`/api/public/book/${host.username}/${eventType.slug}/available-days?month=${monthStr}`)
+      .then(async (res) => { if (res.ok) { const data = await res.json(); setAvailableDays(new Set(data.availableDays)); } })
+      .finally(() => setAvailableDaysLoading(false));
+  }, [currentMonth, host, eventType]);
 
   // Redirect timer
   const redirectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -198,7 +210,9 @@ export default function ShortBookingPage() {
                         const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                         const isPast = dateObj < today;
                         const isSelected = dateStr === selectedDate;
-                        return <button key={day} disabled={isPast} onClick={() => { setSelectedDate(dateStr); setSelectedSlot(null); }} className={`rounded-full py-1.5 text-sm transition-colors ${isPast ? "cursor-not-allowed text-gray-300" : isSelected ? `${!brandColor ? "bg-primary" : ""} text-white font-bold` : "hover:bg-gray-100 text-gray-700 font-medium"}`} style={isSelected && brandColor ? { backgroundColor: brandColor } : undefined}>{day}</button>;
+                        const hasSlots = availableDays.has(dateStr);
+                        const isDisabled = isPast || (!availableDaysLoading && !hasSlots);
+                        return <button key={day} disabled={isDisabled} onClick={() => { setSelectedDate(dateStr); setSelectedSlot(null); }} className={`rounded-full py-1.5 text-sm transition-colors ${isDisabled ? "cursor-not-allowed text-gray-300" : isSelected ? `${!brandColor ? "bg-primary" : ""} text-white font-bold` : "hover:bg-gray-100 text-gray-700 font-medium"}`} style={isSelected && brandColor ? { backgroundColor: brandColor } : undefined}>{day}</button>;
                       })}
                     </div>
                   </div>
