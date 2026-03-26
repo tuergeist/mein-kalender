@@ -27,6 +27,7 @@ interface BrandingInfo {
   accentColor: string | null;
   avatarUrl: string | null;
   backgroundUrl: string | null;
+  backgroundOpacity: number | null;
 }
 
 type Step = "loading" | "error" | "date" | "time" | "form" | "confirmed";
@@ -126,7 +127,7 @@ export default function ShortBookingPage() {
   return (
     <div
       className="flex min-h-screen items-center justify-center bg-gray-50 p-4"
-      style={branding?.backgroundUrl ? { backgroundImage: `linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url(${branding.backgroundUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+      style={branding?.backgroundUrl ? { backgroundImage: `linear-gradient(rgba(255,255,255,${branding.backgroundOpacity ?? 0.85}), rgba(255,255,255,${branding.backgroundOpacity ?? 0.85})), url(${branding.backgroundUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
     >
       <Card className="w-full max-w-3xl">
         <CardBody className="flex flex-col gap-0 p-0 md:flex-row">

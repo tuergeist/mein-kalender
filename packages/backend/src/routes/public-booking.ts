@@ -20,13 +20,13 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const user = await prisma.user.findUnique({
         where: { username },
-        select: { id: true, email: true, username: true, displayName: true, avatarUrl: true, brandColor: true, accentColor: true, backgroundUrl: true },
+        select: { id: true, email: true, username: true, displayName: true, avatarUrl: true, brandColor: true, accentColor: true, backgroundUrl: true, backgroundOpacity: true },
       });
       if (!user) return reply.code(404).send({ error: "Not found" });
 
       const eventType = await prisma.eventType.findFirst({
         where: { userId: user.id, slug },
-        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true, redirectUrl: true, redirectTitle: true, redirectDelaySecs: true, brandColor: true, accentColor: true, avatarUrl: true, backgroundUrl: true },
+        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true, redirectUrl: true, redirectTitle: true, redirectDelaySecs: true, brandColor: true, accentColor: true, avatarUrl: true, backgroundUrl: true, backgroundOpacity: true },
       });
 
       if (!eventType || !eventType.enabled) {
@@ -41,6 +41,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
           accentColor: eventType.accentColor || user.accentColor || null,
           avatarUrl: eventType.avatarUrl || user.avatarUrl || null,
           backgroundUrl: eventType.backgroundUrl || user.backgroundUrl || null,
+          backgroundOpacity: eventType.backgroundOpacity ?? user.backgroundOpacity ?? null,
         },
       };
     }
@@ -195,7 +196,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const eventType = await prisma.eventType.findUnique({
         where: { shortHash: hash },
-        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true, redirectUrl: true, redirectTitle: true, redirectDelaySecs: true, userId: true, brandColor: true, accentColor: true, avatarUrl: true, backgroundUrl: true },
+        select: { id: true, name: true, slug: true, durationMinutes: true, description: true, location: true, color: true, enabled: true, redirectUrl: true, redirectTitle: true, redirectDelaySecs: true, userId: true, brandColor: true, accentColor: true, avatarUrl: true, backgroundUrl: true, backgroundOpacity: true },
       });
 
       if (!eventType || !eventType.enabled) {
@@ -204,7 +205,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       const user = await prisma.user.findUnique({
         where: { id: eventType.userId },
-        select: { username: true, displayName: true, email: true, avatarUrl: true, brandColor: true, accentColor: true, backgroundUrl: true },
+        select: { username: true, displayName: true, email: true, avatarUrl: true, brandColor: true, accentColor: true, backgroundUrl: true, backgroundOpacity: true },
       });
 
       if (!user || !user.username) {
@@ -212,13 +213,14 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       }
 
       return {
-        eventType: { ...eventType, userId: undefined, brandColor: undefined, accentColor: undefined, avatarUrl: undefined, backgroundUrl: undefined },
+        eventType: { ...eventType, userId: undefined, brandColor: undefined, accentColor: undefined, avatarUrl: undefined, backgroundUrl: undefined, backgroundOpacity: undefined },
         host: { displayName: user.displayName || user.email, username: user.username },
         branding: {
           brandColor: eventType.brandColor || user.brandColor || null,
           accentColor: eventType.accentColor || user.accentColor || null,
           avatarUrl: eventType.avatarUrl || user.avatarUrl || null,
           backgroundUrl: eventType.backgroundUrl || user.backgroundUrl || null,
+          backgroundOpacity: eventType.backgroundOpacity ?? user.backgroundOpacity ?? null,
         },
       };
     }

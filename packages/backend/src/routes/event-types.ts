@@ -105,12 +105,12 @@ export async function eventTypesRoutes(app: FastifyInstance) {
   );
 
   // Update event type
-  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[]; bookingCalendarEntryId?: string | null; availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>; enableShortLink?: boolean; brandColor?: string | null; accentColor?: string | null; avatarUrl?: string | null; backgroundUrl?: string | null } }>(
+  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[]; bookingCalendarEntryId?: string | null; availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>; enableShortLink?: boolean; brandColor?: string | null; accentColor?: string | null; avatarUrl?: string | null; backgroundUrl?: string | null; backgroundOpacity?: number | null } }>(
     "/api/event-types/:id",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
       const { id } = request.params;
-      const { name, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds, bookingCalendarEntryId, availabilityRules, enableShortLink, brandColor, accentColor, avatarUrl, backgroundUrl } = request.body;
+      const { name, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds, bookingCalendarEntryId, availabilityRules, enableShortLink, brandColor, accentColor, avatarUrl, backgroundUrl, backgroundOpacity } = request.body;
 
       const existing = await prisma.eventType.findFirst({
         where: { id, userId: user.id },
@@ -148,6 +148,7 @@ export async function eventTypesRoutes(app: FastifyInstance) {
           ...(accentColor !== undefined && { accentColor: accentColor || null }),
           ...(avatarUrl !== undefined && { avatarUrl: avatarUrl || null }),
           ...(backgroundUrl !== undefined && { backgroundUrl: backgroundUrl || null }),
+          ...(backgroundOpacity !== undefined && { backgroundOpacity }),
         },
       });
 

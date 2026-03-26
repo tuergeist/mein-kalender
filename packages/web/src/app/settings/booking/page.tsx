@@ -49,6 +49,7 @@ export default function BookingSettingsPage() {
   const [accentColor, setAccentColor] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [backgroundUrl, setBackgroundUrl] = useState("");
+  const [backgroundOpacity, setBackgroundOpacity] = useState(0.85);
   const [uploading, setUploading] = useState<string | null>(null);
   const [showUsernameWarning, setShowUsernameWarning] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -63,7 +64,7 @@ export default function BookingSettingsPage() {
     if (res.ok) {
       const data = await res.json();
       setUsername(data.username || ""); setSavedUsername(data.username || ""); setBookingCalendarId(data.bookingCalendarEntryId || "");
-      setBrandColor(data.brandColor || ""); setAccentColor(data.accentColor || ""); setAvatarUrl(data.avatarUrl || ""); setBackgroundUrl(data.backgroundUrl || "");
+      setBrandColor(data.brandColor || ""); setAccentColor(data.accentColor || ""); setAvatarUrl(data.avatarUrl || ""); setBackgroundUrl(data.backgroundUrl || ""); setBackgroundOpacity(data.backgroundOpacity ?? 0.85);
     }
   }
 
@@ -134,6 +135,7 @@ export default function BookingSettingsPage() {
           accentColor: accentColor || null,
           avatarUrl: avatarUrl || null,
           backgroundUrl: backgroundUrl || null,
+          backgroundOpacity: backgroundUrl ? backgroundOpacity : null,
         }),
       }),
     ]);
@@ -230,7 +232,14 @@ export default function BookingSettingsPage() {
                   <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Upload</Button>
                 </div>
                 {backgroundUrl && (
-                  <div className="mt-2 h-12 w-full rounded bg-cover bg-center" style={{ backgroundImage: `url(${backgroundUrl})` }} />
+                  <>
+                    <div className="mt-2 h-12 w-full rounded bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,${backgroundOpacity}), rgba(255,255,255,${backgroundOpacity})), url(${backgroundUrl})` }} />
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs text-default-400 shrink-0">Overlay</span>
+                      <input type="range" min="0" max="1" step="0.05" value={backgroundOpacity} onChange={(e) => setBackgroundOpacity(parseFloat(e.target.value))} className="flex-1" />
+                      <span className="text-xs text-default-400 w-8">{Math.round(backgroundOpacity * 100)}%</span>
+                    </div>
+                  </>
                 )}
               </div>
             </div>

@@ -39,6 +39,7 @@ interface EventType {
   accentColor: string | null;
   avatarUrl: string | null;
   backgroundUrl: string | null;
+  backgroundOpacity: number | null;
 }
 
 export default function EditEventTypePage() {
@@ -68,6 +69,7 @@ export default function EditEventTypePage() {
   const [formAccentColor, setFormAccentColor] = useState("");
   const [formAvatarUrl, setFormAvatarUrl] = useState("");
   const [formBackgroundUrl, setFormBackgroundUrl] = useState("");
+  const [formBackgroundOpacity, setFormBackgroundOpacity] = useState(0.85);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
 
@@ -111,6 +113,7 @@ export default function EditEventTypePage() {
       setFormAccentColor(et.accentColor || "");
       setFormAvatarUrl(et.avatarUrl || "");
       setFormBackgroundUrl(et.backgroundUrl || "");
+      setFormBackgroundOpacity(et.backgroundOpacity ?? 0.85);
     }
   }
 
@@ -159,6 +162,7 @@ export default function EditEventTypePage() {
       accentColor: formAccentColor || null,
       avatarUrl: formAvatarUrl || null,
       backgroundUrl: formBackgroundUrl || null,
+      backgroundOpacity: formBackgroundUrl ? formBackgroundOpacity : null,
     };
     const res = await apiAuthFetch(`/api/event-types/${id}`, accessToken, { method: "PUT", body: JSON.stringify(body) });
     setSaving(false);
@@ -301,6 +305,13 @@ export default function EditEventTypePage() {
                   <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Upload</Button>
                 </div>
               </div>
+              {formBackgroundUrl && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-default-400 shrink-0">Overlay</span>
+                  <input type="range" min="0" max="1" step="0.05" value={formBackgroundOpacity} onChange={(e) => setFormBackgroundOpacity(parseFloat(e.target.value))} className="flex-1" />
+                  <span className="text-xs text-default-400 w-8">{Math.round(formBackgroundOpacity * 100)}%</span>
+                </div>
+              )}
             </div>
           </CardBody>
         </Card>
