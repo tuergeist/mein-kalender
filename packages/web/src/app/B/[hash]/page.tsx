@@ -159,7 +159,7 @@ export default function ShortBookingPage() {
               {selectedSlot && <p className="text-sm text-gray-500">{formatTime(selectedSlot)} – {formatTime(new Date(new Date(selectedSlot).getTime() + eventType.durationMinutes * 60000).toISOString())}</p>}</>
             )}
           </div>
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-6 md:min-h-[420px]">
             {currentStep === "confirmed" && confirmation && (
               <div className="text-center">
                 <div className="mb-4 text-4xl">&#10003;</div>

@@ -268,7 +268,7 @@ export default function BookingPage() {
           </div>
 
           {/* Right panel */}
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-6 md:min-h-[420px]">
             {step === "confirmed" && confirmation && (
               <div className="text-center">
                 <div className="mb-4 text-4xl">&#10003;</div>
