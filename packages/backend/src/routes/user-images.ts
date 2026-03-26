@@ -11,12 +11,13 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function userImageRoutes(app: FastifyInstance) {
   // Upload avatar or background (authenticated)
-  app.post<{ Params: { type: string } }>(
+  app.post<{ Params: { type: string }; Querystring: { skipUserUpdate?: string } }>(
     "/api/profile/image/:type",
     { preHandler: authenticate },
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
       const { type } = request.params;
+      const skipUserUpdate = request.query.skipUserUpdate === "true";
 
       if (type !== "avatar" && type !== "background") {
         return reply.code(400).send({ error: "Type must be 'avatar' or 'background'" });
@@ -47,12 +48,13 @@ export async function userImageRoutes(app: FastifyInstance) {
         update: { data, mimeType: file.mimetype },
       });
 
-      // Update the user's URL field to point to the served image
       const imageUrl = `/api/public/image/${image.id}`;
-      if (type === "avatar") {
-        await prisma.user.update({ where: { id: user.id }, data: { avatarUrl: imageUrl } });
-      } else {
-        await prisma.user.update({ where: { id: user.id }, data: { backgroundUrl: imageUrl } });
+      if (!skipUserUpdate) {
+        if (type === "avatar") {
+          await prisma.user.update({ where: { id: user.id }, data: { avatarUrl: imageUrl } });
+        } else {
+          await prisma.user.update({ where: { id: user.id }, data: { backgroundUrl: imageUrl } });
+        }
       }
 
       return { url: imageUrl };
