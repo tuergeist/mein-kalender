@@ -84,14 +84,14 @@ export default function EventTypesPage() {
                       {savedUsername && et.enabled && (
                         <div className="ml-6 mt-2 space-y-1">
                           <div className="flex items-center gap-1.5">
-                            <code className="rounded bg-default-100 px-2 py-1 text-xs text-default-600">{bookingBaseUrl}/{et.slug}</code>
+                            <a href={`${bookingBaseUrl}/${et.slug}`} target="_blank" rel="noopener noreferrer" className="rounded bg-default-100 px-2 py-1 text-xs text-default-600 hover:underline">{bookingBaseUrl}/{et.slug}</a>
                             <Button size="sm" variant="light" isIconOnly className="h-7 w-7 min-w-0" onPress={() => navigator.clipboard.writeText(`${bookingBaseUrl}/${et.slug}`)}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                             </Button>
                           </div>
                           {et.shortHash && (
                             <div className="flex items-center gap-1.5">
-                              <code className="rounded bg-primary/10 px-2 py-1 text-xs text-primary">{typeof window !== "undefined" ? window.location.origin : ""}/B/{et.shortHash}</code>
+                              <a href={`${typeof window !== "undefined" ? window.location.origin : ""}/B/${et.shortHash}`} target="_blank" rel="noopener noreferrer" className="rounded bg-primary/10 px-2 py-1 text-xs text-primary hover:underline">{typeof window !== "undefined" ? window.location.origin : ""}/B/{et.shortHash}</a>
                               <Button size="sm" variant="light" isIconOnly className="h-7 w-7 min-w-0" onPress={() => navigator.clipboard.writeText(`${window.location.origin}/B/${et.shortHash}`)}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                               </Button>

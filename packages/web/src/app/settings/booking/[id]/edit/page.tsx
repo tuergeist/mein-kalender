@@ -69,6 +69,7 @@ export default function EditEventTypePage() {
   const [formAvatarUrl, setFormAvatarUrl] = useState("");
   const [formBackgroundUrl, setFormBackgroundUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
 
   useEffect(() => {
     if (accessToken) {
@@ -111,6 +112,32 @@ export default function EditEventTypePage() {
       setFormAvatarUrl(et.avatarUrl || "");
       setFormBackgroundUrl(et.backgroundUrl || "");
     }
+  }
+
+  async function uploadImage(type: "avatar" | "background") {
+    if (!accessToken) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp,image/gif";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      setUploading(type);
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/profile/image/${type}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (type === "avatar") setFormAvatarUrl(data.url);
+        else setFormBackgroundUrl(data.url);
+      }
+      setUploading(null);
+    };
+    input.click();
   }
 
   async function handleSave() {
@@ -265,8 +292,14 @@ export default function EditEventTypePage() {
                 </div>
               </div>
               <div className="flex gap-4">
-                <Input label="Profile Photo URL" size="sm" value={formAvatarUrl} onValueChange={setFormAvatarUrl} placeholder="Use default" className="flex-1" />
-                <Input label="Background Image URL" size="sm" value={formBackgroundUrl} onValueChange={setFormBackgroundUrl} placeholder="Use default" className="flex-1" />
+                <div className="flex flex-1 items-end gap-2">
+                  <Input label="Profile Photo" size="sm" value={formAvatarUrl} onValueChange={setFormAvatarUrl} placeholder="Use default" className="flex-1" />
+                  <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Upload</Button>
+                </div>
+                <div className="flex flex-1 items-end gap-2">
+                  <Input label="Background Image" size="sm" value={formBackgroundUrl} onValueChange={setFormBackgroundUrl} placeholder="Use default" className="flex-1" />
+                  <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Upload</Button>
+                </div>
               </div>
             </div>
           </CardBody>

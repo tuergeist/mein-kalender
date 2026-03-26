@@ -41,7 +41,6 @@ export default function BookingSettingsPage() {
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
 
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
-  const [savingRules, setSavingRules] = useState(false);
 
   const [bookingCalendarId, setBookingCalendarId] = useState("");
   const [allCalendarEntries, setAllCalendarEntries] = useState<Array<{ id: string; name: string; sourceName: string }>>([]);
@@ -50,9 +49,9 @@ export default function BookingSettingsPage() {
   const [accentColor, setAccentColor] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [backgroundUrl, setBackgroundUrl] = useState("");
-  const [brandingSaving, setBrandingSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [showUsernameWarning, setShowUsernameWarning] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (accessToken) { loadProfile(); loadEventTypes(); loadAvailability(); loadCalendars(); }
@@ -120,29 +119,25 @@ export default function BookingSettingsPage() {
     setRules((prev) => prev.map((r) => (r.dayOfWeek === dayOfWeek ? { ...r, [field]: value } : r)));
   }
 
-  async function saveRules() {
+  async function saveAll() {
     if (!accessToken) return;
-    setSavingRules(true);
-    await apiAuthFetch("/api/availability", accessToken, {
-      method: "PUT",
-      body: JSON.stringify(rules.map((r) => ({ dayOfWeek: r.dayOfWeek, startTime: r.startTime, endTime: r.endTime, enabled: r.enabled }))),
-    });
-    setSavingRules(false);
-  }
-
-  async function saveBranding() {
-    if (!accessToken) return;
-    setBrandingSaving(true);
-    await apiAuthFetch("/api/profile/branding", accessToken, {
-      method: "PUT",
-      body: JSON.stringify({
-        brandColor: brandColor || null,
-        accentColor: accentColor || null,
-        avatarUrl: avatarUrl || null,
-        backgroundUrl: backgroundUrl || null,
+    setSaving(true);
+    await Promise.all([
+      apiAuthFetch("/api/availability", accessToken, {
+        method: "PUT",
+        body: JSON.stringify(rules.map((r) => ({ dayOfWeek: r.dayOfWeek, startTime: r.startTime, endTime: r.endTime, enabled: r.enabled }))),
       }),
-    });
-    setBrandingSaving(false);
+      apiAuthFetch("/api/profile/branding", accessToken, {
+        method: "PUT",
+        body: JSON.stringify({
+          brandColor: brandColor || null,
+          accentColor: accentColor || null,
+          avatarUrl: avatarUrl || null,
+          backgroundUrl: backgroundUrl || null,
+        }),
+      }),
+    ]);
+    setSaving(false);
   }
 
   async function uploadImage(type: "avatar" | "background") {
@@ -178,11 +173,10 @@ export default function BookingSettingsPage() {
       <div className="mx-auto max-w-3xl space-y-6">
         <h1 className="text-2xl font-bold">Booking Settings</h1>
 
-        {/* Username */}
+        {/* Booking URL */}
         <Card>
           <CardHeader><h2 className="text-lg font-semibold">Booking URL</h2></CardHeader>
           <CardBody>
-            <p className="mb-3 text-sm text-default-500">Set your username for public booking links.</p>
             <div className="flex items-end gap-2">
               <Input label="Username" value={username} onValueChange={setUsername} description={savedUsername ? `Your booking URL: ${bookingBaseUrl}/...` : undefined} errorMessage={usernameError} isInvalid={!!usernameError} className="flex-1" />
               <Button size="sm" color="primary" isLoading={usernameSaving} isDisabled={username === savedUsername} onPress={saveUsername} className="shrink-0">Save</Button>
@@ -190,90 +184,78 @@ export default function BookingSettingsPage() {
           </CardBody>
         </Card>
 
-        {/* Branding */}
+        {/* Branding + Working Hours + Booking Calendar — single save */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Branding</h2></CardHeader>
-          <CardBody>
-            <p className="mb-4 text-sm text-default-500">Customize how your booking pages look to guests.</p>
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="mb-1 block text-sm font-medium">Brand Color</label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={brandColor || "#3b82f6"} onChange={(e) => setBrandColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
-                    <Input size="sm" placeholder="#3b82f6" value={brandColor} onValueChange={setBrandColor} className="flex-1" />
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <label className="mb-1 block text-sm font-medium">Accent Color</label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={accentColor || "#6366f1"} onChange={(e) => setAccentColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
-                    <Input size="sm" placeholder="#6366f1" value={accentColor} onValueChange={setAccentColor} className="flex-1" />
-                  </div>
+          <CardHeader className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Branding &amp; Defaults</h2>
+            <Button size="sm" color="primary" isLoading={saving} onPress={saveAll}>Save</Button>
+          </CardHeader>
+          <CardBody className="space-y-6">
+            <p className="text-sm text-default-400">These are your defaults. Each event type can override branding and working hours in its own settings.</p>
+
+            {/* Colors */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="mb-1 block text-sm font-medium">Brand Color</label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={brandColor || "#3b82f6"} onChange={(e) => setBrandColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
+                  <Input size="sm" placeholder="#3b82f6" value={brandColor} onValueChange={setBrandColor} className="flex-1" />
                 </div>
               </div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <div className="flex items-end gap-2">
-                    <Input label="Profile Photo" size="sm" value={avatarUrl} onValueChange={setAvatarUrl} placeholder="https://... or upload" className="flex-1" />
-                    <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Upload</Button>
-                  </div>
-                  {avatarUrl && (
-                    <div className="mt-2">
-                      <img src={avatarUrl} alt="Preview" className="h-12 w-12 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-end gap-2">
-                    <Input label="Background Image" size="sm" value={backgroundUrl} onValueChange={setBackgroundUrl} placeholder="https://... or upload" className="flex-1" />
-                    <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Upload</Button>
-                  </div>
-                  {backgroundUrl && (
-                    <div className="mt-2 h-12 w-full rounded bg-cover bg-center" style={{ backgroundImage: `url(${backgroundUrl})` }} />
-                  )}
+              <div className="flex-1">
+                <label className="mb-1 block text-sm font-medium">Accent Color</label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={accentColor || "#6366f1"} onChange={(e) => setAccentColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
+                  <Input size="sm" placeholder="#6366f1" value={accentColor} onValueChange={setAccentColor} className="flex-1" />
                 </div>
               </div>
-              <Button size="sm" color="primary" isLoading={brandingSaving} onPress={saveBranding}>Save Branding</Button>
             </div>
-          </CardBody>
-        </Card>
 
-        {/* Defaults */}
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Defaults (used when event type has no override)</p>
+            {/* Images */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <div className="flex items-end gap-2">
+                  <Input label="Profile Photo" size="sm" value={avatarUrl} onValueChange={setAvatarUrl} placeholder="https://... or upload" className="flex-1" />
+                  <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Upload</Button>
+                </div>
+                {avatarUrl && (
+                  <div className="mt-2">
+                    <img src={avatarUrl} alt="Preview" className="h-12 w-12 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-end gap-2">
+                  <Input label="Background Image" size="sm" value={backgroundUrl} onValueChange={setBackgroundUrl} placeholder="https://... or upload" className="flex-1" />
+                  <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Upload</Button>
+                </div>
+                {backgroundUrl && (
+                  <div className="mt-2 h-12 w-full rounded bg-cover bg-center" style={{ backgroundImage: `url(${backgroundUrl})` }} />
+                )}
+              </div>
+            </div>
 
-        {/* Default Booking Calendar */}
-        <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Default Booking Calendar</h2></CardHeader>
-          <CardBody>
-            <p className="mb-3 text-sm text-default-500">Used when an event type has no booking calendar set.</p>
-            {allCalendarEntries.length === 0 ? (
-              <p className="text-default-400">Connect a calendar with write access first.</p>
-            ) : (
-              <Select label="Booking Calendar" placeholder="Select a calendar" selectedKeys={bookingCalendarId ? new Set([bookingCalendarId]) : new Set()} onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) handleSetBookingCalendar(s); }}>
+            {/* Booking Calendar */}
+            {allCalendarEntries.length > 0 && (
+              <Select label="Default Booking Calendar" placeholder="Select a calendar" selectedKeys={bookingCalendarId ? new Set([bookingCalendarId]) : new Set()} onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) handleSetBookingCalendar(s); }} size="sm">
                 {allCalendarEntries.map((entry) => (<SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>{entry.name} ({entry.sourceName})</SelectItem>))}
               </Select>
             )}
-          </CardBody>
-        </Card>
 
-        {/* Default Working Hours */}
-        <Card>
-          <CardHeader className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Default Working Hours</h2>
-            <Button size="sm" color="primary" isLoading={savingRules} onPress={saveRules}>Save</Button>
-          </CardHeader>
-          <CardBody>
-            <div className="space-y-2">
-              {rules.map((rule) => (
-                <div key={rule.dayOfWeek} className="flex items-center gap-3">
-                  <Switch size="sm" isSelected={rule.enabled} onValueChange={(v) => updateRule(rule.dayOfWeek, "enabled", v)} />
-                  <span className="w-10 text-sm font-medium">{DAY_NAMES[rule.dayOfWeek]}</span>
-                  <Input type="time" size="sm" value={rule.startTime} onValueChange={(v) => updateRule(rule.dayOfWeek, "startTime", v)} isDisabled={!rule.enabled} className="w-28" />
-                  <span className="text-sm text-default-400">–</span>
-                  <Input type="time" size="sm" value={rule.endTime} onValueChange={(v) => updateRule(rule.dayOfWeek, "endTime", v)} isDisabled={!rule.enabled} className="w-28" />
-                </div>
-              ))}
+            {/* Working Hours */}
+            <div>
+              <p className="mb-2 text-sm font-medium">Default Working Hours</p>
+              <div className="space-y-2">
+                {rules.map((rule) => (
+                  <div key={rule.dayOfWeek} className="flex items-center gap-3">
+                    <Switch size="sm" isSelected={rule.enabled} onValueChange={(v) => updateRule(rule.dayOfWeek, "enabled", v)} />
+                    <span className="w-10 text-sm font-medium">{DAY_NAMES[rule.dayOfWeek]}</span>
+                    <Input type="time" size="sm" value={rule.startTime} onValueChange={(v) => updateRule(rule.dayOfWeek, "startTime", v)} isDisabled={!rule.enabled} className="w-28" />
+                    <span className="text-sm text-default-400">–</span>
+                    <Input type="time" size="sm" value={rule.endTime} onValueChange={(v) => updateRule(rule.dayOfWeek, "endTime", v)} isDisabled={!rule.enabled} className="w-28" />
+                  </div>
+                ))}
+              </div>
             </div>
           </CardBody>
         </Card>
