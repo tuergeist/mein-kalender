@@ -329,6 +329,7 @@ export function CalendarView() {
           nowIndicator={true}
           scrollTime={`${String(Math.max(0, new Date().getHours() - 2)).padStart(2, "0")}:00:00`}
           locale={deLocale}
+          allDayText=""
           firstDay={1}
           eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
           dayMaxEvents={true}

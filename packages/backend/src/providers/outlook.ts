@@ -168,7 +168,8 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       timeMin.setDate(timeMin.getDate() - 30);
       const daysAhead = fetchDaysInAdvance || 90;
       const timeMax = new Date(Date.now() + daysAhead * 86400000);
-      url = `${GRAPH_API_BASE}/me/calendars/${calendarId}/calendarView/delta?startDateTime=${timeMin.toISOString()}&endDateTime=${timeMax.toISOString()}`;
+      const selectFields = "id,subject,body,start,end,location,isAllDay,showAs,responseStatus,type,categories,isCancelled";
+      url = `${GRAPH_API_BASE}/me/calendars/${calendarId}/calendarView/delta?startDateTime=${timeMin.toISOString()}&endDateTime=${timeMax.toISOString()}&$select=${selectFields}`;
     }
 
     const created: NormalizedEvent[] = [];
@@ -305,12 +306,24 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
     const showAs = showAsMap[rawShowAs ?? "busy"] ?? "busy";
 
     const metadata: Record<string, unknown> = { responseStatus, showAs };
+    if (item.categories) metadata.categories = item.categories;
+    if (item.type) metadata.outlookType = item.type;
+
+    // Better fallback titles for Outlook events without a subject
+    let title = (item.subject as string) || "";
+    if (!title) {
+      if (rawShowAs === "oof") title = "Out of Office";
+      else if (rawShowAs === "workingElsewhere") title = "Working Elsewhere";
+      else if (rawShowAs === "free") title = "Free";
+      else if (rawShowAs === "tentative") title = "Tentative";
+      else title = "(No title)";
+    }
 
     return {
       id: "",
       sourceEventId: item.id as string,
       calendarId,
-      title: (item.subject as string) || "(No title)",
+      title,
       description: stripHtml((item.body as Record<string, string>)?.content) || null,
       location: ((item.location as Record<string, string>)?.displayName) || null,
       startTime: new Date(start.dateTime + (start.timeZone === "UTC" ? "Z" : "")),
