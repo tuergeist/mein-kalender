@@ -170,6 +170,7 @@ model EventType {
   bookings          Booking[]
   calendars         CalendarEntry[]   @relation("EventTypeCalendars")
   availabilityRules AvailabilityRule[]
+  pageViews         BookingPageView[]
 
   @@unique([userId, slug])
   @@index([userId])
@@ -229,6 +230,53 @@ model IcsFeed {
 
   @@index([userId])
   @@map("ics_feeds")
+}
+
+model SyncHealth {
+  id              String   @id @default(cuid())
+  userId          String
+  sourceId        String
+  provider        String
+  eventsProcessed Int      @default(0)
+  eventsFailed    Int      @default(0)
+  latencyMs       Int      @default(0)
+  checksumMatch   Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([sourceId])
+  @@map("sync_health")
+}
+
+model Conflict {
+  id          String    @id @default(cuid())
+  userId      String
+  eventAId    String
+  eventBId    String
+  eventATitle String
+  eventBTitle String
+  eventAStart DateTime
+  eventBStart DateTime
+  eventASource String   // provider name (google, outlook, etc.)
+  eventBSource String
+  detectedAt  DateTime  @default(now())
+  resolvedAt  DateTime?
+
+  @@index([userId, resolvedAt])
+  @@map("conflicts")
+}
+
+model BookingPageView {
+  id          String   @id @default(cuid())
+  eventTypeId String
+  date        DateTime @db.Date
+  viewCount   Int      @default(1)
+
+  eventType EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([eventTypeId, date])
+  @@index([eventTypeId])
+  @@map("booking_page_views")
 }
 
 model UserImage {

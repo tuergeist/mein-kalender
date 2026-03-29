@@ -23,6 +23,7 @@ import { icsFeedsRoutes } from "./routes/ics-feeds";
 import { icsServeRoutes } from "./routes/ics-serve";
 import { userImageRoutes } from "./routes/user-images";
 import { syncTargetsRoutes } from "./routes/sync-targets";
+import { dashboardRoutes } from "./routes/dashboard";
 
 validateEnv();
 
@@ -49,6 +50,7 @@ server.register(icsFeedsRoutes);
 server.register(icsServeRoutes);
 server.register(userImageRoutes);
 server.register(syncTargetsRoutes);
+server.register(dashboardRoutes);
 
 async function seedAdminUser() {
   const email = "admin@admin.local";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import {
   Button,
@@ -11,6 +11,7 @@ import {
   DropdownItem,
 } from "@heroui/react";
 import Link from "next/link";
+import { apiAuthFetch } from "@/lib/api";
 
 export type AppSection = "dashboard" | "calendar" | "bookings" | "sync" | "settings";
 export type SettingsSubSection = "sources" | "events" | "booking" | "profile" | "other";
@@ -38,9 +39,41 @@ const NAV_ITEMS: { key: AppSection; label: string; href: string; icon: string }[
   { key: "settings", label: "Settings", href: "/settings", icon: "M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" },
 ];
 
+function useSyncHeartbeat() {
+  const { data: session } = useSession();
+  const accessToken = (session as { accessToken?: string } | null)?.accessToken;
+  const [status, setStatus] = useState<"unknown" | "ok" | "warning" | "error">("unknown");
+
+  useEffect(() => {
+    if (!accessToken) return;
+    let mounted = true;
+
+    function check() {
+      apiAuthFetch("/api/dashboard/sync-status", accessToken!)
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (!mounted || !data?.sources) return;
+          const statuses = data.sources.map((s: { syncStatus: string }) => s.syncStatus);
+          if (statuses.length === 0) setStatus("unknown");
+          else if (statuses.every((s: string) => s === "ok")) setStatus("ok");
+          else if (statuses.some((s: string) => s === "error")) setStatus("error");
+          else setStatus("warning");
+        })
+        .catch(() => {});
+    }
+
+    check();
+    const interval = setInterval(check, 5 * 60 * 1000); // 5 min
+    return () => { mounted = false; clearInterval(interval); };
+  }, [accessToken]);
+
+  return status;
+}
+
 export function AppShell({ children, section, settingsSection, sidebarContent }: AppShellProps) {
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const heartbeat = useSyncHeartbeat();
 
   return (
     <div className="flex h-screen flex-col bg-stone-50">
@@ -136,6 +169,20 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
               </Link>
             ))}
           </nav>
+
+          {/* Sync heartbeat */}
+          {heartbeat !== "unknown" && (
+            <div className="mx-3 flex items-center gap-2 rounded-md px-2 py-1.5">
+              <span className={`inline-block h-2 w-2 rounded-full ${
+                heartbeat === "ok" ? "bg-[#059669] animate-pulse" :
+                heartbeat === "warning" ? "bg-[var(--color-amber-500)]" :
+                "bg-red-500"
+              }`} />
+              <span className="text-xs text-stone-500">
+                {heartbeat === "ok" ? "Sync OK" : heartbeat === "warning" ? "Sync verzögert" : "Sync-Fehler"}
+              </span>
+            </div>
+          )}
 
           {/* Settings sub-navigation */}
           {section === "settings" && (

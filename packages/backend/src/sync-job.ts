@@ -42,6 +42,10 @@ export async function processSyncJob(
     return;
   }
 
+  const syncStart = Date.now();
+  let eventsProcessed = 0;
+  let eventsFailed = 0;
+
   try {
     const credentials = JSON.parse(
       decrypt(source.credentials, process.env.ENCRYPTION_SECRET!)
@@ -58,6 +62,7 @@ export async function processSyncJob(
     for (const entry of source.calendarEntries) {
       try {
         await syncCalendarEntry(prisma, provider, token, entry, source.syncToken, userId, source.fetchDaysInAdvance);
+        eventsProcessed++;
       } catch (err) {
         if (
           err instanceof ProviderError &&
@@ -66,7 +71,9 @@ export async function processSyncJob(
           // Full sync fallback
           console.log(`[sync] Sync token expired for ${entry.id}, doing full sync`);
           await syncCalendarEntry(prisma, provider, token, entry, null, userId, source.fetchDaysInAdvance);
+          eventsProcessed++;
         } else {
+          eventsFailed++;
           throw err;
         }
       }
@@ -84,6 +91,9 @@ export async function processSyncJob(
         syncError: null,
       },
     });
+
+    // Log sync health (fire-and-forget)
+    logSyncHealth(prisma, userId, sourceId, source.provider, syncStart, eventsProcessed, eventsFailed, true);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error(`[sync] Error syncing source ${sourceId}:`, message);
@@ -95,6 +105,9 @@ export async function processSyncJob(
         syncError: message,
       },
     });
+
+    // Log sync health even on failure (fire-and-forget)
+    logSyncHealth(prisma, userId, sourceId, source.provider, syncStart, eventsProcessed, eventsFailed, false);
 
     throw err; // Let BullMQ handle retries
   }
@@ -546,6 +559,24 @@ async function syncIcsSource(
   }
 
   console.log(`[sync] ICS source ${source.id}: synced ${events.length} events`);
+}
+
+function logSyncHealth(
+  prisma: PrismaClient,
+  userId: string,
+  sourceId: string,
+  provider: string,
+  syncStart: number,
+  eventsProcessed: number,
+  eventsFailed: number,
+  checksumMatch: boolean
+): void {
+  const latencyMs = Date.now() - syncStart;
+  prisma.syncHealth.create({
+    data: { userId, sourceId, provider, eventsProcessed, eventsFailed, latencyMs, checksumMatch },
+  }).catch((err) => {
+    console.warn("[sync] Failed to log sync health:", err);
+  });
 }
 
 function parseIcsDate(dateStr: string): Date {
