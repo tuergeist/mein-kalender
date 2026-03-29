@@ -47,7 +47,7 @@ export default function Home() {
             <p className="font-[family-name:var(--font-dm-sans)] text-lg leading-relaxed text-[var(--text-secondary)] md:text-xl">
               Kalender-Sync, die deine Daten nicht zerstört.{" "}
               <span className="text-[var(--text-tertiary)]">
-                Google, Outlook und Proton — endlich in einem Blick.
+                Google, Outlook und Proton — alles auf einen Blick.
               </span>
             </p>
             <div className="flex flex-col items-center gap-3 md:items-start">
@@ -210,10 +210,10 @@ export default function Home() {
             <div className="flex flex-col items-center gap-10 md:flex-row-reverse md:gap-16">
               <div className="flex flex-col gap-4 md:w-1/2">
                 <h2 className="font-[family-name:var(--font-satoshi)] text-xl font-semibold tracking-[-0.02em] text-[var(--text-primary)] md:text-[22px]">
-                  Proton. Outlook. Google. Alle synchronisiert.
+                  Proton. Outlook. Google. Alles im Blick.
                 </h2>
                 <p className="font-[family-name:var(--font-dm-sans)] text-base leading-relaxed text-[var(--text-secondary)]">
-                  Als einziges Tool synchronisieren wir auch Proton Calendar. Ohne deine Daten zu zerstören.
+                  Google und Outlook voll synchronisiert. Proton Calendar als Leseansicht integriert — Schreib-Sync kommt bald.
                 </p>
               </div>
               <div className="flex w-full items-center justify-center gap-6 md:w-1/2">
@@ -287,7 +287,7 @@ export default function Home() {
                   "Multi-Kalender-Sync",
                   "Gebrandete Buchungsseiten",
                   "Sync-Cockpit",
-                  "Proton-Support",
+                  "Proton Calendar (Leseansicht)",
                   "Überschneidungs-Erkennung",
                   "Unbegrenzte Kalender",
                 ].map((feature) => (
