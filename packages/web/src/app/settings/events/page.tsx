@@ -59,7 +59,7 @@ export default function EventTypesPage() {
   return (
     <AppShell section="settings" settingsSection="events">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-2xl font-bold">Event Types</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Event Types</h1>
 
         <Card>
           <CardHeader className="flex items-center justify-between">
@@ -78,7 +78,7 @@ export default function EventTypesPage() {
                         <div className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: et.color }} />
                         <div>
                           <span className="font-medium">{et.name}</span>
-                          <span className="ml-2 text-sm text-default-400">{et.durationMinutes} min</span>
+                          <span className="ml-2 font-mono text-sm text-default-400">{et.durationMinutes} min</span>
                         </div>
                       </div>
                       {savedUsername && et.enabled && (

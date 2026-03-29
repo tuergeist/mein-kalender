@@ -103,13 +103,13 @@ export default function SignUpPage() {
           <div className="flex flex-col gap-2">
             <Button
               variant="bordered"
-              onPress={() => signIn("google", { callbackUrl: "/calendar" })}
+              onPress={() => signIn("google", { callbackUrl: "/dashboard" })}
             >
               Sign up with Google
             </Button>
             <Button
               variant="bordered"
-              onPress={() => signIn("azure-ad", { callbackUrl: "/calendar" })}
+              onPress={() => signIn("azure-ad", { callbackUrl: "/dashboard" })}
             >
               Sign up with Microsoft
             </Button>

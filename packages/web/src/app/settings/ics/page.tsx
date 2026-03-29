@@ -116,7 +116,7 @@ export default function ICSSettingsPage() {
           <Button variant="light" size="sm" onPress={() => router.push("/settings")}>
             &larr; Back
           </Button>
-          <h1 className="text-2xl font-bold">Import ICS Calendar</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Import ICS Calendar</h1>
         </div>
 
         <Card>

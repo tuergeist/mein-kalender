@@ -1,13 +1,32 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const inter = Inter({
+const satoshi = localFont({
+  src: [
+    { path: "../fonts/Satoshi-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/Satoshi-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/Satoshi-Bold.woff2", weight: "600", style: "normal" },
+    { path: "../fonts/Satoshi-Bold.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-satoshi",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-dm-sans",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
@@ -21,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="de" className={`light ${inter.variable}`} suppressHydrationWarning>
+    <html lang="de" className={`light ${satoshi.variable} ${dmSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

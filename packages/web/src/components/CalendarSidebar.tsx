@@ -117,7 +117,7 @@ export function CalendarSidebar() {
   return (
     <div className="flex flex-col gap-1 overflow-hidden p-3">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <h2 className="font-mono text-[10px] font-medium uppercase tracking-widest text-stone-400">
           Calendars
         </h2>
         <Button
@@ -125,23 +125,23 @@ export function CalendarSidebar() {
           variant="light"
           isLoading={syncing}
           onPress={handleSyncNow}
-          className="h-7 min-w-0 px-2 text-xs text-gray-500"
+          className="h-7 min-w-0 px-2 text-xs text-stone-500"
         >
           {syncing ? "" : "Sync"}
         </Button>
       </div>
 
       {sources.length === 0 && (
-        <p className="text-xs text-gray-400">No calendars connected</p>
+        <p className="text-xs text-stone-400">No calendars connected</p>
       )}
 
       {sources.map((source) => (
         <div key={source.id} className="mb-3">
           <div className="mb-1 flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
+            <span className="flex h-5 w-5 items-center justify-center rounded bg-stone-100 text-[10px] font-bold text-stone-500">
               {providerIcon[source.provider] || "?"}
             </span>
-            <span className="text-xs font-medium text-gray-500">
+            <span className="text-xs font-medium text-stone-500">
               {source.label || source.provider}
             </span>
             {source.syncStatus === "syncing" && <Spinner size="sm" />}
@@ -156,21 +156,21 @@ export function CalendarSidebar() {
                 key={entry.id}
                 type="button"
                 onClick={() => toggleCalendar(entry.id)}
-                className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-left hover:bg-gray-50"
+                className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-left hover:bg-stone-50"
               >
                 <span
                   className="inline-block h-3 w-3 shrink-0 rounded-full border-2"
                   style={
                     entry.enabled
                       ? { backgroundColor: entry.color || "#3b82f6", borderColor: entry.color || "#3b82f6" }
-                      : { backgroundColor: "white", borderColor: "#d1d5db" }
+                      : { backgroundColor: "white", borderColor: "#D6D3D1" }
                   }
                 />
-                <span className={`truncate text-xs ${entry.enabled ? "text-gray-700" : "text-gray-400"}`}>
+                <span className={`truncate text-xs ${entry.enabled ? "text-stone-700" : "text-stone-400"}`}>
                   {entry.name}
                 </span>
                 {entry.readOnly && (
-                  <span className="shrink-0 text-[10px] text-gray-400">RO</span>
+                  <span className="shrink-0 text-[10px] text-stone-400">RO</span>
                 )}
               </button>
             ))}

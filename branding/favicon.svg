@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- mein-kalender.link — Favicon (D: Link mark) -->
+  <rect width="48" height="48" rx="10" fill="#9f1239"/>
+  <path d="M16 34L32 18" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="14" cy="36" r="4.5" fill="none" stroke="#fff" stroke-width="2.5"/>
+  <circle cx="34" cy="16" r="4.5" fill="none" stroke="#fff" stroke-width="2.5"/>
+</svg>

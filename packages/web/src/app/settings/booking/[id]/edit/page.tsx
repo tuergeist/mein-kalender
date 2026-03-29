@@ -182,12 +182,10 @@ export default function EditEventTypePage() {
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/settings/booking">
-              <Button variant="light" size="sm" isIconOnly className="text-gray-500">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-bold">Edit Event Type</h1>
+            <Button variant="light" size="sm" isIconOnly className="text-stone-500" onPress={() => router.back()}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </Button>
+            <h1 className="font-display text-2xl font-bold tracking-tight">Edit Event Type</h1>
           </div>
           <Button color="primary" isLoading={saving} isDisabled={!formName.trim()} onPress={handleSave}>Save</Button>
         </div>

@@ -56,7 +56,7 @@ export default function ProtonSettingsPage() {
           >
             &larr; Back
           </Button>
-          <h1 className="text-2xl font-bold">Add Proton Calendar</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Add Proton Calendar</h1>
         </div>
 
         <Card>

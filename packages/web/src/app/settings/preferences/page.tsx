@@ -14,7 +14,7 @@ export default function PreferencesPage() {
   return (
     <AppShell section="settings" settingsSection="other">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-2xl font-bold">Preferences</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Preferences</h1>
 
         <Card>
           <CardHeader><h2 className="text-lg font-semibold">Map Provider</h2></CardHeader>

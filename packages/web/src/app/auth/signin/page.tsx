@@ -25,7 +25,7 @@ export default function SignInPage() {
     if (result?.error) {
       setError("Invalid email or password");
     } else {
-      window.location.href = "/calendar";
+      window.location.href = "/dashboard";
     }
     setLoading(false);
   };
@@ -64,13 +64,13 @@ export default function SignInPage() {
           <div className="flex flex-col gap-2">
             <Button
               variant="bordered"
-              onPress={() => signIn("google", { callbackUrl: "/calendar" })}
+              onPress={() => signIn("google", { callbackUrl: "/dashboard" })}
             >
               Continue with Google
             </Button>
             <Button
               variant="bordered"
-              onPress={() => signIn("azure-ad", { callbackUrl: "/calendar" })}
+              onPress={() => signIn("azure-ad", { callbackUrl: "/dashboard" })}
             >
               Continue with Microsoft
             </Button>

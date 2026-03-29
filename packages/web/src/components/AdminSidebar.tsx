@@ -25,7 +25,7 @@ export function AdminSidebar() {
             href={link.href}
             className={`rounded-lg px-3 py-2 text-sm transition-colors ${
               active
-                ? "bg-blue-50 font-medium text-blue-700"
+                ? "bg-rose-50 font-medium text-rose-700"
                 : "text-gray-600 hover:bg-gray-100"
             }`}
           >
@@ -35,10 +35,10 @@ export function AdminSidebar() {
       })}
       <hr className="my-3 border-gray-200" />
       <Link
-        href="/calendar"
-        className="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100"
+        href="/dashboard"
+        className="rounded-lg px-3 py-2 text-sm text-stone-600 hover:bg-stone-50"
       >
-        Back to Calendar
+        Back to Dashboard
       </Link>
     </nav>
   );

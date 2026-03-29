@@ -173,7 +173,7 @@ export default function BookingSettingsPage() {
   return (
     <AppShell section="settings" settingsSection="booking">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-2xl font-bold">Booking Settings</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Booking Settings</h1>
 
         {/* Booking URL */}
         <Card>

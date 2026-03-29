@@ -41,7 +41,7 @@ export function LocationMap({ location, className = "" }: LocationMapProps) {
           href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
+          className="text-rose-700 hover:underline"
         >
           {location}
         </a>

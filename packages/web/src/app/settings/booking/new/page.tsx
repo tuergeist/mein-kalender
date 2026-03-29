@@ -41,7 +41,13 @@ export default function NewEventTypePage() {
   const [formCustomHours, setFormCustomHours] = useState(false);
   const [formRules, setFormRules] = useState(DEFAULT_RULES.map((r) => ({ ...r })));
   const [formShortLink, setFormShortLink] = useState(false);
+  const [formBrandColor, setFormBrandColor] = useState("");
+  const [formAccentColor, setFormAccentColor] = useState("");
+  const [formAvatarUrl, setFormAvatarUrl] = useState("");
+  const [formBackgroundUrl, setFormBackgroundUrl] = useState("");
+  const [formBackgroundOpacity, setFormBackgroundOpacity] = useState(0.85);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
 
   useEffect(() => {
     if (accessToken) loadCalendars();
@@ -56,6 +62,32 @@ export default function NewEventTypePage() {
         s.calendarEntries.filter((e: { readOnly: boolean }) => !e.readOnly).map((e: { id: string; name: string }) => ({ ...e, sourceName: s.label || s.provider }))
       ));
     }
+  }
+
+  async function uploadImage(type: "avatar" | "background") {
+    if (!accessToken) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp,image/gif";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      setUploading(type);
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/profile/image/${type}?skipUserUpdate=true`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (type === "avatar") setFormAvatarUrl(data.url);
+        else setFormBackgroundUrl(data.url);
+      }
+      setUploading(null);
+    };
+    input.click();
   }
 
   async function handleSave() {
@@ -73,6 +105,11 @@ export default function NewEventTypePage() {
       bookingCalendarEntryId: formBookingCalendarId || null,
       availabilityRules: formCustomHours ? formRules : undefined,
       enableShortLink: formShortLink,
+      brandColor: formBrandColor || null,
+      accentColor: formAccentColor || null,
+      avatarUrl: formAvatarUrl || null,
+      backgroundUrl: formBackgroundUrl || null,
+      backgroundOpacity: formBackgroundUrl ? formBackgroundOpacity : null,
     };
     const res = await apiAuthFetch("/api/event-types", accessToken, { method: "POST", body: JSON.stringify(body) });
     setSaving(false);
@@ -84,12 +121,10 @@ export default function NewEventTypePage() {
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/settings/booking">
-              <Button variant="light" size="sm" isIconOnly className="text-gray-500">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-bold">New Event Type</h1>
+            <Button variant="light" size="sm" isIconOnly className="text-stone-500" onPress={() => router.back()}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </Button>
+            <h1 className="font-display text-2xl font-bold tracking-tight">New Event Type</h1>
           </div>
           <Button color="primary" isLoading={saving} isDisabled={!formName.trim()} onPress={handleSave}>Create</Button>
         </div>
@@ -164,6 +199,49 @@ export default function NewEventTypePage() {
                 ))}
               </div>
             )}
+          </CardBody>
+        </Card>
+
+        {/* Branding */}
+        <Card>
+          <CardHeader><h2 className="text-lg font-semibold">Branding</h2></CardHeader>
+          <CardBody>
+            <p className="mb-4 text-xs text-default-400">Customize the look of your booking page. Leave empty to use your account defaults.</p>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium">Brand Color</label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={formBrandColor || "#9F1239"} onChange={(e) => setFormBrandColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
+                    <Input size="sm" placeholder="Use default" value={formBrandColor} onValueChange={setFormBrandColor} className="flex-1" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium">Accent Color</label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={formAccentColor || "#D97706"} onChange={(e) => setFormAccentColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
+                    <Input size="sm" placeholder="Use default" value={formAccentColor} onValueChange={setFormAccentColor} className="flex-1" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="flex flex-1 items-end gap-2">
+                  <Input label="Profile Photo" size="sm" value={formAvatarUrl} onValueChange={setFormAvatarUrl} placeholder="Use default" className="flex-1" />
+                  <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Upload</Button>
+                </div>
+                <div className="flex flex-1 items-end gap-2">
+                  <Input label="Background Image" size="sm" value={formBackgroundUrl} onValueChange={setFormBackgroundUrl} placeholder="Use default" className="flex-1" />
+                  <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Upload</Button>
+                </div>
+              </div>
+              {formBackgroundUrl && (
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 text-xs text-default-400">Overlay</span>
+                  <input type="range" min="0" max="1" step="0.05" value={formBackgroundOpacity} onChange={(e) => setFormBackgroundOpacity(parseFloat(e.target.value))} className="flex-1" />
+                  <span className="w-8 text-xs text-default-400">{Math.round(formBackgroundOpacity * 100)}%</span>
+                </div>
+              )}
+            </div>
           </CardBody>
         </Card>
 

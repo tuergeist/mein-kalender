@@ -255,25 +255,25 @@ export function CalendarView() {
 
           <ButtonGroup size="sm" variant="flat" className="md:hidden">
             <Button
-              className={`min-w-0 px-2 ${currentView === "dayGridMonth" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}`}
+              className={`min-w-0 px-2 ${currentView === "dayGridMonth" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}`}
               onPress={() => handleViewChange("dayGridMonth")}
             >
               M
             </Button>
             <Button
-              className={`min-w-0 px-2 ${currentView === "timeGridWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}`}
+              className={`min-w-0 px-2 ${currentView === "timeGridWeek" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}`}
               onPress={() => handleViewChange("timeGridWeek")}
             >
               W
             </Button>
             <Button
-              className={`min-w-0 px-2 ${currentView === "timeGridDay" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}`}
+              className={`min-w-0 px-2 ${currentView === "timeGridDay" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}`}
               onPress={() => handleViewChange("timeGridDay")}
             >
               D
             </Button>
             <Button
-              className={`min-w-0 px-2 ${currentView === "listWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}`}
+              className={`min-w-0 px-2 ${currentView === "listWeek" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}`}
               onPress={() => handleViewChange("listWeek")}
             >
               L
@@ -283,25 +283,25 @@ export function CalendarView() {
 
         <ButtonGroup size="sm" variant="flat" className="hidden md:flex">
           <Button
-            className={currentView === "dayGridMonth" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+            className={currentView === "dayGridMonth" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}
             onPress={() => handleViewChange("dayGridMonth")}
           >
             Month
           </Button>
           <Button
-            className={currentView === "timeGridWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+            className={currentView === "timeGridWeek" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}
             onPress={() => handleViewChange("timeGridWeek")}
           >
             Week
           </Button>
           <Button
-            className={currentView === "timeGridDay" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+            className={currentView === "timeGridDay" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}
             onPress={() => handleViewChange("timeGridDay")}
           >
             Day
           </Button>
           <Button
-            className={currentView === "listWeek" ? "bg-blue-100 text-blue-700 font-medium" : "text-gray-600"}
+            className={currentView === "listWeek" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}
             onPress={() => handleViewChange("listWeek")}
           >
             List

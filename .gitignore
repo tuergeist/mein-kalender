@@ -8,3 +8,4 @@ dist/
 .claude/*
 !.claude/commands/
 .microsoft.md
+.gstack/

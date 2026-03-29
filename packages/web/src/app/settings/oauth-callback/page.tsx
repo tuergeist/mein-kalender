@@ -57,7 +57,7 @@ function OAuthCallbackContent() {
         <div className="text-center">
           <p className="text-lg font-semibold text-red-600">Connection Failed</p>
           <p className="mt-2 text-default-500">{error}</p>
-          <a href="/settings" className="mt-4 inline-block text-purple-500 underline">
+          <a href="/settings" className="mt-4 inline-block text-rose-700 underline">
             Back to Settings
           </a>
         </div>

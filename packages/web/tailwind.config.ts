@@ -9,32 +9,41 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        purple: {
-          50:  '#EEEDFE',
-          100: '#CECBF6',
-          200: '#AFA9EC',
-          400: '#7F77DD',
-          600: '#534AB7',
-          800: '#3C3489',
-          900: '#26215C',
+        rose: {
+          50:  '#FFF1F2',
+          100: '#FFE4E6',
+          200: '#FECDD3',
+          300: '#FDA4AF',
+          400: '#FB7185',
+          500: '#F43F5E',
+          600: '#E11D48',
+          700: '#9F1239',
+          800: '#881337',
+          900: '#4C0519',
         },
-        teal: {
-          50:  '#E1F5EE',
-          100: '#9FE1CB',
-          200: '#5DCAA5',
-          400: '#1D9E75',
-          600: '#0F6E56',
-          800: '#085041',
-          900: '#04342C',
+        amber: {
+          50:  '#FFFBEB',
+          100: '#FEF3C7',
+          200: '#FDE68A',
+          300: '#FCD34D',
+          400: '#FBBF24',
+          500: '#F59E0B',
+          600: '#D97706',
+          700: '#B45309',
+          800: '#92400E',
+          900: '#78350F',
         },
-        blue: {
-          50:  '#E6F1FB',
-          100: '#B5D4F4',
-          200: '#85B7EB',
-          400: '#378ADD',
-          600: '#185FA5',
-          800: '#0C447C',
-          900: '#042C53',
+        stone: {
+          50:  '#FAFAF9',
+          100: '#F5F5F4',
+          200: '#E7E5E4',
+          300: '#D6D3D1',
+          400: '#A8A29E',
+          500: '#78716C',
+          600: '#57534E',
+          700: '#44403C',
+          800: '#292524',
+          900: '#1C1917',
         },
         surface: {
           primary:   'var(--bg-primary)',
@@ -43,8 +52,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'monospace'],
+        display: ['Satoshi', 'var(--font-satoshi)', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['DM Sans', 'var(--font-dm-sans)', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['Geist Mono', 'var(--font-geist-mono)', 'JetBrains Mono', 'monospace'],
       },
       borderRadius: {
         sm:   '4px',
@@ -61,7 +71,43 @@ const config: Config = {
     },
   },
   darkMode: "class",
-  plugins: [heroui() as any],
+  plugins: [heroui({
+    themes: {
+      light: {
+        colors: {
+          primary: {
+            50:  '#FFF1F2',
+            100: '#FFE4E6',
+            200: '#FECDD3',
+            300: '#FDA4AF',
+            400: '#FB7185',
+            500: '#F43F5E',
+            600: '#E11D48',
+            700: '#9F1239',
+            800: '#881337',
+            900: '#4C0519',
+            DEFAULT: '#9F1239',
+            foreground: '#FFFFFF',
+          },
+          secondary: {
+            50:  '#FFFBEB',
+            100: '#FEF3C7',
+            200: '#FDE68A',
+            300: '#FCD34D',
+            400: '#FBBF24',
+            500: '#F59E0B',
+            600: '#D97706',
+            700: '#B45309',
+            800: '#92400E',
+            900: '#78350F',
+            DEFAULT: '#D97706',
+            foreground: '#FFFFFF',
+          },
+          focus: '#9F1239',
+        },
+      },
+    },
+  }) as any],
 };
 
 export default config;

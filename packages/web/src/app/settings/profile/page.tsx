@@ -19,17 +19,23 @@ export default function ProfileSettingsPage() {
   return (
     <AppShell section="settings" settingsSection="profile">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-2xl font-bold">Profile</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Profile</h1>
 
         <Card>
-          <CardBody className="flex flex-col items-center gap-4 p-6">
-            <Avatar
-              src={session?.user?.image || undefined}
-              name={session?.user?.name || session?.user?.email || "U"}
-              size="lg"
-            />
+          <CardBody className="flex flex-col gap-4 p-6">
+            <div className="flex items-center gap-3">
+              <Avatar
+                src={session?.user?.image || undefined}
+                name={session?.user?.name || session?.user?.email || "U"}
+                size="lg"
+              />
+              <div>
+                <p className="font-medium">{session?.user?.name || "User"}</p>
+                <p className="text-sm text-default-500">{session?.user?.email}</p>
+              </div>
+            </div>
 
-            <div className="w-full max-w-md space-y-4">
+            <div className="space-y-4">
               <Input
                 label="Email"
                 value={session?.user?.email || ""}
