@@ -41,6 +41,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de" className={`light ${satoshi.variable} ${dmSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+      <head>
+        <script defer src="https://api.pirsch.io/pa.js" id="pianjs" data-code="tlkwjKBDo5OXWaLS7O7kFPuDT8XFnH55" />
+      </head>
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
