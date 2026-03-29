@@ -88,6 +88,15 @@ export async function profileRoutes(app: FastifyInstance) {
     }
   );
 
+  // Delete account
+  app.delete("/api/profile", async (request, reply) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+
+    await prisma.user.delete({ where: { id: user.id } });
+
+    return reply.code(204).send();
+  });
+
   // Set booking calendar
   app.put<{ Body: { bookingCalendarEntryId: string | null } }>(
     "/api/profile/booking-calendar",
