@@ -193,6 +193,11 @@ export default function DashboardPage() {
                 {weekly.syncSuccessRate}%
               </p>
               <p className="text-xs text-[var(--text-tertiary)]">Sync-Erfolg</p>
+              {weekly.syncCycles > 0 && (
+                <p className="font-mono text-[10px] text-[var(--text-tertiary)] mt-1">
+                  {weekly.syncCycles} Zyklen · p50: {weekly.latency.p50 < 1000 ? `${weekly.latency.p50}ms` : `${(weekly.latency.p50 / 1000).toFixed(1)}s`}
+                </p>
+              )}
             </div>
           </div>
         )}
