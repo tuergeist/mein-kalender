@@ -144,16 +144,36 @@ export async function dashboardRoutes(app: FastifyInstance) {
     return { sources };
   });
 
-  // Recent conflicts
+  // All unresolved conflicts
   app.get("/api/dashboard/conflicts", async (request) => {
     const { user } = request as unknown as AuthenticatedRequest;
 
     const conflicts = await prisma.conflict.findMany({
       where: { userId: user.id, resolvedAt: null },
       orderBy: { detectedAt: "desc" },
-      take: 10,
     });
 
     return { conflicts };
+  });
+
+  // Manually resolve a conflict
+  app.post<{ Params: { id: string } }>("/api/dashboard/conflicts/:id/resolve", async (request, reply) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+    const { id } = request.params;
+
+    const conflict = await prisma.conflict.findFirst({
+      where: { id, userId: user.id, resolvedAt: null },
+    });
+
+    if (!conflict) {
+      return reply.status(404).send({ error: "Conflict not found" });
+    }
+
+    await prisma.conflict.update({
+      where: { id },
+      data: { resolvedAt: new Date() },
+    });
+
+    return { ok: true };
   });
 }

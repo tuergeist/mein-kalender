@@ -44,16 +44,6 @@ interface SyncSource {
   lastSyncAt: string | null;
 }
 
-interface Conflict {
-  id: string;
-  eventATitle: string;
-  eventBTitle: string;
-  eventAStart: string;
-  eventASource: string;
-  eventBSource: string;
-  detectedAt: string;
-}
-
 interface Booking {
   id: string;
   guestName: string;
@@ -69,7 +59,6 @@ export default function DashboardPage() {
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [weekly, setWeekly] = useState<WeeklySummary | null>(null);
   const [sources, setSources] = useState<SyncSource[]>([]);
-  const [conflicts, setConflicts] = useState<Conflict[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [eventTypeCount, setEventTypeCount] = useState(0);
   const [syncTargetCount, setSyncTargetCount] = useState(0);
@@ -82,15 +71,13 @@ export default function DashboardPage() {
       apiAuthFetch("/api/dashboard/briefing", accessToken).then((r) => r.ok ? r.json() : null),
       apiAuthFetch("/api/dashboard/weekly-summary", accessToken).then((r) => r.ok ? r.json() : null),
       apiAuthFetch("/api/dashboard/sync-status", accessToken).then((r) => r.ok ? r.json() : { sources: [] }),
-      apiAuthFetch("/api/dashboard/conflicts", accessToken).then((r) => r.ok ? r.json() : { conflicts: [] }),
       apiAuthFetch("/api/bookings", accessToken).then((r) => r.ok ? r.json() : []),
       apiAuthFetch("/api/event-types", accessToken).then((r) => r.ok ? r.json() : []),
       apiAuthFetch("/api/sync-targets", accessToken).then((r) => r.ok ? r.json() : []),
-    ]).then(([b, w, s, c, bks, et, st]) => {
+    ]).then(([b, w, s, bks, et, st]) => {
       setBriefing(b);
       setWeekly(w);
       setSources(s.sources || []);
-      setConflicts(c.conflicts || []);
       setBookings(bks);
       setEventTypeCount(Array.isArray(et) ? et.length : 0);
       setSyncTargetCount(Array.isArray(st?.targets) ? st.targets.length : Array.isArray(st) ? st.length : 0);
@@ -154,26 +141,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Conflict Banner */}
-        {conflicts.length > 0 && (
-          <div id="conflict-banner" className="space-y-2">
-            {conflicts.map((c) => (
-              <Link key={c.id} href="/calendar" className="flex items-start gap-3 rounded-xl border border-[var(--color-amber-200)] bg-[var(--color-amber-50)] p-4 transition-shadow hover:shadow-md">
-                <span className="mt-0.5 text-lg">&#9888;</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-[var(--color-amber-800)]">Terminüberschneidung erkannt</p>
-                  <p className="mt-0.5 text-xs text-[var(--color-amber-700)]">
-                    {c.eventATitle} ({providerName(c.eventASource)}) und {c.eventBTitle} ({providerName(c.eventBSource)})
-                    <br />
-                    {formatDateTime(c.eventAStart)}
-                  </p>
-                </div>
-                <span className="mt-1 shrink-0 text-xs text-[var(--color-amber-400)]">→</span>
-              </Link>
-            ))}
-          </div>
-        )}
-
         {/* Weekly Summary */}
         {weekly && !loading && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -181,17 +148,10 @@ export default function DashboardPage() {
               <p className="font-display text-2xl font-bold">{weekly.meetings}</p>
               <p className="text-xs text-[var(--text-tertiary)]">Termine diese Woche</p>
             </Link>
-            {conflicts.length > 0 ? (
-              <a href="#conflict-banner" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
-                <p className="font-display text-2xl font-bold">{conflicts.length}</p>
-                <p className="text-xs text-[var(--text-tertiary)]">Überschneidungen</p>
-              </a>
-            ) : (
-              <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
-                <p className="font-display text-2xl font-bold">0</p>
-                <p className="text-xs text-[var(--text-tertiary)]">Überschneidungen</p>
-              </div>
-            )}
+            <Link href="/conflicts" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
+              <p className={`font-display text-2xl font-bold ${briefing && briefing.unresolvedConflicts > 0 ? "text-[var(--color-amber-600)]" : ""}`}>{briefing?.unresolvedConflicts ?? 0}</p>
+              <p className="text-xs text-[var(--text-tertiary)]">Überschneidungen</p>
+            </Link>
             <Link href="/settings" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
               <p className="font-display text-2xl font-bold">{weekly.calendarsConnected}</p>
               <p className="text-xs text-[var(--text-tertiary)]">Kalender verbunden</p>

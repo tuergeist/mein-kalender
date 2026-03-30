@@ -33,7 +33,7 @@ interface CalendarEvent {
   };
 }
 
-export function CalendarView() {
+export function CalendarView({ initialDate }: { initialDate?: string }) {
   const { data: session } = useSession();
   const calendarRef = useRef<FullCalendar>(null);
   const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
@@ -332,6 +332,7 @@ export function CalendarView() {
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+          initialDate={initialDate}
           initialView={isMobile ? "listWeek" : "timeGridWeek"}
           nowIndicator={true}
           scrollTime={`${String(Math.max(0, new Date().getHours() - 2)).padStart(2, "0")}:00:00`}
