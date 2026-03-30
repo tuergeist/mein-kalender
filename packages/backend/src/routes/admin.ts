@@ -227,6 +227,30 @@ export async function adminRoutes(app: FastifyInstance) {
     };
   });
 
+  // Force full resync for all Outlook sources (clears sync tokens)
+  app.post("/api/admin/full-resync-outlook", async () => {
+    const sources = await prisma.calendarSource.findMany({
+      where: { provider: "outlook" },
+      select: { id: true, userId: true },
+    });
+
+    // Clear all sync tokens
+    await prisma.calendarSource.updateMany({
+      where: { provider: "outlook" },
+      data: { syncToken: null },
+    });
+
+    // Queue sync jobs
+    const queue = getSyncQueue();
+    await Promise.all(
+      sources.map((s) =>
+        queue.add("sync-source", { sourceId: s.id, userId: s.userId }, { jobId: `sync-${s.id}-full` })
+      )
+    );
+
+    return { status: "queued", count: sources.length };
+  });
+
   // Update source sync interval
   app.patch<{
     Params: { id: string };
