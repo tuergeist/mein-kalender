@@ -26,7 +26,6 @@ export async function dashboardRoutes(app: FastifyInstance) {
           title: { not: { startsWith: "[Sync]" } },
         },
         orderBy: { startTime: "asc" },
-        take: 20,
         include: {
           calendarEntry: {
             select: { name: true, color: true, source: { select: { provider: true, label: true } } },
