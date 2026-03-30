@@ -4,105 +4,202 @@ import Base from '../layouts/Base.astro';
 const appUrl = 'https://app.mein-kalender.link';
 ---
 
-<Base title="mein-kalender.link — Alle deine Kalender an einem Ort">
+<Base title="mein-kalender.link — Nie wieder doppelt gebucht">
 
-  <!-- ======== Navbar ======== -->
+  <!-- Navbar -->
   <nav class="navbar">
     <div class="container navbar-inner">
-      <a href="/" class="navbar-brand" aria-label="mein-kalender.link Startseite">
-        <img src="/logo-horizontal.svg" alt="mein-kalender.link" class="navbar-logo" width="240" height="40" />
+      <a href="/" aria-label="Startseite">
+        <img src="/logo-horizontal.svg" alt="mein-kalender.link" class="navbar-logo" />
       </a>
-      <a href={`${appUrl}/auth/signup`} class="btn-primary">Jetzt starten</a>
+      <div class="navbar-links">
+        <a href="#features">Features</a>
+        <a href="#preise">Preise</a>
+        <a href={`${appUrl}/auth/signin`} class="nav-link-muted">Anmelden</a>
+        <a href={`${appUrl}/auth/signup`} class="btn-nav">Kostenlos testen</a>
+      </div>
+      <a href={`${appUrl}/auth/signup`} class="btn-nav mobile-only">Kostenlos testen</a>
     </div>
   </nav>
 
   <main>
-    <!-- ======== Hero ======== -->
+    <!-- Hero -->
     <section class="hero">
       <div class="container hero-inner">
-        <img src="/logo-full.svg" alt="mein-kalender.link Logo" class="hero-logo" width="340" height="170" />
-        <h1 class="hero-headline">Alle deine Kalender an einem Ort</h1>
-        <p class="hero-subtitle">
-          Google, Outlook und ICS-Kalender zusammenführen, Termine zwischen Konten kopieren
-          und Buchungsseiten für deine Verfügbarkeit erstellen.
-        </p>
-        <div class="hero-actions">
-          <a href={`${appUrl}/auth/signup`} class="btn-primary btn-lg">Kostenlos starten</a>
-          <a href="#features" class="btn-secondary btn-lg">Mehr erfahren</a>
+        <div class="hero-text">
+          <h1>Nie wieder doppelt gebucht.</h1>
+          <p class="hero-sub">
+            Kalender-Sync, die deine Daten nicht zerstört.
+            <span class="text-muted">Google, Outlook und Proton — alles auf einen Blick.</span>
+          </p>
+          <div class="hero-cta">
+            <a href={`${appUrl}/auth/signup`} class="btn-primary">Kostenlos testen</a>
+            <p class="cta-sub">14 Tage kostenlos. Keine Kreditkarte nötig.</p>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <svg width="320" height="280" viewBox="0 0 320 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="20" width="72" height="72" rx="16" fill="#4285F4" opacity="0.9"/>
+            <rect x="32" y="38" width="48" height="4" rx="2" fill="#fff" opacity="0.8"/>
+            <rect x="32" y="48" width="36" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <rect x="32" y="58" width="42" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <text x="56" y="34" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Google</text>
+
+            <rect x="230" y="20" width="72" height="72" rx="16" fill="#0078D4" opacity="0.9"/>
+            <rect x="242" y="38" width="48" height="4" rx="2" fill="#fff" opacity="0.8"/>
+            <rect x="242" y="48" width="36" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <rect x="242" y="58" width="42" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <text x="266" y="34" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Outlook</text>
+
+            <rect x="125" y="0" width="72" height="72" rx="16" fill="#6D4AFF" opacity="0.9"/>
+            <rect x="137" y="18" width="48" height="4" rx="2" fill="#fff" opacity="0.8"/>
+            <rect x="137" y="28" width="36" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <rect x="137" y="38" width="42" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <text x="161" y="14" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Proton</text>
+
+            <path d="M56 92 L140 140" stroke="#FDA4AF" stroke-width="2" stroke-dasharray="4 4"/>
+            <path d="M266 92 L180 140" stroke="#FDA4AF" stroke-width="2" stroke-dasharray="4 4"/>
+            <path d="M161 72 L161 140" stroke="#FDA4AF" stroke-width="2" stroke-dasharray="4 4"/>
+
+            <rect x="110" y="140" width="100" height="100" rx="20" fill="#9F1239"/>
+            <rect x="124" y="162" width="72" height="4" rx="2" fill="#fff" opacity="0.9"/>
+            <rect x="124" y="174" width="56" height="4" rx="2" fill="#fff" opacity="0.7"/>
+            <rect x="124" y="186" width="64" height="4" rx="2" fill="#fff" opacity="0.7"/>
+            <rect x="124" y="198" width="40" height="4" rx="2" fill="#fff" opacity="0.5"/>
+            <text x="160" y="156" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Satoshi, sans-serif">Mein Kalender</text>
+
+            <circle cx="200" cy="150" r="8" fill="#059669"/>
+            <path d="M196 150 L199 153 L204 147" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
       </div>
     </section>
 
-    <!-- ======== Features ======== -->
+    <!-- Trust Section -->
+    <section class="trust-section">
+      <div class="container trust-inner">
+        <div class="trust-text">
+          <h2>Du siehst sofort, ob alles funktioniert.</h2>
+          <p>Kein anderes Tool zeigt dir die Gesundheit deiner Synchronisierung. Events synchronisiert, Integrität geprüft, Provider-Status auf einen Blick.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-label">SYNC-COCKPIT</div>
+          <div class="trust-grid">
+            <div class="trust-stat">
+              <span class="stat-number">247</span>
+              <span class="stat-label">Events synchronisiert</span>
+            </div>
+            <div class="trust-stat">
+              <span class="stat-number stat-green">99.9%</span>
+              <span class="stat-label">Integrität</span>
+            </div>
+            <div class="trust-stat">
+              <span class="stat-number">3</span>
+              <span class="stat-label">Provider verbunden</span>
+            </div>
+          </div>
+          <div class="trust-providers">
+            <span class="provider-dot green"></span><span>Google</span>
+            <span class="provider-dot green"></span><span>Outlook</span>
+            <span class="provider-dot green"></span><span>Proton</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
     <section id="features" class="features">
       <div class="container">
-        <h2 class="section-title">Was mein-kalender.link kann</h2>
-        <div class="features-grid">
-
-          <!-- Feature 1: Consolidate -->
-          <div class="card feature-card">
-            <div class="feature-icon" aria-hidden="true">
-              <!-- Lucide: layers -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.84Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
-            </div>
-            <h3>Kalender zusammenführen</h3>
-            <p>Google, Outlook und ICS-Kalender in einer einzigen Ansicht. Behalte den Überblick über alle deine Termine.</p>
+        <!-- Feature 1 -->
+        <div class="feature-row">
+          <div class="feature-text">
+            <h2>Drei Firmen. Drei Buchungsseiten. Ein Tool.</h2>
+            <p>Jede Buchungsseite mit eigenem Branding. Dein Beratungsmandat sieht anders aus als dein Board-Sitz.</p>
           </div>
-
-          <!-- Feature 2: Copy -->
-          <div class="card feature-card">
-            <div class="feature-icon" aria-hidden="true">
-              <!-- Lucide: copy -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          <div class="feature-visual">
+            <div class="cards-fan">
+              <div class="fan-card" style="transform: rotate(-6deg); top: 8px; left: 0;">
+                <div class="fan-bar" style="background: #4285F4;"></div>
+              </div>
+              <div class="fan-card" style="transform: rotate(-2deg); top: 4px; left: 24px;">
+                <div class="fan-bar" style="background: #059669;"></div>
+              </div>
+              <div class="fan-card" style="transform: rotate(2deg); top: 0; left: 48px;">
+                <div class="fan-bar" style="background: #9F1239;"></div>
+              </div>
             </div>
-            <h3>Kalender kopieren</h3>
-            <p>Synchronisiere Termine zwischen verschiedenen Konten. Dein Arbeitskalender und Privatkalender bleiben automatisch aktuell.</p>
           </div>
+        </div>
 
-          <!-- Feature 3: Booking -->
-          <div class="card feature-card">
-            <div class="feature-icon" aria-hidden="true">
-              <!-- Lucide: calendar-check -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+        <!-- Feature 2 (reversed) -->
+        <div class="feature-row reversed">
+          <div class="feature-text">
+            <h2>Proton. Outlook. Google. Alles im Blick.</h2>
+            <p>Google und Outlook voll synchronisiert. Proton Calendar als Leseansicht integriert — Schreib-Sync kommt bald.</p>
+          </div>
+          <div class="feature-visual">
+            <div class="provider-logos">
+              <div class="provider-logo" style="background: #4285F4;">G</div>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L14 7M19 12L14 17" stroke="#FDA4AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="provider-logo" style="background: #0078D4;">O</div>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L14 7M19 12L14 17" stroke="#FDA4AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="provider-logo" style="background: #6D4AFF;">P</div>
             </div>
-            <h3>Buchungsseiten</h3>
-            <p>Teile deine Verfügbarkeit und lass andere direkt Termine bei dir buchen. Einfach, ohne Hin-und-her-Mails.</p>
           </div>
+        </div>
 
+        <!-- Feature 3 -->
+        <div class="feature-row">
+          <div class="feature-text">
+            <h2>Überschneidungen sofort erkennen.</h2>
+            <p>Board Meeting um 14 Uhr bei Firma A, Kundencall um 14 Uhr bei Firma B? Wir sagen dir Bescheid.</p>
+          </div>
+          <div class="feature-visual">
+            <div class="conflict-card">
+              <span class="conflict-icon">&#9888;</span>
+              <div>
+                <strong>Terminüberschneidung erkannt</strong>
+                <p>Board Meeting (Outlook) und Kundencall (Google)<br/>Morgen, 14:00 — 15:00</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ======== Trust / EU ======== -->
-    <section class="trust">
-      <div class="container">
-        <div class="trust-card card">
-          <div class="trust-icon" aria-hidden="true">
-            <!-- Lucide: shield-check -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+    <!-- Pricing -->
+    <section id="preise" class="pricing">
+      <div class="container pricing-inner">
+        <h2>Ein Plan. Alles drin.</h2>
+        <div class="price-card">
+          <div class="price-amount">
+            <span class="price-number">19&thinsp;&euro;</span>
+            <span class="price-period">/Monat</span>
           </div>
-          <div class="trust-content">
-            <h2>Gehostet in der EU</h2>
-            <p>
-              mein-kalender.link wird ausschließlich auf Servern in der Europäischen Union betrieben.
-              Deine Kalenderdaten unterliegen der DSGVO und verlassen die EU nicht.
-            </p>
-          </div>
+          <ul class="price-features">
+            <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Multi-Kalender-Sync</li>
+            <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Gebrandete Buchungsseiten</li>
+            <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sync-Cockpit</li>
+            <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Proton Calendar (Leseansicht)</li>
+            <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Überschneidungs-Erkennung</li>
+            <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Unbegrenzte Kalender</li>
+          </ul>
+          <a href={`${appUrl}/auth/signup`} class="btn-primary" style="width:100%;">Kostenlos testen</a>
+          <p class="cta-sub">14 Tage kostenlos. Keine Kreditkarte nötig.</p>
         </div>
       </div>
     </section>
 
-    <!-- ======== CTA ======== -->
-    <section class="cta">
-      <div class="container cta-inner">
-        <h2>Bereit, deine Kalender zu vereinen?</h2>
-        <p>Kostenlos starten — keine Kreditkarte nötig.</p>
-        <a href={`${appUrl}/auth/signup`} class="btn-primary btn-lg">Jetzt kostenlos registrieren</a>
+    <!-- Footer CTA -->
+    <section class="footer-cta">
+      <div class="container" style="text-align:center;">
+        <h2>Schluss mit Kalender-Chaos.</h2>
+        <a href={`${appUrl}/auth/signup`} class="btn-white">Jetzt starten</a>
       </div>
     </section>
   </main>
 
-  <!-- ======== Footer ======== -->
+  <!-- Footer -->
   <footer class="footer">
     <div class="container footer-inner">
       <div class="footer-company">
@@ -113,226 +210,123 @@ const appUrl = 'https://app.mein-kalender.link';
         <a href="/impressum">Impressum</a>
         <a href="/datenschutz">Datenschutz</a>
       </nav>
-      <p class="footer-copy">&copy; {new Date().getFullYear()} Expert Sieve UG (haftungsbeschränkt). Alle Rechte vorbehalten.</p>
+      <p class="footer-copy">&copy; {new Date().getFullYear()} Expert Sieve UG (haftungsbeschränkt)</p>
     </div>
   </footer>
 
   <style>
-    /* ======== Navbar ======== */
-    .navbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--bg-primary);
-      border-bottom: 1px solid var(--border-subtle);
-    }
-    .navbar-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 64px;
-    }
-    .navbar-brand {
-      display: flex;
-      align-items: center;
-    }
-    .navbar-logo {
-      height: 36px;
-      width: auto;
-    }
-
-    /* ======== Hero ======== */
-    .hero {
-      padding: 80px 0 64px;
-      text-align: center;
-    }
-    .hero-inner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-6);
-    }
-    .hero-logo {
-      width: 280px;
-      height: auto;
-    }
-    .hero-headline {
-      font-size: 36px;
-      font-weight: 600;
-      line-height: 1.2;
-      letter-spacing: -0.5px;
-      max-width: 600px;
-    }
-    .hero-subtitle {
-      font-size: 18px;
-      color: var(--text-secondary);
-      max-width: 560px;
-      line-height: 1.6;
-    }
-    .hero-actions {
-      display: flex;
-      gap: var(--space-4);
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: var(--space-4);
-    }
-
-    /* ======== Features ======== */
-    .features {
-      padding: 80px 0;
-      background: var(--bg-secondary);
-    }
-    .section-title {
-      text-align: center;
-      margin-bottom: var(--space-12);
-    }
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--space-6);
-    }
-    .feature-card {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-3);
-      transition: box-shadow var(--transition-normal), transform var(--transition-normal);
-    }
-    .feature-card:hover {
-      box-shadow: var(--shadow-md);
-      transform: translateY(-2px);
-    }
-    .feature-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius-md);
-      background: var(--color-purple-50);
-      color: var(--color-purple-600);
-    }
-    .feature-card p {
-      color: var(--text-secondary);
-      font-size: 15px;
-    }
-
-    /* ======== Trust ======== */
-    .trust {
-      padding: 64px 0;
-    }
-    .trust-card {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--space-6);
-      max-width: 700px;
-      margin: 0 auto;
-      padding: var(--space-8);
-    }
-    .trust-icon {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 56px;
-      height: 56px;
-      border-radius: var(--radius-lg);
-      background: var(--color-teal-50);
-      color: var(--color-teal-600);
-    }
-    .trust-content h2 {
-      margin-bottom: var(--space-2);
-    }
-    .trust-content p {
-      color: var(--text-secondary);
-    }
-
-    /* ======== CTA ======== */
-    .cta {
-      padding: 80px 0;
-      background: var(--bg-secondary);
-      text-align: center;
-    }
-    .cta-inner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-4);
-    }
-    .cta-inner p {
-      color: var(--text-secondary);
-      font-size: 18px;
-    }
-    .cta-inner .btn-primary {
-      margin-top: var(--space-4);
-    }
-
-    /* ======== Footer ======== */
-    .footer {
-      padding: var(--space-10) 0;
-      border-top: 1px solid var(--border-subtle);
-    }
-    .footer-inner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-4);
-      text-align: center;
-    }
-    .footer-company {
-      color: var(--text-secondary);
-      font-size: 14px;
-    }
-    .footer-name {
-      font-weight: 500;
-    }
-    .footer-address {
-      color: var(--text-tertiary);
-    }
-    .footer-links {
-      display: flex;
-      gap: var(--space-6);
-    }
-    .footer-links a {
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-    .footer-links a:hover {
-      color: var(--interactive-primary);
-    }
-    .footer-copy {
-      font-size: 12px;
-      color: var(--text-tertiary);
-    }
-
-    /* ======== Responsive ======== */
+    /* Navbar */
+    .navbar { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--color-stone-200); }
+    .navbar-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    .navbar-logo { height: 32px; width: auto; }
+    .navbar-links { display: flex; align-items: center; gap: 32px; }
+    .navbar-links a { font-size: 14px; font-weight: 500; color: var(--color-stone-500); transition: color 0.15s; }
+    .navbar-links a:hover { color: var(--color-stone-900); }
+    .nav-link-muted { color: var(--color-stone-500); }
+    .btn-nav { display: inline-flex; align-items: center; background: var(--color-rose-700); color: #fff !important; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; transition: background 0.15s; }
+    .btn-nav:hover { background: var(--color-rose-800); color: #fff; }
+    .mobile-only { display: none; }
     @media (max-width: 768px) {
-      .hero {
-        padding: 48px 0 40px;
-      }
-      .hero-headline {
-        font-size: 28px;
-      }
-      .hero-subtitle {
-        font-size: 16px;
-      }
-      .hero-logo {
-        width: 220px;
-      }
-      .features {
-        padding: 48px 0;
-      }
-      .features-grid {
-        grid-template-columns: 1fr;
-        gap: var(--space-4);
-      }
-      .trust-card {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-      }
-      .cta {
-        padding: 48px 0;
-      }
+      .navbar-links { display: none; }
+      .mobile-only { display: inline-flex; }
     }
+
+    /* Hero */
+    .hero { padding: 80px 0 64px; }
+    .hero-inner { display: flex; align-items: center; gap: 48px; }
+    .hero-text { flex: 1; }
+    .hero-text h1 { font-family: var(--font-display); font-size: 52px; font-weight: 700; line-height: 1.1; letter-spacing: -0.04em; color: var(--color-stone-900); }
+    .hero-sub { margin-top: 16px; font-size: 18px; line-height: 1.6; color: var(--color-stone-600); }
+    .text-muted { color: var(--color-stone-400); }
+    .hero-cta { margin-top: 24px; }
+    .cta-sub { margin-top: 8px; font-size: 14px; color: var(--color-stone-400); }
+    .hero-visual { flex-shrink: 0; }
+    @media (max-width: 768px) {
+      .hero { padding: 48px 0 32px; }
+      .hero-inner { flex-direction: column; text-align: center; }
+      .hero-text h1 { font-size: 36px; }
+      .hero-visual { order: -1; }
+      .hero-cta { display: flex; flex-direction: column; align-items: center; }
+    }
+
+    /* Trust Section */
+    .trust-section { background: #fff; padding: 80px 0; }
+    .trust-inner { display: flex; align-items: center; gap: 48px; }
+    .trust-text { flex: 1; }
+    .trust-text h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+    .trust-text p { margin-top: 12px; color: var(--color-stone-600); }
+    .trust-card { flex: 1; background: #fff; border: 1px solid var(--color-stone-200); border-radius: 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .trust-label { font-family: var(--font-display); font-size: 12px; font-weight: 600; color: var(--color-stone-400); letter-spacing: 0.08em; margin-bottom: 16px; }
+    .trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .trust-stat { background: var(--color-stone-50); border-radius: 12px; padding: 16px; }
+    .stat-number { font-family: var(--font-display); font-size: 24px; font-weight: 700; display: block; }
+    .stat-green { color: #059669; }
+    .stat-label { font-size: 12px; color: var(--color-stone-400); }
+    .trust-providers { display: flex; align-items: center; gap: 12px; margin-top: 16px; font-size: 12px; color: var(--color-stone-400); }
+    .provider-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .provider-dot.green { background: #059669; }
+    @media (max-width: 768px) {
+      .trust-inner { flex-direction: column; }
+      .trust-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Features */
+    .features { padding: 80px 0; }
+    .feature-row { display: flex; align-items: center; gap: 48px; margin-bottom: 80px; }
+    .feature-row:last-child { margin-bottom: 0; }
+    .feature-row.reversed { flex-direction: row-reverse; }
+    .feature-text { flex: 1; }
+    .feature-text h2 { font-family: var(--font-display); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+    .feature-text p { margin-top: 8px; color: var(--color-stone-600); }
+    .feature-visual { flex: 1; display: flex; justify-content: center; }
+    @media (max-width: 768px) {
+      .feature-row, .feature-row.reversed { flex-direction: column; gap: 24px; margin-bottom: 48px; }
+    }
+
+    /* Booking cards fan */
+    .cards-fan { position: relative; width: 256px; height: 192px; }
+    .fan-card { position: absolute; width: 192px; height: 160px; background: #fff; border: 1px solid var(--color-stone-200); border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .fan-bar { height: 8px; width: 64px; border-radius: 999px; }
+
+    /* Provider logos */
+    .provider-logos { display: flex; align-items: center; gap: 16px; }
+    .provider-logo { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+    /* Conflict card */
+    .conflict-card { display: flex; align-items: flex-start; gap: 12px; background: var(--color-amber-50); border: 1px solid var(--color-amber-200); border-radius: 12px; padding: 16px; max-width: 320px; }
+    .conflict-icon { font-size: 20px; margin-top: 2px; }
+    .conflict-card strong { font-size: 14px; color: var(--color-amber-800); display: block; }
+    .conflict-card p { font-size: 12px; color: var(--color-amber-700); margin-top: 4px; line-height: 1.5; }
+
+    /* Pricing */
+    .pricing { background: #fff; padding: 80px 0; }
+    .pricing-inner { display: flex; flex-direction: column; align-items: center; }
+    .pricing-inner > h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+    .price-card { margin-top: 40px; width: 100%; max-width: 420px; border: 1px solid var(--color-stone-200); border-radius: 16px; padding: 32px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); background: #fff; text-align: center; }
+    .price-amount { display: flex; align-items: baseline; justify-content: center; gap: 4px; }
+    .price-number { font-family: var(--font-display); font-size: 52px; font-weight: 700; letter-spacing: -0.04em; }
+    .price-period { font-size: 18px; color: var(--color-stone-400); }
+    .price-features { list-style: none; margin-top: 32px; text-align: left; display: flex; flex-direction: column; gap: 12px; }
+    .price-features li { display: flex; align-items: center; gap: 12px; font-size: 16px; }
+    .price-features li svg { flex-shrink: 0; }
+    .price-card .btn-primary { margin-top: 32px; }
+    .price-card .cta-sub { margin-top: 12px; text-align: center; }
+
+    /* Footer CTA */
+    .footer-cta { background: var(--color-stone-900); padding: 64px 0; }
+    .footer-cta h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: #fff; margin-bottom: 24px; }
+    .btn-white { display: inline-flex; align-items: center; justify-content: center; background: #fff; color: var(--color-rose-700); font-family: var(--font-body); font-weight: 500; font-size: 16px; padding: 14px 32px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.15s; }
+    .btn-white:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,0,0,0.1); color: var(--color-rose-700); }
+
+    /* Footer */
+    .footer { background: var(--color-stone-900); border-top: 1px solid rgba(255,255,255,0.1); padding: 32px 0; }
+    .footer-inner { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+    .footer-company { font-size: 14px; color: var(--color-stone-400); }
+    .footer-name { font-weight: 500; }
+    .footer-address { color: var(--color-stone-500); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 14px; color: var(--color-stone-400); }
+    .footer-links a:hover { color: var(--color-stone-200); }
+    .footer-copy { font-size: 12px; color: var(--color-stone-500); }
   </style>
 </Base>
