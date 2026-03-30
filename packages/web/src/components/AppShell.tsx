@@ -9,6 +9,15 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Input,
+  Textarea,
+  RadioGroup,
+  Radio,
 } from "@heroui/react";
 import Link from "next/link";
 import { apiAuthFetch } from "@/lib/api";
@@ -74,6 +83,28 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const heartbeat = useSyncHeartbeat();
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [fbType, setFbType] = useState<"bug" | "feature">("bug");
+  const [fbTitle, setFbTitle] = useState("");
+  const [fbDesc, setFbDesc] = useState("");
+  const [fbSending, setFbSending] = useState(false);
+  const [fbDone, setFbDone] = useState(false);
+
+  async function handleFeedbackSubmit() {
+    const token = (session as { accessToken?: string } | null)?.accessToken;
+    if (!token || !fbTitle.trim()) return;
+    setFbSending(true);
+    try {
+      await apiAuthFetch("/api/feedback", token, {
+        method: "POST",
+        body: JSON.stringify({ type: fbType, title: fbTitle.trim(), description: fbDesc.trim() || undefined }),
+      });
+      setFbDone(true);
+      setTimeout(() => { setShowFeedback(false); setFbDone(false); setFbTitle(""); setFbDesc(""); setFbType("bug"); }, 1500);
+    } finally {
+      setFbSending(false);
+    }
+  }
 
   return (
     <div className="flex h-screen flex-col bg-stone-50">
@@ -128,6 +159,9 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
             <DropdownMenu>
               <DropdownItem key="profile" href="/settings/profile">
                 Profil
+              </DropdownItem>
+              <DropdownItem key="feedback" onPress={() => setShowFeedback(true)}>
+                Feedback geben
               </DropdownItem>
               <DropdownItem
                 key="logout"
@@ -214,6 +248,33 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-3 md:p-5">{children}</main>
       </div>
+
+      {/* Feedback Modal */}
+      <Modal isOpen={showFeedback} onClose={() => { setShowFeedback(false); setFbDone(false); }}>
+        <ModalContent>
+          {fbDone ? (
+            <ModalBody className="py-10 text-center">
+              <p className="text-lg font-medium text-[#059669]">Danke fuer dein Feedback!</p>
+            </ModalBody>
+          ) : (
+            <>
+              <ModalHeader>Feedback geben</ModalHeader>
+              <ModalBody className="flex flex-col gap-4">
+                <RadioGroup label="Art" orientation="horizontal" value={fbType} onValueChange={(v) => setFbType(v as "bug" | "feature")}>
+                  <Radio value="bug">Fehler melden</Radio>
+                  <Radio value="feature">Wunsch / Idee</Radio>
+                </RadioGroup>
+                <Input label="Titel" placeholder="Kurze Beschreibung" value={fbTitle} onValueChange={setFbTitle} variant="bordered" />
+                <Textarea label="Details (optional)" placeholder="Was ist passiert? Was wuenschst du dir?" value={fbDesc} onValueChange={setFbDesc} variant="bordered" minRows={3} />
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={() => setShowFeedback(false)}>Abbrechen</Button>
+                <Button color="primary" isLoading={fbSending} isDisabled={fbTitle.trim().length < 3} onPress={handleFeedbackSubmit}>Absenden</Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

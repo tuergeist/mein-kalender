@@ -46,6 +46,7 @@ services:
       WEB_URL: ${WEB_URL:-http://localhost:4201}
       API_PORT: "4200"
       API_HOST: "0.0.0.0"
+      TODOIST_API_TOKEN: ${TODOIST_API_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy
