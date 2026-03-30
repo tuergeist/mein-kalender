@@ -189,14 +189,21 @@ export default function DashboardPage() {
               <p className="text-xs text-[var(--text-tertiary)]">Kalender verbunden</p>
             </div>
             <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
-              <p className={`font-display text-2xl font-bold ${weekly.syncSuccessRate >= 99 ? "text-[#059669]" : weekly.syncSuccessRate >= 95 ? "text-[var(--color-amber-600)]" : "text-red-600"}`}>
-                {weekly.syncSuccessRate}%
-              </p>
-              <p className="text-xs text-[var(--text-tertiary)]">Sync-Erfolg</p>
-              {weekly.syncCycles > 0 && (
-                <p className="font-mono text-[10px] text-[var(--text-tertiary)] mt-1">
-                  {weekly.syncCycles} Zyklen · p50: {weekly.latency.p50 < 1000 ? `${weekly.latency.p50}ms` : `${(weekly.latency.p50 / 1000).toFixed(1)}s`}
-                </p>
+              {weekly.syncSuccessRate >= 99 ? (
+                <>
+                  <p className="font-display text-2xl font-bold text-[#059669]">Läuft</p>
+                  <p className="text-xs text-[var(--text-tertiary)]">Alle Kalender synchron</p>
+                </>
+              ) : weekly.syncSuccessRate >= 90 ? (
+                <>
+                  <p className="font-display text-2xl font-bold text-[var(--color-amber-600)]">Teilweise</p>
+                  <p className="text-xs text-[var(--text-tertiary)]">Einzelne Syncs verzögert</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-display text-2xl font-bold text-red-600">Gestört</p>
+                  <p className="text-xs text-[var(--text-tertiary)]">Sync-Probleme erkannt</p>
+                </>
               )}
             </div>
           </div>
