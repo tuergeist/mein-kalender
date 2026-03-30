@@ -195,7 +195,7 @@ export default function DashboardPage() {
               <p className="font-display text-2xl font-bold">{weekly.calendarsConnected}</p>
               <p className="text-xs text-[var(--text-tertiary)]">Kalender verbunden</p>
             </Link>
-            <Link href="/sync" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
+            <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
               {weekly.syncSuccessRate >= 97 ? (
                 <>
                   <p className="font-display text-2xl font-bold text-[#059669]">Läuft</p>
@@ -212,7 +212,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-[var(--text-tertiary)]">Sync-Probleme erkannt</p>
                 </>
               )}
-            </Link>
+            </div>
           </div>
         )}
 
