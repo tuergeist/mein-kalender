@@ -30,7 +30,7 @@ interface WeeklySummary {
   meetings: number;
   overlapsDetected: number;
   calendarsConnected: number;
-  integrityScore: number;
+  syncSuccessRate: number;
   syncCycles: number;
   latency: { p50: number; p95: number };
 }
@@ -189,10 +189,10 @@ export default function DashboardPage() {
               <p className="text-xs text-[var(--text-tertiary)]">Kalender verbunden</p>
             </div>
             <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
-              <p className={`font-display text-2xl font-bold ${weekly.integrityScore >= 99 ? "text-[#059669]" : weekly.integrityScore >= 95 ? "text-[var(--color-amber-600)]" : "text-red-600"}`}>
-                {weekly.integrityScore}%
+              <p className={`font-display text-2xl font-bold ${weekly.syncSuccessRate >= 99 ? "text-[#059669]" : weekly.syncSuccessRate >= 95 ? "text-[var(--color-amber-600)]" : "text-red-600"}`}>
+                {weekly.syncSuccessRate}%
               </p>
-              <p className="text-xs text-[var(--text-tertiary)]">Integrität</p>
+              <p className="text-xs text-[var(--text-tertiary)]">Sync-Erfolg</p>
             </div>
           </div>
         )}

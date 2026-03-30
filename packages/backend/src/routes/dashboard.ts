@@ -20,8 +20,9 @@ export async function dashboardRoutes(app: FastifyInstance) {
     const [events, unresolvedConflicts, sources] = await Promise.all([
       prisma.event.findMany({
         where: {
-          calendarEntry: { source: { userId: user.id }, isTarget: false },
-          startTime: { gte: startOfDay, lt: endOfDay },
+          calendarEntry: { source: { userId: user.id }, isTarget: false, enabled: true },
+          startTime: { lt: endOfDay },
+          endTime: { gte: startOfDay },
           title: { not: { startsWith: "[Sync]" } },
         },
         orderBy: { startTime: "asc" },
@@ -76,7 +77,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
     };
   });
 
-  // Weekly summary: meetings, overlaps, calendars, integrity
+  // Weekly summary: meetings, overlaps, calendars, sync success
   app.get("/api/dashboard/weekly-summary", async (request) => {
     const { user } = request as unknown as AuthenticatedRequest;
 
@@ -89,8 +90,9 @@ export async function dashboardRoutes(app: FastifyInstance) {
     const [eventCount, conflictsDetected, calendarCount, healthRecords] = await Promise.all([
       prisma.event.count({
         where: {
-          calendarEntry: { source: { userId: user.id }, isTarget: false },
-          startTime: { gte: startOfWeek, lt: endOfWeek },
+          calendarEntry: { source: { userId: user.id }, isTarget: false, enabled: true },
+          startTime: { lt: endOfWeek },
+          endTime: { gte: startOfWeek },
           title: { not: { startsWith: "[Sync]" } },
         },
       }),
@@ -106,7 +108,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
 
     const totalCycles = healthRecords.length;
     const matchingCycles = healthRecords.filter((r) => r.checksumMatch).length;
-    const integrityScore = totalCycles > 0 ? Math.round((matchingCycles / totalCycles) * 1000) / 10 : 100;
+    const syncSuccessRate = totalCycles > 0 ? Math.round((matchingCycles / totalCycles) * 1000) / 10 : 100;
 
     const latencies = healthRecords.map((r) => r.latencyMs).sort((a, b) => a - b);
     const p50 = latencies.length > 0 ? latencies[Math.floor(latencies.length * 0.5)] : 0;
@@ -117,7 +119,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
       meetings: eventCount,
       overlapsDetected: conflictsDetected,
       calendarsConnected: calendarCount,
-      integrityScore,
+      syncSuccessRate,
       syncCycles: totalCycles,
       latency: { p50, p95 },
     };

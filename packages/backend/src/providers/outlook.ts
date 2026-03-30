@@ -309,14 +309,28 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
     if (item.categories) metadata.categories = item.categories;
     if (item.type) metadata.outlookType = item.type;
 
-    // Better fallback titles for Outlook events without a subject
+    // Better fallback titles for Outlook events without a subject.
+    // IMPORTANT: The Graph API delta endpoint may omit "subject" entirely
+    // when it hasn't changed. We must distinguish between:
+    //   - subject missing from response (delta didn't include it) → keep existing title
+    //   - subject present but empty string → genuine no-title event
+    const subjectPresent = "subject" in item;
     let title = (item.subject as string) || "";
-    if (!title) {
+    if (subjectPresent && !title) {
       if (rawShowAs === "oof") title = "Out of Office";
       else if (rawShowAs === "workingElsewhere") title = "Working Elsewhere";
       else if (rawShowAs === "free") title = "Free";
       else if (rawShowAs === "tentative") title = "Tentative";
       else title = "(No title)";
+    }
+    if (!subjectPresent) {
+      metadata._subjectMissing = true;
+    }
+    if (!("body" in item)) {
+      metadata._bodyMissing = true;
+    }
+    if (!("location" in item)) {
+      metadata._locationMissing = true;
     }
 
     return {

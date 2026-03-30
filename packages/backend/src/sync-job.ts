@@ -129,6 +129,13 @@ async function syncCalendarEntry(
     fetchDaysInAdvance
   );
 
+  // Strip internal delta flags from providerMetadata before persisting
+  function cleanMetadata(meta: Record<string, unknown> | undefined | null): object | undefined {
+    if (!meta) return undefined;
+    const { _subjectMissing, _bodyMissing, _locationMissing, ...rest } = meta;
+    return Object.keys(rest).length > 0 ? rest : undefined;
+  }
+
   // Process created events in a single transaction
   if (delta.created.length > 0) {
     await prisma.$transaction(
@@ -149,7 +156,7 @@ async function syncCalendarEntry(
             startTime: event.startTime,
             endTime: event.endTime,
             allDay: event.allDay,
-            providerMetadata: event.providerMetadata as object ?? undefined,
+            providerMetadata: cleanMetadata(event.providerMetadata),
           },
           update: {
             title: event.title,
@@ -158,7 +165,7 @@ async function syncCalendarEntry(
             startTime: event.startTime,
             endTime: event.endTime,
             allDay: event.allDay,
-            providerMetadata: event.providerMetadata as object ?? undefined,
+            providerMetadata: cleanMetadata(event.providerMetadata),
           },
         })
       )
@@ -166,20 +173,46 @@ async function syncCalendarEntry(
   }
 
   // Process updated events
+  // Note: Delta responses from providers (especially Outlook Graph API) may
+  // return sparse objects with only changed fields. We must avoid overwriting
+  // existing data with empty/fallback values when a field was simply not
+  // included in the delta response.
   for (const event of delta.updated) {
+    const meta = event.providerMetadata as Record<string, unknown> | null;
+    const subjectMissing = meta?._subjectMissing === true;
+
+    const bodyMissing = meta?._bodyMissing === true;
+    const locationMissing = meta?._locationMissing === true;
+
+    const data: Record<string, unknown> = {
+      startTime: event.startTime,
+      endTime: event.endTime,
+      allDay: event.allDay,
+    };
+
+    // Only update fields that the provider actually returned in the delta.
+    // Outlook's Graph API delta endpoint may omit unchanged fields.
+    if (!subjectMissing) {
+      data.title = event.title;
+    }
+    if (!bodyMissing) {
+      data.description = event.description;
+    }
+    if (!locationMissing) {
+      data.location = event.location;
+    }
+
+    const cleaned = cleanMetadata(meta);
+    if (cleaned) {
+      data.providerMetadata = cleaned;
+    }
+
     await prisma.event.updateMany({
       where: {
         calendarEntryId: entry.id,
         sourceEventId: event.sourceEventId,
       },
-      data: {
-        title: event.title,
-        description: event.description,
-        location: event.location,
-        startTime: event.startTime,
-        endTime: event.endTime,
-        allDay: event.allDay,
-      },
+      data,
     });
   }
 
