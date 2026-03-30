@@ -159,56 +159,82 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
     syncToken?: string | null,
     fetchDaysInAdvance?: number
   ): Promise<EventDelta> {
-    let url: string;
-
     if (syncToken) {
-      url = syncToken; // deltaToken is a full URL for Graph API
-    } else {
-      const timeMin = new Date();
-      timeMin.setDate(timeMin.getDate() - 30);
-      const daysAhead = fetchDaysInAdvance || 90;
-      const timeMax = new Date(Date.now() + daysAhead * 86400000);
-      const selectFields = "id,subject,body,start,end,location,isAllDay,showAs,responseStatus,type,categories,isCancelled";
-      url = `${GRAPH_API_BASE}/me/calendars/${calendarId}/calendarView/delta?startDateTime=${timeMin.toISOString()}&endDateTime=${timeMax.toISOString()}&$select=${selectFields}`;
+      return this.getDeltaEvents(token, calendarId, syncToken);
     }
+    return this.getFullEvents(token, calendarId, fetchDaysInAdvance);
+  }
+
+  // Full sync: use calendarView (not delta) to get complete event data
+  private async getFullEvents(
+    token: TokenSet,
+    calendarId: string,
+    fetchDaysInAdvance?: number
+  ): Promise<EventDelta> {
+    const timeMin = new Date();
+    timeMin.setDate(timeMin.getDate() - 30);
+    const daysAhead = fetchDaysInAdvance || 90;
+    const timeMax = new Date(Date.now() + daysAhead * 86400000);
 
     const created: NormalizedEvent[] = [];
+    let currentUrl: string | null =
+      `${GRAPH_API_BASE}/me/calendars/${calendarId}/calendarView?startDateTime=${timeMin.toISOString()}&endDateTime=${timeMax.toISOString()}&$top=100&$select=id,subject,body,start,end,location,isAllDay,showAs,responseStatus,type,categories,isCancelled`;
+
+    while (currentUrl) {
+      const res = await this.fetchWithRefresh(currentUrl, token);
+      if (!res.ok) throw this.mapError(res.status, await res.text());
+
+      const data = await res.json() as any;
+      for (const item of data.value || []) {
+        created.push(this.mapEvent(item, calendarId));
+      }
+      currentUrl = data["@odata.nextLink"] ?? null;
+    }
+
+    // Now get a delta token for future incremental syncs
+    const deltaUrl = `${GRAPH_API_BASE}/me/calendars/${calendarId}/calendarView/delta?startDateTime=${timeMin.toISOString()}&endDateTime=${new Date(Date.now() + daysAhead * 86400000).toISOString()}&$select=id,subject,body,start,end,location,isAllDay,showAs,responseStatus,type,categories,isCancelled`;
+    let nextDeltaLink: string | null = null;
+    let deltaPageUrl: string | null = deltaUrl;
+    while (deltaPageUrl) {
+      const res = await this.fetchWithRefresh(deltaPageUrl, token);
+      if (!res.ok) break; // non-fatal, we just won't have a delta token
+      const data = await res.json() as any;
+      deltaPageUrl = data["@odata.nextLink"] ?? null;
+      if (data["@odata.deltaLink"]) nextDeltaLink = data["@odata.deltaLink"];
+    }
+
+    return { created, updated: [], deleted: [], nextSyncToken: nextDeltaLink };
+  }
+
+  // Incremental sync: use calendarView/delta with sync token
+  private async getDeltaEvents(
+    token: TokenSet,
+    calendarId: string,
+    syncToken: string
+  ): Promise<EventDelta> {
     const updated: NormalizedEvent[] = [];
     const deleted: string[] = [];
     let nextDeltaLink: string | null = null;
 
-    // Follow pagination
-    let currentUrl: string | null = url;
+    let currentUrl: string | null = syncToken;
     while (currentUrl) {
       const res = await this.fetchWithRefresh(currentUrl, token);
-
-      if (!res.ok) {
-        throw this.mapError(res.status, await res.text());
-      }
+      if (!res.ok) throw this.mapError(res.status, await res.text());
 
       const data = await res.json() as any;
-
       for (const item of data.value || []) {
         if (item["@removed"]) {
           deleted.push(item.id);
           continue;
         }
-
-        const event = this.mapEvent(item, calendarId);
-        if (syncToken) {
-          updated.push(event);
-        } else {
-          created.push(event);
-        }
+        updated.push(this.mapEvent(item, calendarId));
       }
 
       currentUrl = data["@odata.nextLink"] ?? null;
-      if (data["@odata.deltaLink"]) {
-        nextDeltaLink = data["@odata.deltaLink"];
-      }
+      if (data["@odata.deltaLink"]) nextDeltaLink = data["@odata.deltaLink"];
     }
 
-    return { created, updated, deleted, nextSyncToken: nextDeltaLink };
+    return { created: [], updated, deleted, nextSyncToken: nextDeltaLink };
   }
 
   async createEvent(
