@@ -93,7 +93,7 @@ export default function DashboardPage() {
       setConflicts(c.conflicts || []);
       setBookings(bks);
       setEventTypeCount(Array.isArray(et) ? et.length : 0);
-      setSyncTargetCount(Array.isArray(st) ? st.length : 0);
+      setSyncTargetCount(Array.isArray(st?.targets) ? st.targets.length : Array.isArray(st) ? st.length : 0);
       setLoading(false);
     });
   }, [accessToken]);
