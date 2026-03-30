@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import {
   Card, CardBody, CardHeader, Button, Input, Divider,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip,
@@ -24,8 +25,22 @@ interface CalendarSource {
   calendarEntries: CalendarEntry[];
 }
 
+const ADMIN_CONSENT_ERRORS = ["consent_required", "interaction_required", "access_denied", "AADSTS65001", "AADSTS90094"];
+const MS_CLIENT_ID = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || "";
+
 export default function SettingsPage() {
+  return (
+    <Suspense>
+      <SettingsPageContent />
+    </Suspense>
+  );
+}
+
+function SettingsPageContent() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const oauthError = searchParams.get("error") || null;
+  const isConsentError = oauthError ? ADMIN_CONSENT_ERRORS.some((e) => oauthError.includes(e)) : false;
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState<string | null>(null);
@@ -81,6 +96,44 @@ export default function SettingsPage() {
     <AppShell section="settings" settingsSection="sources">
       <div className="mx-auto max-w-3xl space-y-6">
         <h1 className="font-display text-2xl font-bold tracking-tight">Calendar Sources</h1>
+
+        {/* OAuth Error Banner */}
+        {oauthError && (
+          <div className={`rounded-xl border p-5 ${isConsentError ? "border-[var(--color-amber-200)] bg-[var(--color-amber-50)]" : "border-red-200 bg-red-50"}`}>
+            {isConsentError ? (
+              <>
+                <p className="text-sm font-medium text-[var(--color-amber-800)]">
+                  Dein Unternehmen erfordert eine Admin-Freigabe für Mein Kalender.
+                </p>
+                <p className="mt-2 text-sm text-[var(--color-amber-700)]">
+                  Bitte leite diesen Link an deinen IT-Administrator weiter, damit er Mein Kalender für deine Organisation freigibt:
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <code className="block flex-1 overflow-x-auto rounded-lg bg-white px-3 py-2 text-xs text-[var(--text-secondary)] border border-[var(--color-amber-200)]">
+                    {`https://login.microsoftonline.com/common/adminconsent?client_id=${MS_CLIENT_ID}`}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    onPress={() => {
+                      navigator.clipboard.writeText(`https://login.microsoftonline.com/common/adminconsent?client_id=${MS_CLIENT_ID}`);
+                    }}
+                  >
+                    Kopieren
+                  </Button>
+                </div>
+                <p className="mt-2 text-xs text-[var(--color-amber-600)]">
+                  Nach der Freigabe durch den Admin kannst du die Verbindung erneut versuchen.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-red-800">Kalender-Verbindung fehlgeschlagen</p>
+                <p className="mt-1 text-sm text-red-600">{oauthError}</p>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Connected Sources */}
         <Card>

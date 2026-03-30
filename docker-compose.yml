@@ -80,6 +80,7 @@ services:
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:4201}
       NEXTAUTH_SECRET: dev-secret-change-in-production
       NEXT_PUBLIC_API_URL: http://localhost:4201
+      NEXT_PUBLIC_MICROSOFT_CLIENT_ID: ${MICROSOFT_CALENDAR_CLIENT_ID}
       API_URL: http://api:4200
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
