@@ -36,10 +36,22 @@ export async function eventTypesRoutes(app: FastifyInstance) {
       include: {
         calendars: { select: { id: true, name: true } },
         availabilityRules: { orderBy: { dayOfWeek: "asc" } },
-        bookingCalendarEntry: { select: { id: true, name: true } },
       },
     });
-    return eventTypes;
+
+    // Resolve booking calendar names (bookingCalendarEntryId is a loose FK)
+    const calendarIds = eventTypes.map((et) => et.bookingCalendarEntryId).filter(Boolean) as string[];
+    const calendars = calendarIds.length > 0
+      ? await prisma.calendarEntry.findMany({ where: { id: { in: calendarIds } }, select: { id: true, name: true } })
+      : [];
+    const calendarMap = Object.fromEntries(calendars.map((c) => [c.id, c.name]));
+
+    return eventTypes.map((et) => ({
+      ...et,
+      bookingCalendarEntry: et.bookingCalendarEntryId
+        ? { id: et.bookingCalendarEntryId, name: calendarMap[et.bookingCalendarEntryId] || null }
+        : null,
+    }));
   });
 
   // Get single event type
