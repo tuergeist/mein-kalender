@@ -32,6 +32,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "mein-kalender.link — Nie wieder doppelt gebucht",
   description: "Kalender-Sync für Profis: Google, Outlook und Proton in einem Blick. Ohne deine Daten zu zerstören. 14 Tage kostenlos testen.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+  },
 };
 
 export default function RootLayout({
