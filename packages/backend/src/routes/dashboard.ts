@@ -20,7 +20,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
     const [events, unresolvedConflicts, sources] = await Promise.all([
       prisma.event.findMany({
         where: {
-          calendarEntry: { source: { userId: user.id }, isTarget: false, enabled: true },
+          calendarEntry: { source: { userId: user.id }, enabled: true },
           startTime: { lt: endOfDay },
           endTime: { gte: startOfDay },
           title: { not: { startsWith: "[Sync]" } },
@@ -89,7 +89,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
     const [eventCount, conflictsDetected, calendarCount, healthRecords] = await Promise.all([
       prisma.event.count({
         where: {
-          calendarEntry: { source: { userId: user.id }, isTarget: false, enabled: true },
+          calendarEntry: { source: { userId: user.id }, enabled: true },
           startTime: { lt: endOfWeek },
           endTime: { gte: startOfWeek },
           title: { not: { startsWith: "[Sync]" } },

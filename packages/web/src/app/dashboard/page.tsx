@@ -198,7 +198,7 @@ export default function DashboardPage() {
             <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
               {weekly.syncSuccessRate >= 97 ? (
                 <>
-                  <p className="font-display text-2xl font-bold text-[#059669]">Läuft</p>
+                  <p className="font-display text-2xl font-bold text-[#059669]">Alles OK</p>
                   <p className="text-xs text-[var(--text-tertiary)]">Alle Kalender synchron</p>
                 </>
               ) : weekly.syncSuccessRate >= 90 ? (

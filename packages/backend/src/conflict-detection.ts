@@ -21,7 +21,6 @@ export async function detectConflicts(
     where: {
       calendarEntry: {
         source: { userId },
-        isTarget: false,
         enabled: true,
       },
       allDay: false,
