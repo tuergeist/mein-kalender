@@ -53,10 +53,14 @@ export default function SettingsPage() {
     loadData();
   }
 
+  const [resyncingId, setResyncingId] = useState<string | null>(null);
+
   async function handleFullResync(sourceId: string) {
     if (!accessToken) return;
+    setResyncingId(sourceId);
     await apiAuthFetch(`/api/sources/${sourceId}/full-sync`, accessToken, { method: "POST" });
     loadData();
+    setTimeout(() => setResyncingId(null), 10000);
   }
 
   async function handleDisconnect(sourceId: string) {
@@ -127,8 +131,8 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="flat" onPress={() => handleFullResync(source.id)}>
-                        Neu laden
+                      <Button size="sm" variant="flat" isDisabled={resyncingId === source.id} onPress={() => handleFullResync(source.id)}>
+                        {resyncingId === source.id ? "Wird geladen..." : "Neu laden"}
                       </Button>
                       <Button size="sm" color="danger" variant="light" onPress={() => setShowDisconnectModal(source.id)}>
                         Trennen
