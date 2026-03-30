@@ -7,6 +7,7 @@ import {
 } from "./types";
 import { ProviderError, ProviderErrorCode } from "./errors";
 import { getProvider } from "./providers";
+import { conflictQueue } from "./queues";
 
 export async function processSyncJob(
   prisma: PrismaClient,
@@ -39,6 +40,16 @@ export async function processSyncJob(
       where: { id: sourceId },
       data: { syncStatus: "ok", lastSyncAt: new Date(), syncError: null },
     });
+
+    // Queue conflict detection for ICS sources too
+    conflictQueue.add("detect-conflicts", { userId }, {
+      jobId: `conflicts-${userId}-${Date.now()}`,
+      removeOnComplete: 50,
+      removeOnFail: 20,
+    }).catch((err) => {
+      console.warn("[sync] Failed to queue conflict detection:", err);
+    });
+
     return;
   }
 
@@ -94,6 +105,15 @@ export async function processSyncJob(
 
     // Log sync health (fire-and-forget)
     logSyncHealth(prisma, userId, sourceId, source.provider, syncStart, eventsProcessed, eventsFailed, true);
+
+    // Queue conflict detection as a separate async job (fire-and-forget)
+    conflictQueue.add("detect-conflicts", { userId }, {
+      jobId: `conflicts-${userId}-${Date.now()}`,
+      removeOnComplete: 50,
+      removeOnFail: 20,
+    }).catch((err) => {
+      console.warn("[sync] Failed to queue conflict detection:", err);
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error(`[sync] Error syncing source ${sourceId}:`, message);

@@ -29,6 +29,7 @@ interface CalendarEvent {
     readOnly: boolean;
     sourceEventId: string;
     providerMetadata: Record<string, unknown> | null;
+    ignored: boolean;
   };
 }
 
@@ -86,6 +87,7 @@ export function CalendarView() {
             startTime: string;
             endTime: string;
             allDay: boolean;
+            ignored: boolean;
             description: string | null;
             location: string | null;
             sourceEventId: string;
@@ -113,6 +115,7 @@ export function CalendarView() {
               readOnly: e.calendarEntry.readOnly,
               sourceEventId: e.sourceEventId,
               providerMetadata: e.providerMetadata,
+              ignored: e.ignored,
             },
           })
         );
@@ -173,6 +176,7 @@ export function CalendarView() {
     const transparency = meta?.transparency as string | undefined;
     const wl = meta?.workingLocation as { type?: string } | undefined;
     const rawTitle = arg.event.title;
+    const isIgnored = arg.event.extendedProps?.ignored === true;
 
     const isWorkingLocation = eventType === "workingLocation"
       || /^(Arbeitsort:|Working location:)/i.test(rawTitle)
@@ -199,8 +203,11 @@ export function CalendarView() {
       ? rawTitle.replace(/^Arbeitsort:\s*|^Working location:\s*/i, "")
       : rawTitle;
 
+    const ignoredStyle = isIgnored ? "opacity:0.45; text-decoration:line-through;" : "";
+    const opacityStyle = isFree && !isIgnored ? "opacity:0.6;" : "";
+
     return {
-      html: `<div class="fc-event-main-frame" style="${isFree ? "opacity:0.6;" : ""}">
+      html: `<div class="fc-event-main-frame" style="${ignoredStyle}${opacityStyle}">
         ${arg.timeText ? `<div class="fc-event-time">${arg.timeText}</div>` : ""}
         <div class="fc-event-title-container">
           <div class="fc-event-title fc-sticky">${(icon ? icon + " " : "") + title}</div>

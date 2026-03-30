@@ -297,11 +297,12 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
   const effectiveStart = dayStart > now ? dayStart : now;
   if (effectiveStart >= dayEnd) return [];
 
-  // 2. Load busy events for this date
+  // 2. Load busy events for this date (excluding ignored events)
   const events = await prisma.event.findMany({
     where: {
       startTime: { lt: dayEnd },
       endTime: { gt: dayStart },
+      ignored: false,
       calendarEntry: {
         source: { userId },
         ...(calendarIds.length > 0

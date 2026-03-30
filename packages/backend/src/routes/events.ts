@@ -93,6 +93,61 @@ export async function eventsRoutes(app: FastifyInstance) {
     return updated;
   });
 
+  // Toggle ignored status on a single event
+  app.put<{
+    Params: { id: string };
+    Body: { ignored: boolean };
+  }>("/api/events/:id/ignore", async (request, reply) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+
+    const event = await prisma.event.findFirst({
+      where: {
+        id: request.params.id,
+        calendarEntry: { source: { userId: user.id } },
+      },
+    });
+
+    if (!event) {
+      return reply.code(404).send({ error: "Not found" });
+    }
+
+    const updated = await prisma.event.update({
+      where: { id: request.params.id },
+      data: { ignored: request.body.ignored },
+    });
+
+    return updated;
+  });
+
+  // Ignore/unignore all events in a series (same title + same calendar)
+  app.put<{
+    Body: { eventId: string; ignored: boolean };
+  }>("/api/events/ignore-series", async (request, reply) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+    const { eventId, ignored } = request.body;
+
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        calendarEntry: { source: { userId: user.id } },
+      },
+    });
+
+    if (!event) {
+      return reply.code(404).send({ error: "Not found" });
+    }
+
+    const result = await prisma.event.updateMany({
+      where: {
+        calendarEntryId: event.calendarEntryId,
+        title: event.title,
+      },
+      data: { ignored },
+    });
+
+    return { count: result.count };
+  });
+
   // Delete an event
   app.delete<{ Params: { id: string } }>("/api/events/:id", async (request, reply) => {
     const { user } = request as unknown as AuthenticatedRequest;

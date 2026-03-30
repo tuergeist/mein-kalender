@@ -50,6 +50,7 @@ interface CalendarEvent {
     calendarName: string;
     calendarColor: string;
     readOnly: boolean;
+    ignored?: boolean;
   };
 }
 
@@ -69,6 +70,8 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
   const [endTime, setEndTime] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showSeriesDialog, setShowSeriesDialog] = useState(false);
+  const [ignoring, setIgnoring] = useState(false);
 
   if (!event) return null;
 
@@ -111,7 +114,42 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
     setSaving(false);
   }
 
+  async function handleIgnoreSingle() {
+    const token = (session as { accessToken?: string })?.accessToken;
+    if (!token) return;
+    setIgnoring(true);
+    const newIgnored = !event!.extendedProps.ignored;
+    const res = await apiAuthFetch(`/api/events/${event!.id}/ignore`, token, {
+      method: "PUT",
+      body: JSON.stringify({ ignored: newIgnored }),
+    });
+    if (res.ok) {
+      onUpdate();
+      onClose();
+    }
+    setIgnoring(false);
+    setShowSeriesDialog(false);
+  }
+
+  async function handleIgnoreSeries() {
+    const token = (session as { accessToken?: string })?.accessToken;
+    if (!token) return;
+    setIgnoring(true);
+    const newIgnored = !event!.extendedProps.ignored;
+    const res = await apiAuthFetch(`/api/events/ignore-series`, token, {
+      method: "PUT",
+      body: JSON.stringify({ eventId: event!.id, ignored: newIgnored }),
+    });
+    if (res.ok) {
+      onUpdate();
+      onClose();
+    }
+    setIgnoring(false);
+    setShowSeriesDialog(false);
+  }
+
   const readOnly = event.extendedProps.readOnly;
+  const isIgnored = event.extendedProps.ignored;
 
   return (
     <Modal isOpen={!!event} onClose={onClose} size="lg" scrollBehavior="inside">
@@ -159,6 +197,11 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
                     Nur lesen
                   </Chip>
                 )}
+                {isIgnored && (
+                  <Chip size="sm" color="default" variant="flat">
+                    Ignoriert
+                  </Chip>
+                )}
               </div>
 
               <div className="text-sm">
@@ -182,7 +225,26 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
         </ModalBody>
 
         <ModalFooter>
-          {editing ? (
+          {showSeriesDialog ? (
+            <div className="flex w-full flex-col gap-2">
+              <p className="text-sm text-default-500">
+                {isIgnored
+                  ? "Soll nur dieser Termin oder die ganze Serie wieder beachtet werden?"
+                  : "Nur diesen Termin ignorieren oder die ganze Serie?"}
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button size="sm" variant="light" onPress={() => setShowSeriesDialog(false)}>
+                  Abbrechen
+                </Button>
+                <Button size="sm" variant="flat" isLoading={ignoring} onPress={handleIgnoreSingle}>
+                  Nur diesen
+                </Button>
+                <Button size="sm" variant="flat" color="warning" isLoading={ignoring} onPress={handleIgnoreSeries}>
+                  Ganze Serie
+                </Button>
+              </div>
+            </div>
+          ) : editing ? (
             <>
               <Button variant="light" onPress={() => setEditing(false)}>
                 Abbrechen
@@ -193,6 +255,16 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
             </>
           ) : (
             <>
+              <Button
+                size="sm"
+                variant="flat"
+                color={isIgnored ? "success" : "default"}
+                isLoading={ignoring}
+                onPress={() => setShowSeriesDialog(true)}
+              >
+                {isIgnored ? "Nicht mehr ignorieren" : "Ignorieren"}
+              </Button>
+              <div className="flex-1" />
               <Button variant="light" onPress={onClose}>
                 Schließen
               </Button>

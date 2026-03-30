@@ -1,0 +1,842 @@
+[
+  {
+    "timestamp": "2026-03-15T08:52:09.127956",
+    "session_id": "12b52b84-27e4-49d1-97d0-6cf9d7f0c9aa",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && docker compose down 2>&1 | tail -5 && docker compose up -d --build 2>&1 | tail -20",
+    "description": "Rebuild and start with new structure"
+  },
+  {
+    "timestamp": "2026-03-15T09:38:57.969438",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit 2>&1 | head -30",
+    "description": "Check backend TypeScript compilation"
+  },
+  {
+    "timestamp": "2026-03-15T09:38:59.184102",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit 2>&1 | head -30",
+    "description": "Check frontend TypeScript compilation"
+  },
+  {
+    "timestamp": "2026-03-15T11:18:23.829732",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "git add packages/backend/src/sync-job.ts && git commit -m \"$(cat <<'EOF'\nFix CI: add explicit types for map callbacks in sync-job\nEOF\n)\" && git push",
+    "description": "Commit and push type fix"
+  },
+  {
+    "timestamp": "2026-03-15T11:18:27.389151",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/sync-job.ts && git commit -m \"$(cat <<'EOF'\nFix CI: add explicit types for map callbacks in sync-job\nEOF\n)\" && git push",
+    "description": "Commit and push type fix from project root"
+  },
+  {
+    "timestamp": "2026-03-15T12:10:00.698887",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit 2>&1 | head -5",
+    "description": "Check frontend compiles"
+  },
+  {
+    "timestamp": "2026-03-15T12:13:38.654296",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit 2>&1",
+    "description": "Verify backend compiles after prisma generate"
+  },
+  {
+    "timestamp": "2026-03-15T12:16:07.289459",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose restart api sync-worker 2>&1",
+    "description": "Restart backend services to pick up code changes"
+  },
+  {
+    "timestamp": "2026-03-15T12:16:11.949642",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose logs api --tail=10 2>&1",
+    "description": "Check API started and migration applied"
+  },
+  {
+    "timestamp": "2026-03-15T12:16:18.387657",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose exec postgres psql -U calendar_sync -d calendar_sync -c \"\\d target_event_mappings\" 2>&1",
+    "description": "Verify lastSyncedAt column exists"
+  },
+  {
+    "timestamp": "2026-03-15T12:17:34.070298",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "openspec list --json 2>&1",
+    "description": "List available changes"
+  },
+  {
+    "timestamp": "2026-03-15T12:17:40.296330",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && openspec list --json 2>&1",
+    "description": "List available changes from project root"
+  },
+  {
+    "timestamp": "2026-03-15T12:23:08.449607",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit 2>&1 | head -5",
+    "description": "Check frontend compiles"
+  },
+  {
+    "timestamp": "2026-03-15T12:39:34.426325",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose exec postgres psql -U calendar_sync -d calendar_sync -c \"UPDATE calendar_sources SET \\\"syncStatus\\\" = 'ok', \\\"syncError\\\" = NULL;\" 2>&1",
+    "description": "Reset all sync statuses to ok"
+  },
+  {
+    "timestamp": "2026-03-15T12:39:39.209442",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose restart api sync-worker web 2>&1",
+    "description": "Restart all services"
+  },
+  {
+    "timestamp": "2026-03-15T12:39:52.793143",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose logs web --tail=10 2>&1",
+    "description": "Check web container for errors"
+  },
+  {
+    "timestamp": "2026-03-15T12:39:53.253091",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose logs api --tail=10 2>&1",
+    "description": "Check API container for errors"
+  },
+  {
+    "timestamp": "2026-03-15T12:39:59.460494",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose restart nginx 2>&1",
+    "description": "Restart nginx to refresh upstream DNS"
+  },
+  {
+    "timestamp": "2026-03-15T12:40:09.810961",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4201/api/sources -H \"Authorization: Bearer test\" 2>&1",
+    "description": "Check API is reachable through nginx"
+  },
+  {
+    "timestamp": "2026-03-15T12:41:05.113212",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose logs web 2>&1 | grep -i \"error\\|fail\\|undefined\" | tail -5",
+    "description": "Check for session errors"
+  },
+  {
+    "timestamp": "2026-03-15T12:41:50.692282",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose restart web 2>&1",
+    "description": "Restart web for auth fix"
+  },
+  {
+    "timestamp": "2026-03-15T12:43:30.810492",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "curl -s -o /dev/null -w \"TTFB: %{time_starttransfer}s\\nTotal: %{time_total}s\\nSize: %{size_download} bytes\\n\" http://localhost:4201/api/sources -H \"Authorization: Bearer $(docker compose exec -T web node -e \"\nconst { createSigner } = require('fast-jwt');\nconst sign = createSigner({ key: process.env.NEXTAUTH_SECRET });\nconsole.log(sign({ sub: 'test', email: 'test' }));\n\" 2>/dev/null)\" 2>&1",
+    "description": "Measure API response time for /api/sources"
+  },
+  {
+    "timestamp": "2026-03-15T12:43:41.547664",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose exec postgres psql -U calendar_sync -d calendar_sync -c \"SELECT id, email FROM users LIMIT 1;\" 2>&1",
+    "description": "Get user info for test token"
+  },
+  {
+    "timestamp": "2026-03-15T12:43:47.588130",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "TOKEN=$(docker compose exec -T api node -e \"\nconst { createSigner } = require('fast-jwt');\nconst sign = createSigner({ key: process.env.NEXTAUTH_SECRET });\nprocess.stdout.write(sign({ sub: 'cmmnxixf40000o001x0gn1ve1', email: 'mail@ch-becker.de' }));\n\" 2>/dev/null) && curl -s -o /dev/null -w \"TTFB: %{time_starttransfer}s\\nTotal: %{time_total}s\\nSize: %{size_download} bytes\\n\" \"http://localhost:4201/api/sources\" -H \"Authorization: Bearer $TOKEN\"",
+    "description": "Measure /api/sources response time with real token"
+  },
+  {
+    "timestamp": "2026-03-15T12:43:57.975487",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "curl -s -o /dev/null -w \"TTFB: %{time_starttransfer}s\\nTotal: %{time_total}s\\n\" \"http://localhost:4201/api/auth/session\" -H \"Cookie: $(curl -s -D - http://localhost:4201/ 2>/dev/null | grep -i set-cookie | head -1 | sed 's/.*: //' | cut -d';' -f1)\" 2>&1",
+    "description": "Measure session endpoint time"
+  },
+  {
+    "timestamp": "2026-03-15T12:44:37.637634",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose restart web 2>&1",
+    "description": "Restart web"
+  },
+  {
+    "timestamp": "2026-03-15T12:46:08.769974",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose logs web --tail=30 2>&1 | grep -E \"GET|POST|ms$\"",
+    "description": "Check request timings in web logs"
+  },
+  {
+    "timestamp": "2026-03-15T12:46:33.018357",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "docker compose restart web 2>&1",
+    "description": "Restart web"
+  },
+  {
+    "timestamp": "2026-03-15T13:06:42.199209",
+    "session_id": "5cecde87-26d1-4a2a-9171-baa6d445fc85",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit 2>&1 | head -3",
+    "description": "Verify compiles"
+  },
+  {
+    "timestamp": "2026-03-15T13:40:45.913654",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "cd packages/web && npx tsc --noEmit 2>&1",
+    "description": "Type-check frontend"
+  },
+  {
+    "timestamp": "2026-03-15T13:40:48.901046",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit 2>&1",
+    "description": "Type-check frontend"
+  },
+  {
+    "timestamp": "2026-03-15T14:01:27.645789",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit 2>&1",
+    "description": "Type-check frontend"
+  },
+  {
+    "timestamp": "2026-03-15T14:15:18.541362",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "sleep 3",
+    "description": "Wait for hot reload"
+  },
+  {
+    "timestamp": "2026-03-15T14:15:31.855350",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "sleep 3",
+    "description": "Wait for data load"
+  },
+  {
+    "timestamp": "2026-03-15T14:15:50.862259",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "git add packages/backend/src/routes/admin.ts packages/web/src/app/admin/sync/page.tsx && git commit -m \"$(cat <<'EOF'\nAdmin sync queue: show user/source info, expand errors on click\n\nResolve user email and source label/provider for each sync job.\nAdd click-to-expand modal for full error messages. Replace truncated\nSource ID with human-readable source name and provider.\nEOF\n)\" && git push",
+    "description": "Commit and push sync queue improvements"
+  },
+  {
+    "timestamp": "2026-03-15T14:16:05.144503",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/routes/admin.ts packages/web/src/app/admin/sync/page.tsx && git commit -m \"$(cat <<'EOF'\nAdmin sync queue: show user/source info, expand errors on click\n\nResolve user email and source label/provider for each sync job.\nAdd click-to-expand modal for full error messages. Replace truncated\nSource ID with human-readable source name and provider.\nEOF\n)\" && git push",
+    "description": "Commit and push from project root"
+  },
+  {
+    "timestamp": "2026-03-15T14:18:22.112832",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "sleep 3",
+    "description": "Wait for hot reload"
+  },
+  {
+    "timestamp": "2026-03-15T14:18:40.327557",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "sleep 3",
+    "description": "Wait for data load"
+  },
+  {
+    "timestamp": "2026-03-15T14:19:22.824626",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "sleep 3",
+    "description": "Wait for page load"
+  },
+  {
+    "timestamp": "2026-03-15T14:21:10.415264",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit 2>&1",
+    "description": "Type-check frontend"
+  },
+  {
+    "timestamp": "2026-03-15T14:24:13.866851",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/routes/sync.ts packages/backend/src/worker.ts && git commit -m \"$(cat <<'EOF'\nPrevent concurrent syncs for the same source\n\nUse jobId dedup on manual sync triggers so BullMQ won't queue duplicates.\nTrack active syncs in the worker and skip if a source is already syncing.\nEOF\n)\" && git push",
+    "description": "Commit and push sync dedup"
+  },
+  {
+    "timestamp": "2026-03-15T14:28:41.856495",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "sleep 3",
+    "description": "Wait for hot reload"
+  },
+  {
+    "timestamp": "2026-03-15T14:28:59.958831",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "sleep 3",
+    "description": "Wait for data load"
+  },
+  {
+    "timestamp": "2026-03-15T14:29:19.823058",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/routes/admin.ts packages/web/src/app/admin/sources/page.tsx packages/web/src/components/AdminSidebar.tsx && git commit -m \"$(cat <<'EOF'\nAdmin: add Sources page with per-source sync interval config\n\nList all calendar sources with user, provider, status, last sync.\nDropdown to change sync interval (1min\u201324h) per source, immediately\nreschedules the BullMQ job. Searchable and paginated.\nEOF\n)\" && git push",
+    "description": "Commit and push sources page"
+  },
+  {
+    "timestamp": "2026-03-15T14:34:09.932386",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "npx prisma generate 2>&1 | tail -3",
+    "description": "Check if Prisma types are available locally"
+  },
+  {
+    "timestamp": "2026-03-15T14:34:36.717362",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "gh api repos/tuergeist/mein-kalender/contents/.github/workflows --jq '.[].name' 2>&1",
+    "description": "List CI workflow files from GitHub"
+  },
+  {
+    "timestamp": "2026-03-15T14:35:39.988062",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "gh api repos/tuergeist/mein-kalender/contents/.github/workflows/ci.yml --jq '.content' | base64 -d 2>&1",
+    "description": "Fetch CI workflow content"
+  },
+  {
+    "timestamp": "2026-03-15T14:35:50.003558",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "mkdir -p /Users/cb/git/calendar-sync/.github/workflows",
+    "description": "Create workflows directory"
+  },
+  {
+    "timestamp": "2026-03-15T14:36:23.280076",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "ls /Users/cb/git/calendar-sync/.github/workflows/ 2>/dev/null",
+    "description": "Check if workflow dir exists locally"
+  },
+  {
+    "timestamp": "2026-03-15T14:37:02.485644",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "npx tsc 2>&1",
+    "description": "Run tsc (full build, not just noEmit)"
+  },
+  {
+    "timestamp": "2026-03-15T14:37:10.343100",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx turbo build --filter=!@calendar-sync/landing 2>&1 | tail -20",
+    "description": "Run turbo build like CI does"
+  },
+  {
+    "timestamp": "2026-03-15T14:39:18.756148",
+    "session_id": "cefb4268-6dd7-4d5b-8795-113866edd119",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add .github/workflows/ci.yml packages/backend/src/routes/admin.ts packages/backend/src/routes/target-calendar.ts && git commit -m \"$(cat <<'EOF'\nFix CI: add prisma generate step, fix implicit any types\n\nCI was missing prisma generate before typecheck, causing CalendarSource\nand CalendarEntry import errors. Also fix implicit any parameters in\nadmin.ts and target-calendar.ts map callbacks.\nEOF\n)\" && git push",
+    "description": "Commit and push CI fix"
+  },
+  {
+    "timestamp": "2026-03-15T17:54:15.254245",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -20",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-15T18:12:21.939591",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -20",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-15T20:07:38.070071",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -20",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-15T20:49:28.618178",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -20",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-16T10:28:19.453186",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -10",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-16T10:33:51.784323",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -10",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-17T06:52:54.093503",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -10",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-17T08:04:08.674372",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -5 && cd packages/web && npx tsc --noEmit 2>&1 | head -5",
+    "description": "Type-check both packages"
+  },
+  {
+    "timestamp": "2026-03-17T08:50:14.682699",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -10",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-17T13:07:38.832830",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "openspec new change \"per-event-type-config\"",
+    "description": "Create new OpenSpec change"
+  },
+  {
+    "timestamp": "2026-03-17T13:13:52.424743",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "mkdir -p /Users/cb/git/calendar-sync/openspec/changes/per-event-type-config/specs/{per-event-type-schedule,availability-preview}",
+    "description": "Create specs directories"
+  },
+  {
+    "timestamp": "2026-03-17T15:58:04.849315",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "openspec status --change \"per-event-type-config\"",
+    "description": "Check status"
+  },
+  {
+    "timestamp": "2026-03-17T15:58:12.677468",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "echo 'schema: spec-driven\ncreated: 2026-03-17' > /Users/cb/git/calendar-sync/openspec/changes/per-event-type-config/.openspec.yaml && openspec status --change \"per-event-type-config\"",
+    "description": "Fix yaml and check status"
+  },
+  {
+    "timestamp": "2026-03-17T15:58:25.259384",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "ls /Users/cb/git/calendar-sync/openspec/changes/per-event-type-config/",
+    "description": "Check files exist"
+  },
+  {
+    "timestamp": "2026-03-17T16:16:54.573175",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" npx prisma migrate diff --from-schema-datamodel <(git show HEAD:packages/backend/prisma/schema.prisma) --to-schema-datamodel prisma/schema.prisma --script 2>&1",
+    "description": "Generate migration SQL diff"
+  },
+  {
+    "timestamp": "2026-03-17T16:48:38.751036",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "mkdir -p prisma/migrations/1_per_event_type_config && cat > prisma/migrations/1_per_event_type_config/migration.sql << 'SQLEOF'\n-- AlterTable: Add bookingCalendarEntryId to event_types\nALTER TABLE \"event_types\" ADD COLUMN \"bookingCalendarEntryId\" TEXT;\n\n-- AlterTable: Add eventTypeId to availability_rules\nALTER TABLE \"availability_rules\" ADD COLUMN \"eventTypeId\" TEXT;\n\n-- Drop old unique constraint\nALTER TABLE \"availability_rules\" DROP CONSTRAINT IF EXISTS \"availability_rules_userId_dayOfWeek_key\";\n\n-- Create new unique constraint (nullable eventTypeId handled by Prisma)\nCREATE UNIQUE INDEX \"availability_rules_userId_eventTypeId_dayOfWeek_key\" ON \"availability_rules\"(\"userId\", \"eventTypeId\", \"dayOfWeek\");\n\n-- AddForeignKey\nALTER TABLE \"availability_rules\" ADD CONSTRAINT \"availability_rules_eventTypeId_fkey\" FOREIGN KEY (\"eventTypeId\") REFERENCES \"event_types\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;\nSQLEOF\necho \"OK\"",
+    "description": "Create migration SQL"
+  },
+  {
+    "timestamp": "2026-03-17T17:01:22.655394",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" npx prisma generate 2>&1 | tail -1",
+    "description": "Regenerate Prisma client"
+  },
+  {
+    "timestamp": "2026-03-17T17:24:34.038439",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -15",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-20T20:17:44.678056",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -5",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-20T20:17:53.216750",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -5",
+    "description": "Type-check backend from repo root"
+  },
+  {
+    "timestamp": "2026-03-20T20:30:00.051811",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "mkdir -p /Users/cb/git/calendar-sync/packages/web/src/app/B/\\[hash\\]",
+    "description": "Create short URL page directory"
+  },
+  {
+    "timestamp": "2026-03-20T20:33:58.868149",
+    "session_id": "58f9ca29-86ac-4de7-ab84-fd9bca5f8bc1",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && npx tsc --noEmit -p packages/backend/tsconfig.json 2>&1 | head -5 && cd packages/web && npx tsc --noEmit 2>&1 | head -5",
+    "description": "Type-check both"
+  },
+  {
+    "timestamp": "2026-03-21T16:47:52.210116",
+    "session_id": "b8b64f56-6fa7-4b7a-b16c-bd1bed4a7295",
+    "tool_name": "Bash",
+    "command": "git add packages/backend/src/routes/event-types.ts packages/backend/src/routes/event-types.test.ts packages/backend/package.json && git diff --staged --stat",
+    "description": "Stage changes"
+  },
+  {
+    "timestamp": "2026-03-21T16:47:55.586105",
+    "session_id": "b8b64f56-6fa7-4b7a-b16c-bd1bed4a7295",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/routes/event-types.ts packages/backend/src/routes/event-types.test.ts packages/backend/package.json package-lock.json && git diff --staged --stat",
+    "description": "Stage changes from repo root"
+  },
+  {
+    "timestamp": "2026-03-21T17:12:05.908546",
+    "session_id": "b8b64f56-6fa7-4b7a-b16c-bd1bed4a7295",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/prisma/migrations/4_fix_availability_unique_index/migration.sql packages/backend/src/routes/event-types.test.ts && git commit -m \"$(cat <<'EOF'\nFix availability rules unique constraint conflict\n\nMigration 1 tried DROP CONSTRAINT to remove the old (userId, dayOfWeek)\nunique, but it was created as a unique INDEX in migration 0, so it\nsurvived. This caused P2002 errors when upserting per-event-type rules.\nEOF\n)\"",
+    "description": "Commit fix and tests"
+  },
+  {
+    "timestamp": "2026-03-23T21:05:09.185822",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "ls /Users/cb/git/calendar-sync/diary/ 2>/dev/null",
+    "description": "List existing diary entries"
+  },
+  {
+    "timestamp": "2026-03-23T21:05:20.374187",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git log --oneline --since=\"2026-03-21\" --until=\"2026-03-24\" 2>/dev/null | head -20",
+    "description": "Check commits since last diary"
+  },
+  {
+    "timestamp": "2026-03-24T08:12:37.740532",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && gh run list --limit 3",
+    "description": "Check recent CI runs"
+  },
+  {
+    "timestamp": "2026-03-24T10:47:28.283509",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit --pretty 2>&1 | head -20",
+    "description": "Type-check web"
+  },
+  {
+    "timestamp": "2026-03-24T10:47:38.590906",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit --pretty 2>&1 | head -10",
+    "description": "Type-check backend after prisma generate"
+  },
+  {
+    "timestamp": "2026-03-24T10:50:21.520611",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "git status",
+    "description": "Show working tree status"
+  },
+  {
+    "timestamp": "2026-03-24T10:50:21.988542",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "git diff --stat",
+    "description": "Show diff summary"
+  },
+  {
+    "timestamp": "2026-03-24T10:50:22.464197",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "git log --oneline -3",
+    "description": "Recent commits"
+  },
+  {
+    "timestamp": "2026-03-24T10:50:27.015712",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/prisma/schema.prisma packages/backend/prisma/migrations/5_add_user_branding_fields/migration.sql packages/backend/src/routes/profile.ts packages/backend/src/routes/public-booking.ts packages/web/src/app/B/\\[hash\\]/page.tsx packages/web/src/app/book/\\[username\\]/\\[slug\\]/page.tsx packages/web/src/app/settings/booking/page.tsx packages/web/src/components/CalendarView.tsx diary/2026-03-24.md openspec/changes/add-branding-customization/",
+    "description": "Stage all relevant files"
+  },
+  {
+    "timestamp": "2026-03-24T15:53:20.216177",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/routes/public-booking.ts && git commit -m \"$(cat <<'EOF'\nRemove attendees from booking calendar events\n\nGuest's Exchange server response caused Google Calendar to remove the\nhost from their own event. Guest info is already in the description,\nso no need to add them as attendees and trigger invite emails.\nEOF\n)\" && git push",
+    "description": "Commit and push booking fix"
+  },
+  {
+    "timestamp": "2026-03-24T17:23:12.894192",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/routes/availability.ts && git commit -m \"$(cat <<'EOF'\nFix default availability returning per-event-type rules\n\nGET /api/availability was missing eventTypeId: null filter, so it\nreturned both default and per-event-type rules. This caused the\nbooking settings page to display extra rows and create duplicate\ndefault entries when saving.\nEOF\n)\" && git push",
+    "description": "Commit and push"
+  },
+  {
+    "timestamp": "2026-03-24T17:41:20.289167",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "mkdir -p /Users/cb/git/calendar-sync/packages/backend/prisma/migrations/6_add_user_images",
+    "description": "Create migration dir"
+  },
+  {
+    "timestamp": "2026-03-24T17:42:42.295567",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "npx prisma generate 2>&1 | tail -3",
+    "description": "Regenerate Prisma client"
+  },
+  {
+    "timestamp": "2026-03-24T17:50:01.611149",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit --pretty 2>&1 | head -20",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-24T17:50:02.963648",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit --pretty 2>&1 | head -20",
+    "description": "Type-check web"
+  },
+  {
+    "timestamp": "2026-03-24T18:01:24.435667",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/web/src/components/AppShell.tsx packages/web/src/app/settings/page.tsx packages/web/src/app/settings/booking/page.tsx packages/web/src/app/settings/booking/new/page.tsx packages/web/src/app/settings/booking/\\[id\\]/edit/page.tsx packages/web/src/app/settings/booking/\\[id\\]/preview/page.tsx packages/web/src/app/settings/profile/page.tsx packages/web/src/app/settings/preferences/page.tsx packages/web/src/app/profile/page.tsx && git commit -m \"$(cat <<'EOF'\nReorganize settings into sub-navigation sections\n\nSettings sidebar now shows sub-sections: Calendar Sources, Booking,\nProfile, and Preferences. Each has its own page. Profile moved from\n/profile to /settings/profile (old URL redirects). Booking pages now\nhighlight Settings in main nav instead of Bookings.\nEOF\n)\" && git push",
+    "description": "Commit and push settings reorganization"
+  },
+  {
+    "timestamp": "2026-03-24T18:32:01.585475",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit --pretty 2>&1 | head -10",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-24T18:32:03.001802",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit --pretty 2>&1 | head -10",
+    "description": "Type-check web"
+  },
+  {
+    "timestamp": "2026-03-25T17:25:42.515572",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit --pretty 2>&1 | head -20",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-25T17:31:08.313339",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit --pretty 2>&1 | head -10",
+    "description": "Type-check backend"
+  },
+  {
+    "timestamp": "2026-03-25T17:35:11.387381",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync/packages/web && npx tsc --noEmit --pretty 2>&1 | head -20",
+    "description": "Type-check web"
+  },
+  {
+    "timestamp": "2026-03-26T15:26:20.405063",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit --pretty 2>&1 | head -5",
+    "description": "Type-check"
+  },
+  {
+    "timestamp": "2026-03-26T15:26:32.850602",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/providers/outlook.ts packages/web/src/components/CalendarView.tsx && git commit -m \"$(cat <<'EOF'\nFix Outlook recurring events missing titles\n\nGraph API delta endpoint omits subject for recurring instances unless\nexplicitly requested. Added $select parameter to include all needed\nfields. Also added meaningful fallback titles for events without\nsubject (OOF, working elsewhere, focus time) and removed \"Ganzt\u00e4gig\"\nlabel from calendar view.\nEOF\n)\" && git push",
+    "description": "Commit and push"
+  },
+  {
+    "timestamp": "2026-03-26T17:07:03.135457",
+    "session_id": "3d32fcba-b2e2-4b33-9e48-f47043c76d6c",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit --pretty 2>&1 | head -5; cd ../web && npx tsc --noEmit --pretty 2>&1 | head -5",
+    "description": "Type-check both"
+  },
+  {
+    "timestamp": "2026-03-27T12:20:41.770811",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "PGPASSWORD=password psql -h localhost -p 4202 -U calendar_sync -d calendar_sync -c \"SELECT indexname FROM pg_indexes WHERE tablename = 'users' AND indexdef LIKE '%username%';\" 2>&1",
+    "description": "Check if username unique index exists"
+  },
+  {
+    "timestamp": "2026-03-27T14:02:35.300238",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "grep -A2 'username' prisma/schema.prisma | head -10",
+    "description": "Check username field in schema"
+  },
+  {
+    "timestamp": "2026-03-27T14:02:38.911642",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "PGPASSWORD=password psql -h localhost -p 4202 -U calendar_sync -d calendar_sync -c \"SELECT username, count(*) FROM users GROUP BY username HAVING count(*) > 1;\" 2>&1",
+    "description": "Check for duplicate usernames"
+  },
+  {
+    "timestamp": "2026-03-27T14:02:49.207394",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "DATABASE_URL=\"postgresql://calendar_sync:password@localhost:4202/calendar_sync\" npx prisma db push --accept-data-loss 2>&1",
+    "description": "Push schema to fix drift"
+  },
+  {
+    "timestamp": "2026-03-27T14:03:02.787343",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && docker compose restart api 2>&1 && sleep 3 && docker compose logs api --tail 5 2>&1",
+    "description": "Restart API and check logs"
+  },
+  {
+    "timestamp": "2026-03-27T14:07:04.756555",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "PGPASSWORD=password psql -h localhost -p 4202 -U calendar_sync -d calendar_sync -c \"\\d calendar_sources\" 2>&1 | grep -i fetch",
+    "description": "Check if column exists in DB"
+  },
+  {
+    "timestamp": "2026-03-27T14:08:13.948646",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "docker compose build --no-cache api sync-worker 2>&1 | tail -10",
+    "description": "Rebuild API and worker without cache"
+  },
+  {
+    "timestamp": "2026-03-27T14:08:58.420695",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "docker compose up api sync-worker -d 2>&1 && sleep 3 && docker compose logs api --tail 5 2>&1",
+    "description": "Restart API and worker with new images"
+  },
+  {
+    "timestamp": "2026-03-27T14:12:02.142146",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "docker compose logs api --since 1m 2>&1 | grep -i error; echo \"---\"; docker compose logs postgres --since 1m 2>&1 | grep -i error",
+    "description": "Check for recent errors only"
+  },
+  {
+    "timestamp": "2026-03-27T14:13:08.369726",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "docker compose build --no-cache web 2>&1 | tail -5 && docker compose up web -d 2>&1 | tail -5",
+    "description": "Rebuild and restart web"
+  },
+  {
+    "timestamp": "2026-03-27T14:14:28.845256",
+    "session_id": "09b535c7-b5a9-4bd4-acfb-b5afd43db37e",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && openspec new change \"design-system-implementation\" 2>&1",
+    "description": "Create new OpenSpec change"
+  },
+  {
+    "timestamp": "2026-03-29T22:07:29.565880",
+    "session_id": "6623eb9c-e4e6-4cc1-91fa-d2b86eecfcdf",
+    "tool_name": "Bash",
+    "command": "ls /Users/cb/git/calendar-sync/packages/backend/.env* 2>/dev/null; ls /Users/cb/git/calendar-sync/.env* 2>/dev/null",
+    "description": "Find env files"
+  },
+  {
+    "timestamp": "2026-03-29T22:07:36.719619",
+    "session_id": "6623eb9c-e4e6-4cc1-91fa-d2b86eecfcdf",
+    "tool_name": "Bash",
+    "command": "source ../../.env 2>/dev/null; npx prisma migrate dev --name add_sync_health_conflict_booking_views 2>&1 | tail -15",
+    "description": "Run migration with env"
+  },
+  {
+    "timestamp": "2026-03-29T22:07:46.192737",
+    "session_id": "6623eb9c-e4e6-4cc1-91fa-d2b86eecfcdf",
+    "tool_name": "Bash",
+    "command": "grep DATABASE_URL ../../.env | head -1 | cut -d= -f1",
+    "description": "Check env var name"
+  },
+  {
+    "timestamp": "2026-03-29T22:07:50.998876",
+    "session_id": "6623eb9c-e4e6-4cc1-91fa-d2b86eecfcdf",
+    "tool_name": "Bash",
+    "command": "grep -i database ../../.env 2>/dev/null || echo \"NO_DATABASE_IN_ENV\"",
+    "description": "Find database config"
+  },
+  {
+    "timestamp": "2026-03-29T22:07:58.197643",
+    "session_id": "6623eb9c-e4e6-4cc1-91fa-d2b86eecfcdf",
+    "tool_name": "Bash",
+    "command": "grep -i \"DATABASE\\|POSTGRES\\|PG_\" ../../.env ../../.env.example 2>/dev/null",
+    "description": "Find DB config in any env"
+  },
+  {
+    "timestamp": "2026-03-29T22:08:10.427673",
+    "session_id": "6623eb9c-e4e6-4cc1-91fa-d2b86eecfcdf",
+    "tool_name": "Bash",
+    "command": "MIGRATION_DIR=\"/Users/cb/git/calendar-sync/packages/backend/prisma/migrations/$(date +%Y%m%d%H%M%S)_add_sync_health_conflict_booking_views\"\nmkdir -p \"$MIGRATION_DIR\"\ncat > \"$MIGRATION_DIR/migration.sql\" << 'SQL'\n-- CreateTable\nCREATE TABLE \"sync_health\" (\n    \"id\" TEXT NOT NULL,\n    \"userId\" TEXT NOT NULL,\n    \"sourceId\" TEXT NOT NULL,\n    \"provider\" TEXT NOT NULL,\n    \"eventsProcessed\" INTEGER NOT NULL DEFAULT 0,\n    \"eventsFailed\" INTEGER NOT NULL DEFAULT 0,\n    \"latencyMs\" INTEGER NOT NULL DEFAULT 0,\n    \"checksumMatch\" BOOLEAN NOT NULL DEFAULT true,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n\n    CONSTRAINT \"sync_health_pkey\" PRIMARY KEY (\"id\")\n);\n\n-- CreateTable\nCREATE TABLE \"conflicts\" (\n    \"id\" TEXT NOT NULL,\n    \"userId\" TEXT NOT NULL,\n    \"eventAId\" TEXT NOT NULL,\n    \"eventBId\" TEXT NOT NULL,\n    \"eventATitle\" TEXT NOT NULL,\n    \"eventBTitle\" TEXT NOT NULL,\n    \"eventAStart\" TIMESTAMP(3) NOT NULL,\n    \"eventBStart\" TIMESTAMP(3) NOT NULL,\n    \"eventASource\" TEXT NOT NULL,\n    \"eventBSource\" TEXT NOT NULL,\n    \"detectedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"resolvedAt\" TIMESTAMP(3),\n\n    CONSTRAINT \"conflicts_pkey\" PRIMARY KEY (\"id\")\n);\n\n-- CreateTable\nCREATE TABLE \"booking_page_views\" (\n    \"id\" TEXT NOT NULL,\n    \"eventTypeId\" TEXT NOT NULL,\n    \"date\" DATE NOT NULL,\n    \"viewCount\" INTEGER NOT NULL DEFAULT 1,\n\n    CONSTRAINT \"booking_page_views_pkey\" PRIMARY KEY (\"id\")\n);\n\n-- CreateIndex\nCREATE INDEX \"sync_health_userId_createdAt_idx\" ON \"sync_health\"(\"userId\", \"createdAt\");\nCREATE INDEX \"sync_health_sourceId_idx\" ON \"sync_health\"(\"sourceId\");\n\n-- CreateIndex\nCREATE INDEX \"conflicts_userId_resolvedAt_idx\" ON \"conflicts\"(\"userId\", \"resolvedAt\");\n\n-- CreateIndex\nCREATE UNIQUE INDEX \"booking_page_views_eventTypeId_date_key\" ON \"booking_page_views\"(\"eventTypeId\", \"date\");\nCREATE INDEX \"booking_page_views_eventTypeId_idx\" ON \"booking_page_views\"(\"eventTypeId\");\n\n-- AddForeignKey\nALTER TABLE \"booking_page_views\" ADD CONSTRAINT \"booking_page_views_eventTypeId_fkey\" FOREIGN KEY (\"eventTypeId\") REFERENCES \"event_types\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;\nSQL\necho \"DONE: $MIGRATION_DIR\"",
+    "description": "Create migration manually"
+  },
+  {
+    "timestamp": "2026-03-29T22:14:27.023794",
+    "session_id": "6623eb9c-e4e6-4cc1-91fa-d2b86eecfcdf",
+    "tool_name": "Bash",
+    "command": "ls /Users/cb/git/calendar-sync/packages/web/src/app/dashboard/ 2>/dev/null",
+    "description": "Check dashboard dir"
+  },
+  {
+    "timestamp": "2026-03-29T22:17:15.665595",
+    "session_id": "6623eb9c-e4e6-4cc1-91fa-d2b86eecfcdf",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add \\\n  packages/backend/prisma/schema.prisma \\\n  packages/backend/prisma/migrations/ \\\n  packages/backend/src/sync-job.ts \\\n  packages/backend/src/routes/dashboard.ts \\\n  packages/backend/src/server.ts \\\n  packages/web/src/app/dashboard/page.tsx \\\n  packages/web/src/components/AppShell.tsx \\\n&& git commit -m \"$(cat <<'EOF'\nAdd sync health dashboard, conflict detection, and heartbeat indicator\n\nBackend:\n- New tables: SyncHealth (per-cycle metrics), Conflict (detected \n  overlaps), BookingPageView (daily aggregates)\n- Sync health logging in sync-job.ts (fire-and-forget, never blocks sync)\n- Dashboard API: /api/dashboard/briefing, weekly-summary, sync-status, \n  conflicts endpoints\n\nFrontend:\n- Dashboard rewrite: daily briefing with greeting, conflict banners, \n  weekly summary card (meetings, overlaps, integrity score), today's \n  events, upcoming bookings, collapsible sync health details\n- Heartbeat indicator in sidebar (green/amber/red, polls every 5 min)\n- Empty states: \"Keine Termine heute. Das ist das Ziel.\"\nEOF\n)\" && git push origin main 2>&1",
+    "description": "Commit and push Ship 2 core"
+  }
+]

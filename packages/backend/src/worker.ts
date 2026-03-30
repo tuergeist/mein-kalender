@@ -1,17 +1,33 @@
-import { Worker, Queue } from "bullmq";
+import { Worker } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import { processSyncJob } from "./sync-job";
-
-function parseRedisUrl(url: string) {
-  const parsed = new URL(url);
-  return { host: parsed.hostname, port: parseInt(parsed.port || "6379") };
-}
-
-const connection = parseRedisUrl(process.env.REDIS_URL || "redis://localhost:6379");
+import { detectConflicts } from "./conflict-detection";
+import { connection, syncQueue } from "./queues";
 
 const prisma = new PrismaClient();
 
 const activeSyncs = new Set<string>();
+
+const conflictWorker = new Worker(
+  "conflict-detection",
+  async (job) => {
+    const { userId } = job.data;
+    console.log(`[conflicts] Running conflict detection for user ${userId}`);
+    await detectConflicts(prisma, userId);
+  },
+  {
+    connection,
+    concurrency: 3,
+  }
+);
+
+conflictWorker.on("completed", (job) => {
+  console.log(`[conflicts] Job ${job.id} completed`);
+});
+
+conflictWorker.on("failed", (job, err) => {
+  console.error(`[conflicts] Job ${job?.id} failed:`, err.message);
+});
 
 const worker = new Worker(
   "calendar-sync",
@@ -47,15 +63,13 @@ worker.on("failed", (job, err) => {
 
 // Schedule repeating sync jobs for all active sources
 async function scheduleSyncJobs() {
-  const queue = new Queue("calendar-sync", { connection });
-
   const sources = await prisma.calendarSource.findMany({
     where: { syncStatus: { not: "disabled" } },
     select: { id: true, userId: true, syncInterval: true },
   });
 
   for (const source of sources) {
-    await queue.upsertJobScheduler(
+    await syncQueue.upsertJobScheduler(
       `sync-${source.id}`,
       { every: source.syncInterval * 1000 },
       {

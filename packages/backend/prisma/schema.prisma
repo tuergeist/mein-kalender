@@ -116,6 +116,7 @@ model Event {
   startTime        DateTime
   endTime          DateTime
   allDay           Boolean  @default(false)
+  ignored          Boolean  @default(false)
   providerMetadata Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

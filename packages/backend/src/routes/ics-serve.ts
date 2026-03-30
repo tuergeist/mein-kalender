@@ -47,6 +47,7 @@ export async function icsServeRoutes(app: FastifyInstance) {
       const events = await prisma.event.findMany({
         where: {
           startTime: { gte: now, lte: endDate },
+          ignored: false,
           calendarEntry: {
             source: { userId: feed.userId },
             ...(calendarIds.length > 0
