@@ -36,6 +36,7 @@ export async function eventTypesRoutes(app: FastifyInstance) {
       include: {
         calendars: { select: { id: true, name: true } },
         availabilityRules: { orderBy: { dayOfWeek: "asc" } },
+        bookingCalendarEntry: { select: { id: true, name: true } },
       },
     });
     return eventTypes;
@@ -60,28 +61,46 @@ export async function eventTypesRoutes(app: FastifyInstance) {
   );
 
   // Create event type
-  app.post<{ Body: { name: string; durationMinutes: number; description?: string; location?: string; color?: string; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; bookingCalendarEntryId?: string } }>(
+  app.post<{ Body: { name: string; slug?: string; durationMinutes: number; description?: string; location?: string; color?: string; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; bookingCalendarEntryId?: string } }>(
     "/api/event-types",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
-      const { name, durationMinutes, description, location, color, redirectUrl, redirectTitle, redirectDelaySecs, bookingCalendarEntryId } = request.body;
+      const { name, slug: requestedSlug, durationMinutes, description, location, color, redirectUrl, redirectTitle, redirectDelaySecs, bookingCalendarEntryId } = request.body;
 
       if (!name || !durationMinutes) {
         return reply.code(400).send({ error: "name and durationMinutes are required" });
       }
 
-      // Generate unique slug
-      let slug = slugify(name);
-      if (!slug) slug = "event";
-      const existing = await prisma.eventType.findMany({
-        where: { userId: user.id, slug: { startsWith: slug } },
-        select: { slug: true },
-      });
-      const existingSlugs = new Set(existing.map((e) => e.slug));
-      if (existingSlugs.has(slug)) {
-        let i = 2;
-        while (existingSlugs.has(`${slug}-${i}`)) i++;
-        slug = `${slug}-${i}`;
+      // Determine slug: user-provided, auto-generated from name, or hash fallback
+      let slug: string;
+      if (requestedSlug && requestedSlug.trim()) {
+        slug = slugify(requestedSlug.trim());
+        if (slug.length < 3) {
+          return reply.code(400).send({ error: "URL-Pfad muss mindestens 3 Zeichen lang sein." });
+        }
+        const collision = await prisma.eventType.findFirst({
+          where: { userId: user.id, slug },
+        });
+        if (collision) {
+          return reply.code(400).send({ error: "Dieser URL-Pfad wird bereits von einer anderen Terminart verwendet." });
+        }
+      } else {
+        // Auto-generate: try slugified name, then append counter, or use hash
+        slug = slugify(name);
+        if (!slug || slug.length < 3) {
+          slug = await generateShortHash();
+        } else {
+          const existing = await prisma.eventType.findMany({
+            where: { userId: user.id, slug: { startsWith: slug } },
+            select: { slug: true },
+          });
+          const existingSlugs = new Set(existing.map((e) => e.slug));
+          if (existingSlugs.has(slug)) {
+            let i = 2;
+            while (existingSlugs.has(`${slug}-${i}`)) i++;
+            slug = `${slug}-${i}`;
+          }
+        }
       }
 
       const eventType = await prisma.eventType.create({
@@ -105,18 +124,36 @@ export async function eventTypesRoutes(app: FastifyInstance) {
   );
 
   // Update event type
-  app.put<{ Params: { id: string }; Body: { name?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[]; bookingCalendarEntryId?: string | null; availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>; enableShortLink?: boolean; brandColor?: string | null; accentColor?: string | null; avatarUrl?: string | null; backgroundUrl?: string | null; backgroundOpacity?: number | null } }>(
+  app.put<{ Params: { id: string }; Body: { name?: string; slug?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[]; bookingCalendarEntryId?: string | null; availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>; enableShortLink?: boolean; brandColor?: string | null; accentColor?: string | null; avatarUrl?: string | null; backgroundUrl?: string | null; backgroundOpacity?: number | null } }>(
     "/api/event-types/:id",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
       const { id } = request.params;
-      const { name, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds, bookingCalendarEntryId, availabilityRules, enableShortLink, brandColor, accentColor, avatarUrl, backgroundUrl, backgroundOpacity } = request.body;
+      const { name, slug: requestedSlug, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds, bookingCalendarEntryId, availabilityRules, enableShortLink, brandColor, accentColor, avatarUrl, backgroundUrl, backgroundOpacity } = request.body;
 
       const existing = await prisma.eventType.findFirst({
         where: { id, userId: user.id },
       });
       if (!existing) {
         return reply.code(404).send({ error: "Event type not found" });
+      }
+
+      // Validate slug if provided
+      let slugUpdate: { slug: string } | undefined;
+      if (requestedSlug !== undefined) {
+        const slug = slugify(requestedSlug.trim());
+        if (slug.length < 3) {
+          return reply.code(400).send({ error: "URL-Pfad muss mindestens 3 Zeichen lang sein." });
+        }
+        if (slug !== existing.slug) {
+          const collision = await prisma.eventType.findFirst({
+            where: { userId: user.id, slug, id: { not: id } },
+          });
+          if (collision) {
+            return reply.code(400).send({ error: "Dieser URL-Pfad wird bereits von einer anderen Terminart verwendet." });
+          }
+          slugUpdate = { slug };
+        }
       }
 
       // Handle short link toggle
@@ -131,6 +168,7 @@ export async function eventTypesRoutes(app: FastifyInstance) {
         where: { id },
         data: {
           ...(name !== undefined && { name }),
+          ...(slugUpdate && slugUpdate),
           ...(durationMinutes !== undefined && { durationMinutes }),
           ...(description !== undefined && { description }),
           ...(location !== undefined && { location }),

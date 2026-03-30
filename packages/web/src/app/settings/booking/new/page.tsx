@@ -30,6 +30,8 @@ export default function NewEventTypePage() {
   const [allCalendarEntries, setAllCalendarEntries] = useState<Array<{ id: string; name: string; sourceName: string }>>([]);
 
   const [formName, setFormName] = useState("");
+  const [formSlug, setFormSlug] = useState("");
+  const [slugError, setSlugError] = useState("");
   const [formDuration, setFormDuration] = useState("30");
   const [formDescription, setFormDescription] = useState("");
   const [formLocation, setFormLocation] = useState("");
@@ -46,6 +48,7 @@ export default function NewEventTypePage() {
   const [formAvatarUrl, setFormAvatarUrl] = useState("");
   const [formBackgroundUrl, setFormBackgroundUrl] = useState("");
   const [formBackgroundOpacity, setFormBackgroundOpacity] = useState(0.85);
+  const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
 
@@ -92,9 +95,21 @@ export default function NewEventTypePage() {
 
   async function handleSave() {
     if (!accessToken || !formName.trim()) return;
+    // Client-side slug validation
+    const trimmedSlug = formSlug.trim();
+    if (trimmedSlug) {
+      const normalized = trimmedSlug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      if (normalized.length < 3) {
+        setSlugError("URL-Pfad muss mindestens 3 Zeichen lang sein.");
+        return;
+      }
+    }
+    setSlugError("");
+    setSaveError("");
     setSaving(true);
     const body = {
       name: formName,
+      slug: trimmedSlug || undefined,
       durationMinutes: parseInt(formDuration) || 30,
       description: formDescription || null,
       location: formLocation || null,
@@ -113,7 +128,14 @@ export default function NewEventTypePage() {
     };
     const res = await apiAuthFetch("/api/event-types", accessToken, { method: "POST", body: JSON.stringify(body) });
     setSaving(false);
-    if (res.ok) router.push("/settings/booking");
+    if (res.ok) {
+      router.push("/settings/booking");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      const err = data.error || "Speichern fehlgeschlagen";
+      if (err.includes("URL-Pfad")) setSlugError(err);
+      else setSaveError(err);
+    }
   }
 
   return (
@@ -134,6 +156,7 @@ export default function NewEventTypePage() {
           <CardHeader><h2 className="text-lg font-semibold">Grunddaten</h2></CardHeader>
           <CardBody className="space-y-4">
             <Input label="Name" isRequired value={formName} onValueChange={setFormName} placeholder="z.B. 30-Min. Gespräch" />
+            <Input label="URL-Pfad (optional)" value={formSlug} onValueChange={(v) => { setFormSlug(v); setSlugError(""); }} placeholder="Wird automatisch aus dem Namen erzeugt" description="Mindestens 3 Zeichen. Leer lassen für automatische Generierung." errorMessage={slugError} isInvalid={!!slugError} />
             <div className="flex gap-4">
               <Input label="Dauer (Minuten)" type="number" value={formDuration} onValueChange={setFormDuration} className="w-40" />
               <Input label="Ort (optional)" value={formLocation} onValueChange={setFormLocation} placeholder="z.B. Google Meet Link" className="flex-1" />
@@ -141,6 +164,10 @@ export default function NewEventTypePage() {
             <Input label="Beschreibung (optional)" value={formDescription} onValueChange={setFormDescription} />
           </CardBody>
         </Card>
+
+        {saveError && (
+          <div className="rounded-lg bg-danger-50 px-4 py-3 text-sm text-danger">{saveError}</div>
+        )}
 
         {/* After Booking */}
         <Card>

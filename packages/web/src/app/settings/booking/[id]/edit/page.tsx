@@ -24,6 +24,7 @@ const DEFAULT_RULES = [
 
 interface EventType {
   id: string;
+  slug: string;
   name: string;
   durationMinutes: number;
   description: string | null;
@@ -53,6 +54,8 @@ export default function EditEventTypePage() {
   const [allCalendarEntries, setAllCalendarEntries] = useState<Array<{ id: string; name: string; sourceName: string }>>([]);
 
   const [formName, setFormName] = useState("");
+  const [formSlug, setFormSlug] = useState("");
+  const [slugError, setSlugError] = useState("");
   const [formDuration, setFormDuration] = useState("30");
   const [formDescription, setFormDescription] = useState("");
   const [formLocation, setFormLocation] = useState("");
@@ -70,6 +73,7 @@ export default function EditEventTypePage() {
   const [formAvatarUrl, setFormAvatarUrl] = useState("");
   const [formBackgroundUrl, setFormBackgroundUrl] = useState("");
   const [formBackgroundOpacity, setFormBackgroundOpacity] = useState(0.85);
+  const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
 
@@ -96,6 +100,7 @@ export default function EditEventTypePage() {
     if (res.ok) {
       const et: EventType = await res.json();
       setFormName(et.name);
+      setFormSlug(et.slug || "");
       setFormDuration(String(et.durationMinutes));
       setFormDescription(et.description || "");
       setFormLocation(et.location || "");
@@ -145,9 +150,21 @@ export default function EditEventTypePage() {
 
   async function handleSave() {
     if (!accessToken || !formName.trim()) return;
+    // Client-side slug validation
+    const trimmedSlug = formSlug.trim();
+    if (trimmedSlug) {
+      const normalized = trimmedSlug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      if (normalized.length < 3) {
+        setSlugError("URL-Pfad muss mindestens 3 Zeichen lang sein.");
+        return;
+      }
+    }
+    setSlugError("");
+    setSaveError("");
     setSaving(true);
     const body = {
       name: formName,
+      slug: trimmedSlug,
       durationMinutes: parseInt(formDuration) || 30,
       description: formDescription || null,
       location: formLocation || null,
@@ -166,7 +183,14 @@ export default function EditEventTypePage() {
     };
     const res = await apiAuthFetch(`/api/event-types/${id}`, accessToken, { method: "PUT", body: JSON.stringify(body) });
     setSaving(false);
-    if (res.ok) router.push("/settings/booking");
+    if (res.ok) {
+      router.push("/settings/booking");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      const err = data.error || "Speichern fehlgeschlagen";
+      if (err.includes("URL-Pfad")) setSlugError(err);
+      else setSaveError(err);
+    }
   }
 
   if (loading) {
@@ -195,6 +219,7 @@ export default function EditEventTypePage() {
           <CardHeader><h2 className="text-lg font-semibold">Grunddaten</h2></CardHeader>
           <CardBody className="space-y-4">
             <Input label="Name" isRequired value={formName} onValueChange={setFormName} placeholder="z.B. 30-Min. Gespräch" />
+            <Input label="URL-Pfad" value={formSlug} onValueChange={(v) => { setFormSlug(v); setSlugError(""); }} placeholder="z.B. beratung" description="Mindestens 3 Zeichen." errorMessage={slugError} isInvalid={!!slugError} />
             <div className="flex gap-4">
               <Input label="Dauer (Minuten)" type="number" value={formDuration} onValueChange={setFormDuration} className="w-40" />
               <Input label="Ort (optional)" value={formLocation} onValueChange={setFormLocation} placeholder="z.B. Google Meet Link" className="flex-1" />
@@ -202,6 +227,10 @@ export default function EditEventTypePage() {
             <Input label="Beschreibung (optional)" value={formDescription} onValueChange={setFormDescription} />
           </CardBody>
         </Card>
+
+        {saveError && (
+          <div className="rounded-lg bg-danger-50 px-4 py-3 text-sm text-danger">{saveError}</div>
+        )}
 
         {/* After Booking */}
         <Card>
@@ -294,13 +323,49 @@ export default function EditEventTypePage() {
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="flex flex-1 items-end gap-2">
-                  <Input label="Profilfoto" size="sm" value={formAvatarUrl} onValueChange={setFormAvatarUrl} placeholder="Standard verwenden" className="flex-1" />
-                  <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Hochladen</Button>
+                {/* Avatar */}
+                <div className="flex-1">
+                  <label className="mb-1.5 block text-sm font-medium">Profilfoto</label>
+                  {formAvatarUrl ? (
+                    <div className="flex items-center gap-3">
+                      <img src={formAvatarUrl} alt="Profilfoto" className="h-12 w-12 rounded-full object-cover border border-default-200" />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs text-default-500">Bild hochgeladen</span>
+                        <div className="flex gap-1.5">
+                          <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")}>Ersetzen</Button>
+                          <Button size="sm" variant="flat" color="danger" onPress={() => setFormAvatarUrl("")}>Entfernen</Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-default-300 bg-default-50 shrink-0">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-default-400"><circle cx="12" cy="8" r="4"/><path d="M5 20c0-4 3.5-7 7-7s7 3 7 7"/></svg>
+                      </div>
+                      <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")}>Hochladen</Button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex flex-1 items-end gap-2">
-                  <Input label="Hintergrundbild" size="sm" value={formBackgroundUrl} onValueChange={setFormBackgroundUrl} placeholder="Standard verwenden" className="flex-1" />
-                  <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Hochladen</Button>
+                {/* Background */}
+                <div className="flex-1">
+                  <label className="mb-1.5 block text-sm font-medium">Hintergrundbild</label>
+                  {formBackgroundUrl ? (
+                    <div className="space-y-1.5">
+                      <img src={formBackgroundUrl} alt="Hintergrundbild" className="h-24 w-full rounded-lg object-cover border border-default-200" />
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-default-500">Bild hochgeladen</span>
+                        <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")}>Ersetzen</Button>
+                        <Button size="sm" variant="flat" color="danger" onPress={() => setFormBackgroundUrl("")}>Entfernen</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-16 w-24 items-center justify-center rounded-lg border border-dashed border-default-300 bg-default-50 shrink-0">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-default-400"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 4-4 5 5"/></svg>
+                      </div>
+                      <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")}>Hochladen</Button>
+                    </div>
+                  )}
                 </div>
               </div>
               {formBackgroundUrl && (

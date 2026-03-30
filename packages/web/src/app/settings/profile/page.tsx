@@ -1,19 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { Card, CardBody, Input, Button, Avatar } from "@heroui/react";
+import { Card, CardBody, CardHeader, Input, Button, Avatar } from "@heroui/react";
 import { AppShell } from "@/components/AppShell";
+import { apiAuthFetch } from "@/lib/api";
 
 export default function ProfileSettingsPage() {
   const { data: session, update } = useSession();
+  const accessToken = (session as { accessToken?: string } | null)?.accessToken;
   const [displayName, setDisplayName] = useState(session?.user?.name || "");
   const [saving, setSaving] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (accessToken) loadBranding();
+  }, [accessToken]);
+
+  async function loadBranding() {
+    if (!accessToken) return;
+    const res = await apiAuthFetch("/api/profile", accessToken);
+    if (res.ok) {
+      const data = await res.json();
+      setAvatarUrl(data.avatarUrl || null);
+      setBackgroundUrl(data.backgroundUrl || null);
+    }
+  }
 
   async function handleSave() {
     setSaving(true);
     await update({ name: displayName });
     setSaving(false);
+  }
+
+  async function uploadImage(type: "avatar" | "background") {
+    if (!accessToken) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp,image/gif";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      setUploading(type);
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/profile/image/${type}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (type === "avatar") setAvatarUrl(data.url);
+        else setBackgroundUrl(data.url);
+      }
+      setUploading(null);
+    };
+    input.click();
+  }
+
+  async function removeImage(type: "avatar" | "background") {
+    if (!accessToken) return;
+    setRemoving(type);
+    const res = await fetch(`/api/profile/image/${type}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) {
+      if (type === "avatar") setAvatarUrl(null);
+      else setBackgroundUrl(null);
+    }
+    setRemoving(null);
   }
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -40,7 +100,7 @@ export default function ProfileSettingsPage() {
           <CardBody className="flex flex-col gap-4 p-6">
             <div className="flex items-center gap-3">
               <Avatar
-                src={session?.user?.image || undefined}
+                src={avatarUrl || session?.user?.image || undefined}
                 name={session?.user?.name || session?.user?.email || "U"}
                 size="lg"
               />
@@ -71,6 +131,58 @@ export default function ProfileSettingsPage() {
               >
                 Änderungen speichern
               </Button>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Branding Images */}
+        <Card>
+          <CardHeader><h2 className="text-lg font-semibold">Bilder</h2></CardHeader>
+          <CardBody className="space-y-5 p-6 pt-0">
+            {/* Avatar */}
+            <div>
+              <label className="mb-2 block text-sm font-medium">Profilbild</label>
+              {avatarUrl ? (
+                <div className="flex items-center gap-3">
+                  <img src={avatarUrl} alt="Profilbild" className="h-16 w-16 rounded-full object-cover border border-default-200" />
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xs text-default-500">Bild hochgeladen</span>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")}>Ersetzen</Button>
+                      <Button size="sm" variant="flat" color="danger" isLoading={removing === "avatar"} onPress={() => removeImage("avatar")}>Entfernen</Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-default-300 bg-default-50">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-default-400"><circle cx="12" cy="8" r="4"/><path d="M5 20c0-4 3.5-7 7-7s7 3 7 7"/></svg>
+                  </div>
+                  <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")}>Bild hochladen</Button>
+                </div>
+              )}
+            </div>
+
+            {/* Background */}
+            <div>
+              <label className="mb-2 block text-sm font-medium">Hintergrundbild</label>
+              {backgroundUrl ? (
+                <div className="space-y-2">
+                  <img src={backgroundUrl} alt="Hintergrundbild" className="h-36 w-full max-w-md rounded-lg object-cover border border-default-200" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-default-500">Bild hochgeladen</span>
+                    <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")}>Ersetzen</Button>
+                    <Button size="sm" variant="flat" color="danger" isLoading={removing === "background"} onPress={() => removeImage("background")}>Entfernen</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="flex h-24 w-40 items-center justify-center rounded-lg border border-dashed border-default-300 bg-default-50">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-default-400"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 4-4 5 5"/></svg>
+                  </div>
+                  <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")}>Bild hochladen</Button>
+                </div>
+              )}
             </div>
           </CardBody>
         </Card>

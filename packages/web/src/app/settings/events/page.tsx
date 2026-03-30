@@ -17,6 +17,7 @@ interface EventType {
   color: string;
   enabled: boolean;
   shortHash: string | null;
+  bookingCalendarEntry: { id: string; name: string } | null;
 }
 
 export default function EventTypesPage() {
@@ -79,6 +80,9 @@ export default function EventTypesPage() {
                         <div>
                           <span className="font-medium">{et.name}</span>
                           <span className="ml-2 font-mono text-sm text-default-400">{et.durationMinutes} min</span>
+                          {et.bookingCalendarEntry && (
+                            <span className="ml-2 rounded bg-default-100 px-1.5 py-0.5 text-xs text-default-500">{et.bookingCalendarEntry.name}</span>
+                          )}
                         </div>
                       </div>
                       {savedUsername && et.enabled && (

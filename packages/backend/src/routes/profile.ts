@@ -78,6 +78,14 @@ export async function profileRoutes(app: FastifyInstance) {
       if (backgroundUrl !== undefined) data.backgroundUrl = backgroundUrl;
       if (backgroundOpacity !== undefined) data.backgroundOpacity = backgroundOpacity;
 
+      // Clean up UserImage records when clearing uploaded images
+      if (avatarUrl === null) {
+        await prisma.userImage.deleteMany({ where: { userId: user.id, type: "avatar" } });
+      }
+      if (backgroundUrl === null) {
+        await prisma.userImage.deleteMany({ where: { userId: user.id, type: "background" } });
+      }
+
       const updated = await prisma.user.update({
         where: { id: user.id },
         data,

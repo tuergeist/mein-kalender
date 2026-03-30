@@ -6,6 +6,7 @@ import {
   Card, CardBody, CardHeader, Button, Input, Switch, Select, SelectItem,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
 } from "@heroui/react";
+import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { apiAuthFetch } from "@/lib/api";
 
@@ -17,6 +18,7 @@ interface EventType {
   color: string;
   enabled: boolean;
   shortHash: string | null;
+  bookingCalendarEntry: { id: string; name: string } | null;
 }
 
 interface AvailabilityRule {
@@ -174,6 +176,7 @@ export default function BookingSettingsPage() {
     <AppShell section="settings" settingsSection="booking">
       <div className="mx-auto max-w-3xl space-y-6">
         <h1 className="font-display text-2xl font-bold tracking-tight">Buchungseinstellungen</h1>
+        <p className="text-sm text-default-400">Terminarten werden unter <Link href="/settings/events" className="text-primary hover:underline">Einstellungen &gt; Terminarten</Link> verwaltet.</p>
 
         {/* Booking URL */}
         <Card>
@@ -183,6 +186,7 @@ export default function BookingSettingsPage() {
               <Input label="Benutzername" value={username} onValueChange={setUsername} description={savedUsername ? `Deine Buchungs-URL: ${bookingBaseUrl}/...` : undefined} errorMessage={usernameError} isInvalid={!!usernameError} className="flex-1" />
               <Button size="sm" color="primary" isLoading={usernameSaving} isDisabled={username === savedUsername} onPress={saveUsername} className="shrink-0">Speichern</Button>
             </div>
+            <p className="mt-3 text-xs text-default-400">Mit Short-Links entfällt die URL-Erweiterung.</p>
           </CardBody>
         </Card>
 
