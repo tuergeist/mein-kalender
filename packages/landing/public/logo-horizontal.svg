@@ -1,36 +1,8 @@
-<svg width="480" height="80" viewBox="0 0 480 80" xmlns="http://www.w3.org/2000/svg">
-  <!-- mein-kalender.link — Horizontal Wordmark with Mini Icon -->
-
-  <!-- Mini calendar stack -->
-  <g transform="translate(12, 10)">
-    <!-- Back page (teal) -->
-    <rect x="0" y="8" width="44" height="50" rx="6" fill="#5DCAA5" opacity="0.4"/>
-    <rect x="0" y="8" width="44" height="14" rx="6" fill="#1D9E75" opacity="0.45"/>
-    <rect x="0" y="17" width="44" height="5" fill="#1D9E75" opacity="0.45"/>
-    <!-- Middle page (blue) -->
-    <rect x="5" y="4" width="44" height="50" rx="6" fill="#85B7EB" opacity="0.55"/>
-    <rect x="5" y="4" width="44" height="14" rx="6" fill="#378ADD" opacity="0.6"/>
-    <rect x="5" y="13" width="44" height="5" fill="#378ADD" opacity="0.6"/>
-    <!-- Front page (purple) -->
-    <rect x="10" y="0" width="44" height="50" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.8"/>
-    <rect x="10" y="0" width="44" height="14" rx="6" fill="#7F77DD"/>
-    <rect x="10" y="10" width="44" height="4" fill="#7F77DD"/>
-    <!-- Mini grid -->
-    <circle cx="22" cy="24" r="2.5" fill="#AFA9EC"/>
-    <circle cx="32" cy="24" r="2.5" fill="#AFA9EC"/>
-    <circle cx="42" cy="24" r="2.5" fill="#AFA9EC"/>
-    <circle cx="22" cy="34" r="2.5" fill="#AFA9EC"/>
-    <circle cx="32" cy="34" r="2.5" fill="#7F77DD"/>
-    <circle cx="42" cy="34" r="2.5" fill="#AFA9EC"/>
-    <circle cx="32" cy="34" r="5.5" fill="none" stroke="#534AB7" stroke-width="1"/>
-  </g>
-
-  <!-- Mini checkmark badge -->
-  <g transform="translate(52, 48)">
-    <circle cx="0" cy="0" r="9" fill="#1D9E75"/>
-    <path d="M-4 0L-1.5 3L4.5 -2.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-
-  <!-- Wordmark -->
-  <text x="80" y="48" font-family="'Inter', 'Segoe UI', system-ui, sans-serif" font-size="26" font-weight="600" fill="#2C2C2A" letter-spacing="-0.5px">mein-kalender<tspan fill="#7F77DD" font-weight="600">.link</tspan></text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 52">
+  <!-- mein-kalender.link — Horizontal Logo (D: Link mark) — Light background -->
+  <rect x="0" y="2" width="48" height="48" rx="10" fill="#9f1239"/>
+  <path d="M16 34L32 18" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="14" cy="36" r="4" fill="none" stroke="#fff" stroke-width="2"/>
+  <circle cx="34" cy="16" r="4" fill="none" stroke="#fff" stroke-width="2"/>
+  <text x="64" y="36" font-family="'Satoshi',system-ui,sans-serif" font-size="28" font-weight="700" letter-spacing="-0.03em" fill="#1c1917">mein-kalender<tspan fill="#9f1239">.link</tspan></text>
 </svg>
