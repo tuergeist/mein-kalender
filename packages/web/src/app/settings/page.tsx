@@ -53,6 +53,12 @@ export default function SettingsPage() {
     loadData();
   }
 
+  async function handleFullResync(sourceId: string) {
+    if (!accessToken) return;
+    await apiAuthFetch(`/api/sources/${sourceId}/full-sync`, accessToken, { method: "POST" });
+    loadData();
+  }
+
   async function handleDisconnect(sourceId: string) {
     if (!accessToken) return;
     await apiAuthFetch(`/api/sources/${sourceId}`, accessToken, { method: "DELETE" });
@@ -120,9 +126,14 @@ export default function SettingsPage() {
                         {source.calendarEntries.length} calendar(s) &bull; Sync every {source.syncInterval / 60} min
                       </p>
                     </div>
-                    <Button size="sm" color="danger" variant="light" onPress={() => setShowDisconnectModal(source.id)}>
-                      Disconnect
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="flat" onPress={() => handleFullResync(source.id)}>
+                        Neu laden
+                      </Button>
+                      <Button size="sm" color="danger" variant="light" onPress={() => setShowDisconnectModal(source.id)}>
+                        Trennen
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
