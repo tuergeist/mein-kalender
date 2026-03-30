@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/admin", label: "Users" },
-  { href: "/admin/sources", label: "Sources" },
-  { href: "/admin/sync", label: "Sync Queue" },
+  { href: "/admin", label: "Benutzer" },
+  { href: "/admin/sources", label: "Quellen" },
+  { href: "/admin/sync", label: "Sync-Warteschlange" },
 ];
 
 export function AdminSidebar() {
@@ -38,7 +38,7 @@ export function AdminSidebar() {
         href="/dashboard"
         className="rounded-lg px-3 py-2 text-sm text-stone-600 hover:bg-stone-50"
       >
-        Back to Dashboard
+        Zurück zum Dashboard
       </Link>
     </nav>
   );

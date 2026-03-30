@@ -118,7 +118,7 @@ export function CalendarSidebar() {
     <div className="flex flex-col gap-1 overflow-hidden p-3">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="font-mono text-[10px] font-medium uppercase tracking-widest text-stone-400">
-          Calendars
+          Kalender
         </h2>
         <Button
           size="sm"
@@ -132,7 +132,7 @@ export function CalendarSidebar() {
       </div>
 
       {sources.length === 0 && (
-        <p className="text-xs text-stone-400">No calendars connected</p>
+        <p className="text-xs text-stone-400">Keine Kalender verbunden</p>
       )}
 
       {sources.map((source) => (

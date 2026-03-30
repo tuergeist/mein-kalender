@@ -106,7 +106,7 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
       onClose();
     } else {
       const data = await res.json();
-      setError(data.error || "Failed to save");
+      setError(data.error || "Speichern fehlgeschlagen");
     }
     setSaving(false);
   }
@@ -121,13 +121,13 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
             className="inline-block h-3 w-3 rounded-full"
             style={{ backgroundColor: event.extendedProps.calendarColor }}
           />
-          {editing ? "Edit Event" : event.title}
+          {editing ? "Termin bearbeiten" : event.title}
         </ModalHeader>
 
         <ModalBody>
           {editing ? (
             <div className="flex flex-col gap-3">
-              <Input label="Title" value={title} onValueChange={setTitle} />
+              <Input label="Titel" value={title} onValueChange={setTitle} />
               <Input
                 label="Start"
                 type="datetime-local"
@@ -135,14 +135,14 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
                 onValueChange={setStartTime}
               />
               <Input
-                label="End"
+                label="Ende"
                 type="datetime-local"
                 value={endTime}
                 onValueChange={setEndTime}
               />
-              <Input label="Location" value={location} onValueChange={setLocation} />
+              <Input label="Ort" value={location} onValueChange={setLocation} />
               <Textarea
-                label="Description"
+                label="Beschreibung"
                 value={description}
                 onValueChange={setDescription}
               />
@@ -156,7 +156,7 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
                 </Chip>
                 {readOnly && (
                   <Chip size="sm" color="warning" variant="flat">
-                    Read-only
+                    Nur lesen
                   </Chip>
                 )}
               </div>
@@ -185,20 +185,20 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
           {editing ? (
             <>
               <Button variant="light" onPress={() => setEditing(false)}>
-                Cancel
+                Abbrechen
               </Button>
               <Button color="primary" isLoading={saving} onPress={handleSave}>
-                Save
+                Speichern
               </Button>
             </>
           ) : (
             <>
               <Button variant="light" onPress={onClose}>
-                Close
+                Schließen
               </Button>
               {!readOnly && (
                 <Button color="primary" onPress={startEditing}>
-                  Edit
+                  Bearbeiten
                 </Button>
               )}
             </>

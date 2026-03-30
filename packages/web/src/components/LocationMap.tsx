@@ -36,7 +36,7 @@ export function LocationMap({ location, className = "" }: LocationMapProps) {
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <p className="text-sm">
-        <span className="text-default-400">Location: </span>
+        <span className="text-default-400">Ort: </span>
         <a
           href={linkUrl}
           target="_blank"

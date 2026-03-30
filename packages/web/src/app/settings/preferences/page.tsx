@@ -14,16 +14,16 @@ export default function PreferencesPage() {
   return (
     <AppShell section="settings" settingsSection="other">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Preferences</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Einstellungen</h1>
 
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Map Provider</h2></CardHeader>
+          <CardHeader><h2 className="text-lg font-semibold">Kartenanbieter</h2></CardHeader>
           <CardBody>
             <p className="mb-4 text-sm text-default-500">
-              Choose which map service to use for event locations.
+              Wähle den Kartendienst für Veranstaltungsorte.
             </p>
             <Select
-              label="Map Provider"
+              label="Kartenanbieter"
               selectedKeys={[mapProvider]}
               onSelectionChange={(keys) => {
                 const selected = Array.from(keys)[0] as string;
@@ -36,7 +36,7 @@ export default function PreferencesPage() {
               <SelectItem key="google">Google Maps</SelectItem>
               <SelectItem key="osm">OpenStreetMap</SelectItem>
               <SelectItem key="apple">Apple Maps</SelectItem>
-              <SelectItem key="none">No map</SelectItem>
+              <SelectItem key="none">Keine Karte</SelectItem>
             </Select>
           </CardBody>
         </Card>

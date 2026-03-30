@@ -28,19 +28,19 @@ export default function ProtonSettingsPage() {
     try {
       const res = await apiAuthFetch("/api/ics/subscribe", token, {
         method: "POST",
-        body: JSON.stringify({ url, label: label || "Proton Calendar" }),
+        body: JSON.stringify({ url, label: label || "Proton Kalender" }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "Subscription failed");
+        setError(data.error || "Abonnement fehlgeschlagen");
       } else {
         const data = await res.json();
-        setSuccess(`Subscribed with ${data.eventsImported} events`);
+        setSuccess(`Abonniert mit ${data.eventsImported} Terminen`);
         setTimeout(() => router.push("/settings"), 1500);
       }
     } catch {
-      setError("Failed to connect to server");
+      setError("Verbindung zum Server fehlgeschlagen");
     }
     setLoading(false);
   }
@@ -54,50 +54,50 @@ export default function ProtonSettingsPage() {
             size="sm"
             onPress={() => router.push("/settings")}
           >
-            &larr; Back
+            &larr; Zurück
           </Button>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Add Proton Calendar</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Proton Kalender hinzufügen</h1>
         </div>
 
         <Card>
           <CardHeader className="flex-col items-start gap-2 px-6 pt-6">
             <h2 className="text-lg font-semibold">
-              Get your Proton Calendar share link
+              Proton Kalender Freigabelink abrufen
             </h2>
             <ol className="list-decimal space-y-2 pl-5 text-sm text-default-600">
               <li>
-                Open{" "}
+                Öffne{" "}
                 <span className="font-medium text-default-800">
-                  Proton Calendar
+                  Proton Kalender
                 </span>{" "}
-                in your browser
+                im Browser
               </li>
               <li>
-                Click the{" "}
+                Klicke auf das{" "}
                 <span className="font-medium text-default-800">
-                  three-dot menu
+                  Drei-Punkte-Menü
                 </span>{" "}
-                next to the calendar you want to share
+                neben dem Kalender, den du teilen möchtest
               </li>
               <li>
-                Select{" "}
+                Wähle{" "}
                 <span className="font-medium text-default-800">
-                  Share
+                  Teilen
                 </span>
               </li>
               <li>
-                Enable{" "}
+                Aktiviere{" "}
                 <span className="font-medium text-default-800">
-                  Share with anyone
+                  Mit jedem teilen
                 </span>{" "}
-                and copy the link
+                und kopiere den Link
               </li>
-              <li>Paste the link below</li>
+              <li>Füge den Link unten ein</li>
             </ol>
           </CardHeader>
           <CardBody className="flex flex-col gap-4 px-6 pb-6">
             <Input
-              label="Calendar Share Link"
+              label="Kalender-Freigabelink"
               type="url"
               value={url}
               onValueChange={(v) => {
@@ -107,14 +107,14 @@ export default function ProtonSettingsPage() {
               placeholder="https://calendar.proton.me/api/calendar/v1/..."
             />
             <Input
-              label="Calendar Name (optional)"
+              label="Kalendername (optional)"
               value={label}
               onValueChange={setLabel}
-              placeholder="Proton Calendar"
+              placeholder="Proton Kalender"
             />
             <p className="text-xs text-default-400">
-              The calendar will be refreshed automatically every hour. Events are
-              read-only.
+              Der Kalender wird automatisch stündlich aktualisiert. Termine sind
+              schreibgeschützt.
             </p>
             <Button
               color="primary"
@@ -122,7 +122,7 @@ export default function ProtonSettingsPage() {
               onPress={handleSubscribe}
               isDisabled={!url}
             >
-              Subscribe
+              Abonnieren
             </Button>
 
             {error && <p className="text-sm text-danger">{error}</p>}

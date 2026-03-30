@@ -80,7 +80,7 @@ export default function BookingPage() {
     apiFetch(`/api/public/book/${username}/${slug}`)
       .then(async (res) => {
         if (!res.ok) {
-          setError("This booking page is not available.");
+          setError("Diese Buchungsseite ist nicht verfügbar.");
           return;
         }
         const data = await res.json();
@@ -128,7 +128,7 @@ export default function BookingPage() {
   // Submit booking
   async function handleSubmit() {
     if (!guestName.trim() || !guestEmail.trim()) {
-      setFormError("Name and email are required.");
+      setFormError("Name und E-Mail sind erforderlich.");
       return;
     }
     setSubmitting(true);
@@ -144,7 +144,7 @@ export default function BookingPage() {
       setConfirmation(data.booking);
     } else {
       const data = await res.json().catch(() => ({}));
-      setFormError(data.error || "Booking failed. The slot may no longer be available.");
+      setFormError(data.error || "Buchung fehlgeschlagen. Der Zeitslot ist möglicherweise nicht mehr verfügbar.");
     }
     setSubmitting(false);
   }
@@ -199,7 +199,7 @@ export default function BookingPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-400">Loading...</p>
+        <p className="text-gray-400">Laden...</p>
       </div>
     );
   }
@@ -209,7 +209,7 @@ export default function BookingPage() {
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <Card className="max-w-md">
           <CardBody className="text-center">
-            <p className="text-lg font-medium text-gray-600">{error || "Not found"}</p>
+            <p className="text-lg font-medium text-gray-600">{error || "Nicht gefunden"}</p>
           </CardBody>
         </Card>
       </div>
@@ -272,12 +272,12 @@ export default function BookingPage() {
             {step === "confirmed" && confirmation && (
               <div className="text-center">
                 <div className="mb-4 text-4xl">&#10003;</div>
-                <h2 className="text-xl font-bold">Booking confirmed</h2>
+                <h2 className="text-xl font-bold">Buchung bestätigt</h2>
                 <p className="mt-2 text-gray-600">
                   {formatDate(confirmation.startTime)}, {formatTime(confirmation.startTime)} – {formatTime(confirmation.endTime)}
                 </p>
                 <p className="mt-1 text-sm text-gray-500">
-                  You will receive a calendar invitation by email.
+                  Du erhältst eine Kalendereinladung per E-Mail.
                 </p>
                 {eventType.redirectUrl && (
                   <div className="mt-6">
@@ -286,12 +286,12 @@ export default function BookingPage() {
                       className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
                       style={{ backgroundColor: brandColor || "var(--heroui-primary)" }}
                     >
-                      {eventType.redirectTitle || "Continue"}
+                      {eventType.redirectTitle || "Weiter"}
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </a>
                     {redirectCountdown !== null && redirectCountdown > 0 && (
                       <p className="mt-2 text-xs text-gray-400">
-                        Redirecting in {redirectCountdown}s...
+                        Weiterleitung in {redirectCountdown}s...
                       </p>
                     )}
                   </div>
@@ -303,9 +303,9 @@ export default function BookingPage() {
               <div>
                 <div className="mb-4 flex items-center gap-2">
                   <Button size="sm" variant="light" onPress={() => setSelectedSlot(null)}>
-                    &larr; Back
+                    &larr; Zurück
                   </Button>
-                  <h2 className="text-lg font-semibold">Your details</h2>
+                  <h2 className="text-lg font-semibold">Deine Angaben</h2>
                 </div>
                 <div className="space-y-4">
                   <Input
@@ -315,14 +315,14 @@ export default function BookingPage() {
                     onValueChange={setGuestName}
                   />
                   <Input
-                    label="Email"
+                    label="E-Mail"
                     type="email"
                     isRequired
                     value={guestEmail}
                     onValueChange={setGuestEmail}
                   />
                   <Textarea
-                    label="Notes (optional)"
+                    label="Notizen (optional)"
                     value={notes}
                     onValueChange={setNotes}
                     minRows={2}
@@ -335,7 +335,7 @@ export default function BookingPage() {
                     isLoading={submitting}
                     onPress={handleSubmit}
                   >
-                    Book appointment
+                    Termin buchen
                   </Button>
                 </div>
               </div>
@@ -344,7 +344,7 @@ export default function BookingPage() {
             {(step === "date" || step === "time") && (
               <div>
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Date &amp; time</h2>
+                  <h2 className="text-lg font-semibold">Datum &amp; Uhrzeit</h2>
                   <div className="flex gap-1">
                     <Button
                       size="sm"
@@ -425,9 +425,9 @@ export default function BookingPage() {
                       </p>
                       <div className="max-h-72 space-y-1.5 overflow-y-auto">
                         {slotsLoading ? (
-                          <p className="text-center text-xs text-gray-400">Loading...</p>
+                          <p className="text-center text-xs text-gray-400">Laden...</p>
                         ) : slots.length === 0 ? (
-                          <p className="text-center text-xs text-gray-400">No available slots</p>
+                          <p className="text-center text-xs text-gray-400">Keine verfügbaren Zeitslots</p>
                         ) : (
                           slots.map((slot) => (
                             <Button

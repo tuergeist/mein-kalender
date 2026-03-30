@@ -30,7 +30,7 @@ interface DayPreview {
   availableSlots: string[];
 }
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_NAMES = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const HOUR_START = 7;
 const HOUR_END = 21;
 const TOTAL_MINUTES = (HOUR_END - HOUR_START) * 60;
@@ -92,22 +92,22 @@ export default function AvailabilityPreviewPage() {
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </Button>
           </Link>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Availability Preview</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Verfügbarkeitsvorschau</h1>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button size="sm" variant="light" onPress={() => navigateWeek(-1)}>&lsaquo; Prev</Button>
+          <Button size="sm" variant="light" onPress={() => navigateWeek(-1)}>&lsaquo; Zurück</Button>
           <span className="text-sm font-medium">
-            Week of {new Date(weekStart + "T00:00:00Z").toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" })}
+            Woche ab {new Date(weekStart + "T00:00:00Z").toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" })}
           </span>
-          <Button size="sm" variant="light" onPress={() => navigateWeek(1)}>Next &rsaquo;</Button>
+          <Button size="sm" variant="light" onPress={() => navigateWeek(1)}>Weiter &rsaquo;</Button>
         </div>
 
         <div className="flex items-center gap-4 text-xs">
-          <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-green-200" /> Available</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-orange-300" /> Booking</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-blue-300" /> Busy event</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-gray-200" /> Outside hours</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-green-200" /> Verfügbar</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-orange-300" /> Buchung</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-blue-300" /> Belegt</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-gray-200" /> Außerhalb der Arbeitszeiten</span>
         </div>
 
         <Card>

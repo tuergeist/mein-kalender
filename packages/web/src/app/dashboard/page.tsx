@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
         {/* Conflict Banner */}
         {conflicts.length > 0 && (
-          <div className="space-y-2">
+          <div id="conflict-banner" className="space-y-2">
             {conflicts.slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-start gap-3 rounded-xl border border-[var(--color-amber-200)] bg-[var(--color-amber-50)] p-4">
                 <span className="mt-0.5 text-lg">&#9888;</span>
@@ -176,19 +176,26 @@ export default function DashboardPage() {
         {/* Weekly Summary */}
         {weekly && !loading && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
+            <Link href="/calendar" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
               <p className="font-display text-2xl font-bold">{weekly.meetings}</p>
               <p className="text-xs text-[var(--text-tertiary)]">Termine diese Woche</p>
-            </div>
-            <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
-              <p className="font-display text-2xl font-bold">{weekly.overlapsDetected}</p>
-              <p className="text-xs text-[var(--text-tertiary)]">Überschneidungen</p>
-            </div>
-            <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
+            </Link>
+            {weekly.overlapsDetected > 0 ? (
+              <a href="#conflict-banner" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
+                <p className="font-display text-2xl font-bold">{weekly.overlapsDetected}</p>
+                <p className="text-xs text-[var(--text-tertiary)]">Überschneidungen</p>
+              </a>
+            ) : (
+              <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
+                <p className="font-display text-2xl font-bold">{weekly.overlapsDetected}</p>
+                <p className="text-xs text-[var(--text-tertiary)]">Überschneidungen</p>
+              </div>
+            )}
+            <Link href="/settings" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
               <p className="font-display text-2xl font-bold">{weekly.calendarsConnected}</p>
               <p className="text-xs text-[var(--text-tertiary)]">Kalender verbunden</p>
-            </div>
-            <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
+            </Link>
+            <Link href="/sync" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
               {weekly.syncSuccessRate >= 97 ? (
                 <>
                   <p className="font-display text-2xl font-bold text-[#059669]">Läuft</p>
@@ -205,7 +212,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-[var(--text-tertiary)]">Sync-Probleme erkannt</p>
                 </>
               )}
-            </div>
+            </Link>
           </div>
         )}
 

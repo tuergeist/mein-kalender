@@ -238,16 +238,16 @@ export default function SyncPage() {
   async function handleCleanup() {
     if (!accessToken || !cleanupCalendarId) return;
     setCleanupLoading(true);
-    setCleanupStatus("Scanning...");
+    setCleanupStatus("Wird durchsucht...");
     const res = await apiAuthFetch("/api/target-calendar/cleanup", accessToken, {
       method: "POST",
       body: JSON.stringify({ calendarEntryId: cleanupCalendarId }),
     });
     if (res.ok) {
       const data = await res.json();
-      setCleanupStatus(`Deleted ${data.deleted} of ${data.found} [Sync] events.`);
+      setCleanupStatus(`${data.deleted} von ${data.found} [Sync]-Terminen gelöscht.`);
     } else {
-      setCleanupStatus("Cleanup failed.");
+      setCleanupStatus("Aufräumen fehlgeschlagen.");
     }
     setCleanupLoading(false);
   }
@@ -255,18 +255,18 @@ export default function SyncPage() {
   return (
     <AppShell section="sync">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Calendar Sync</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Kalender-Sync</h1>
 
         {/* Fetch Window */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Source Fetch Window</h2></CardHeader>
+          <CardHeader><h2 className="text-lg font-semibold">Quell-Abrufzeitraum</h2></CardHeader>
           <CardBody>
             <p className="mb-3 text-sm text-default-500">
-              How far in advance to fetch events from Google/Outlook calendars.
+              Wie weit im Voraus sollen Termine aus Google/Outlook-Kalendern abgerufen werden.
             </p>
             <div className="flex items-end gap-3">
               <Select
-                label="Fetch period"
+                label="Abrufzeitraum"
                 selectedKeys={new Set([String(fetchDays)])}
                 onSelectionChange={(keys) => {
                   const d = Number(Array.from(keys)[0]);
@@ -275,12 +275,12 @@ export default function SyncPage() {
                 size="sm"
                 className="max-w-xs"
               >
-                <SelectItem key="30">30 days</SelectItem>
-                <SelectItem key="60">60 days</SelectItem>
-                <SelectItem key="90">90 days</SelectItem>
+                <SelectItem key="30">30 Tage</SelectItem>
+                <SelectItem key="60">60 Tage</SelectItem>
+                <SelectItem key="90">90 Tage</SelectItem>
               </Select>
               <Button size="sm" color="primary" isLoading={fetchDaysSaving} isDisabled={!fetchDaysDirty} onPress={() => saveFetchDays()}>
-                Save
+                Speichern
               </Button>
             </div>
           </CardBody>
@@ -289,16 +289,19 @@ export default function SyncPage() {
         {/* Sync Targets */}
         <Card>
           <CardHeader className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Sync Targets</h2>
-            <Button size="sm" color="primary" onPress={openAddTarget}>New Sync Target</Button>
+            <h2 className="text-lg font-semibold">Sync-Ziele</h2>
+            <Button size="sm" color="primary" onPress={openAddTarget}>Neues Sync-Ziel</Button>
           </CardHeader>
           <CardBody>
             <p className="mb-4 text-sm text-default-500">
-              Clone events from source calendars into target calendars. Each target syncs independently.
+              Klone Termine aus Quellkalendern in Zielkalender. Jedes Ziel synchronisiert unabhängig.
+            </p>
+            <p className="mb-4 text-xs text-default-400">
+              Synchronisierte Termine werden automatisch verwaltet und sollten nicht manuell geändert werden.
             </p>
 
             {syncTargets.length === 0 && !showTargetForm ? (
-              <p className="text-default-400">No sync targets configured yet.</p>
+              <p className="text-default-400">Noch keine Sync-Ziele konfiguriert.</p>
             ) : (
               <div className="space-y-3">
                 {syncTargets.map((t) => (
@@ -307,18 +310,18 @@ export default function SyncPage() {
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{t.name}</span>
                         <span className="rounded bg-default-100 px-1.5 py-0.5 text-xs font-medium text-default-600">
-                          {t.syncMode === "blocked" ? "Blocked" : "Full"}
+                          {t.syncMode === "blocked" ? "Blockiert" : "Vollständig"}
                         </span>
                         <span className="text-xs text-default-400">{t.source.label || t.source.provider}</span>
                       </div>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="light" onPress={() => openEditTarget(t)}>Edit</Button>
-                        <Button size="sm" color="danger" variant="light" onPress={() => setDeleteTargetId(t.id)}>Remove</Button>
+                        <Button size="sm" variant="light" onPress={() => openEditTarget(t)}>Bearbeiten</Button>
+                        <Button size="sm" color="danger" variant="light" onPress={() => setDeleteTargetId(t.id)}>Entfernen</Button>
                       </div>
                     </div>
                     <p className="mt-1 text-xs text-default-400">
-                      {t.sourceCalendars.length === 0 ? "All source calendars" : `Sources: ${t.sourceCalendars.map((c) => c.name).join(", ")}`}
-                      {" "}&bull; {t.syncDaysInAdvance} days
+                      {t.sourceCalendars.length === 0 ? "Alle Quellkalender" : `Quellen: ${t.sourceCalendars.map((c) => c.name).join(", ")}`}
+                      {" "}&bull; {t.syncDaysInAdvance} Tage
                     </p>
                   </div>
                 ))}
@@ -328,11 +331,11 @@ export default function SyncPage() {
             {/* Add/Edit target form */}
             {showTargetForm && (
               <div className="mt-4 space-y-4 rounded-lg border border-primary-200 bg-primary-50/30 p-4">
-                <p className="text-sm font-semibold">{editingTargetId ? "Edit Sync Target" : "New Sync Target"}</p>
+                <p className="text-sm font-semibold">{editingTargetId ? "Sync-Ziel bearbeiten" : "Neues Sync-Ziel"}</p>
                 {!editingTargetId && (
                   <Select
-                    label="Target Calendar"
-                    placeholder="Select a calendar"
+                    label="Zielkalender"
+                    placeholder="Kalender auswählen"
                     selectedKeys={formTargetCalendarId ? new Set([formTargetCalendarId]) : new Set()}
                     onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFormTargetCalendarId(s); }}
                     size="sm"
@@ -346,45 +349,45 @@ export default function SyncPage() {
                 )}
                 <div className="flex gap-3">
                   <Select
-                    label="Sync mode"
+                    label="Sync-Modus"
                     selectedKeys={new Set([formSyncMode])}
                     onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFormSyncMode(s); }}
                     size="sm"
                     className="flex-1"
                   >
-                    <SelectItem key="full">Full details</SelectItem>
-                    <SelectItem key="blocked">Blocked only (Busy)</SelectItem>
+                    <SelectItem key="full">Vollständig</SelectItem>
+                    <SelectItem key="blocked">Nur blockiert (Belegt)</SelectItem>
                   </Select>
                   <Select
-                    label="Sync period"
+                    label="Sync-Zeitraum"
                     selectedKeys={new Set([String(formSyncDays)])}
                     onSelectionChange={(keys) => { const d = Number(Array.from(keys)[0]); if (d) setFormSyncDays(d); }}
                     size="sm"
                     className="w-44"
                   >
-                    <SelectItem key="30">30 days</SelectItem>
-                    <SelectItem key="60">60 days</SelectItem>
-                    <SelectItem key="90">90 days</SelectItem>
+                    <SelectItem key="30">30 Tage</SelectItem>
+                    <SelectItem key="60">60 Tage</SelectItem>
+                    <SelectItem key="90">90 Tage</SelectItem>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Switch size="sm" isSelected={formSkipWorkLocation} onValueChange={setFormSkipWorkLocation}>
-                    <span className="text-sm">Skip work location events</span>
+                    <span className="text-sm">Arbeitsort-Termine überspringen</span>
                   </Switch>
                   <Switch size="sm" isSelected={formSkipSingleDayAllDay} onValueChange={setFormSkipSingleDayAllDay}>
-                    <span className="text-sm">Skip single-day all-day events</span>
+                    <span className="text-sm">Eintägige Ganztags-Termine überspringen</span>
                   </Switch>
                   <Switch size="sm" isSelected={formSkipDeclined} onValueChange={setFormSkipDeclined}>
-                    <span className="text-sm">Skip declined events</span>
+                    <span className="text-sm">Abgelehnte Termine überspringen</span>
                   </Switch>
                   <Switch size="sm" isSelected={formSkipFree} onValueChange={setFormSkipFree}>
-                    <span className="text-sm">Skip free/tentative events</span>
+                    <span className="text-sm">Freie/vorläufige Termine überspringen</span>
                   </Switch>
                 </div>
                 <div>
-                  <p className="mb-2 text-sm font-medium">Source calendars</p>
+                  <p className="mb-2 text-sm font-medium">Quellkalender</p>
                   <p className="mb-2 text-xs text-default-400">
-                    {formSourceCalendarIds.length === 0 ? "All calendars (default)" : `${formSourceCalendarIds.length} selected`}
+                    {formSourceCalendarIds.length === 0 ? "Alle Kalender (Standard)" : `${formSourceCalendarIds.length} ausgewählt`}
                   </p>
                   <CheckboxGroup size="sm" value={formSourceCalendarIds} onChange={(vals) => setFormSourceCalendarIds(vals as string[])}>
                     {sources.map((source) => {
@@ -414,20 +417,20 @@ export default function SyncPage() {
                   </CheckboxGroup>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="light" onPress={() => setShowTargetForm(false)}>Cancel</Button>
+                  <Button size="sm" variant="light" onPress={() => setShowTargetForm(false)}>Abbrechen</Button>
                   <Button size="sm" color="primary" isLoading={formSaving} isDisabled={!editingTargetId && !formTargetCalendarId} onPress={saveTarget}>
-                    {editingTargetId ? "Save" : "Create"}
+                    {editingTargetId ? "Speichern" : "Erstellen"}
                   </Button>
                 </div>
               </div>
             )}
 
             <Divider className="my-4" />
-            <p className="mb-2 text-sm font-medium">Clean up [Sync] events</p>
+            <p className="mb-2 text-sm font-medium">[Sync]-Termine aufräumen</p>
             <div className="flex items-end gap-2">
               <Select
-                label="Calendar to clean"
-                placeholder="Select a calendar"
+                label="Kalender aufräumen"
+                placeholder="Kalender auswählen"
                 selectedKeys={cleanupCalendarId ? new Set([cleanupCalendarId]) : new Set()}
                 onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setCleanupCalendarId(s); }}
                 className="flex-1"
@@ -440,7 +443,7 @@ export default function SyncPage() {
                 ))}
               </Select>
               <Button size="sm" variant="flat" color="warning" isLoading={cleanupLoading} isDisabled={!cleanupCalendarId} onPress={handleCleanup}>
-                Clean up
+                Aufräumen
               </Button>
             </div>
             {cleanupStatus && <p className="mt-2 text-sm text-primary">{cleanupStatus}</p>}
@@ -450,55 +453,55 @@ export default function SyncPage() {
         {/* ICS Feeds */}
         <Card>
           <CardHeader className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">ICS Feeds</h2>
+            <h2 className="text-lg font-semibold">ICS-Feeds</h2>
             {!showFeedForm && (
               <Button size="sm" color="primary" onPress={() => setShowFeedForm(true)}>
-                New Feed
+                Neuer Feed
               </Button>
             )}
           </CardHeader>
           <CardBody>
             <p className="mb-3 text-sm text-default-500">
-              Create subscribable ICS feeds from your calendars. Use the URL in Google Calendar, Apple Calendar, etc.
+              Erstelle abonnierbare ICS-Feeds aus deinen Kalendern. Verwende die URL in Google Kalender, Apple Kalender usw.
             </p>
 
             {/* Inline new feed form */}
             {showFeedForm && (
               <div className="mb-4 space-y-4 rounded-lg border border-primary-200 bg-primary-50/30 p-4">
-                <p className="text-sm font-semibold">New Feed</p>
-                <Input label="Name" isRequired value={feedName} onValueChange={setFeedName} placeholder="e.g. Work calendars" size="sm" />
+                <p className="text-sm font-semibold">Neuer Feed</p>
+                <Input label="Name" isRequired value={feedName} onValueChange={setFeedName} placeholder="z.B. Arbeitskalender" size="sm" />
                 <div className="flex gap-3">
                   <Select
-                    label="Mode"
+                    label="Modus"
                     selectedKeys={new Set([feedMode])}
                     onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFeedMode(s); }}
                     size="sm"
                     className="flex-1"
                   >
-                    <SelectItem key="full">Full details</SelectItem>
-                    <SelectItem key="freebusy">Free/busy only</SelectItem>
+                    <SelectItem key="full">Vollständig</SelectItem>
+                    <SelectItem key="freebusy">Nur frei/belegt</SelectItem>
                   </Select>
                   <Select
-                    label="Days in advance"
+                    label="Tage im Voraus"
                     selectedKeys={new Set([feedDays])}
                     onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFeedDays(s); }}
                     size="sm"
                     className="w-36"
                   >
-                    <SelectItem key="30">30 days</SelectItem>
-                    <SelectItem key="60">60 days</SelectItem>
-                    <SelectItem key="90">90 days</SelectItem>
+                    <SelectItem key="30">30 Tage</SelectItem>
+                    <SelectItem key="60">60 Tage</SelectItem>
+                    <SelectItem key="90">90 Tage</SelectItem>
                   </Select>
                 </div>
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <p className="text-sm font-medium">Calendars to include</p>
+                    <p className="text-sm font-medium">Kalender einschließen</p>
                     <Button size="sm" variant="flat" onPress={() => {
                       try {
                         const stored = localStorage.getItem("visibleCalendarIds");
                         if (stored) { const ids = JSON.parse(stored) as string[]; if (ids.length > 0) setFeedCalendarIds(ids); }
                       } catch { /* ignore */ }
-                    }}>Use visible</Button>
+                    }}>Sichtbare verwenden</Button>
                   </div>
                   <CheckboxGroup size="sm" value={feedCalendarIds} onChange={(vals) => setFeedCalendarIds(vals as string[])}>
                     {sources.map((source) => (
@@ -524,14 +527,14 @@ export default function SyncPage() {
                   </CheckboxGroup>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="light" onPress={() => { setShowFeedForm(false); setFeedName(""); setFeedMode("full"); setFeedDays("30"); setFeedCalendarIds([]); }}>Cancel</Button>
-                  <Button size="sm" color="primary" isLoading={feedCreating} isDisabled={!feedName.trim()} onPress={createFeed}>Create</Button>
+                  <Button size="sm" variant="light" onPress={() => { setShowFeedForm(false); setFeedName(""); setFeedMode("full"); setFeedDays("30"); setFeedCalendarIds([]); }}>Abbrechen</Button>
+                  <Button size="sm" color="primary" isLoading={feedCreating} isDisabled={!feedName.trim()} onPress={createFeed}>Erstellen</Button>
                 </div>
               </div>
             )}
 
             {icsFeeds.length === 0 && !showFeedForm ? (
-              <p className="text-default-400">No feeds yet.</p>
+              <p className="text-default-400">Noch keine Feeds.</p>
             ) : (
               <div className="space-y-3">
                 {icsFeeds.map((feed) => (
@@ -540,11 +543,11 @@ export default function SyncPage() {
                       <div>
                         <span className="font-medium">{feed.name}</span>
                         <span className="ml-2 text-xs text-default-400">
-                          {feed.mode === "freebusy" ? "Free/busy only" : "Full details"} &bull; {feed.daysInAdvance} days
+                          {feed.mode === "freebusy" ? "Nur frei/belegt" : "Vollständig"} &bull; {feed.daysInAdvance} Tage
                         </span>
                       </div>
                       <Button size="sm" color="danger" variant="light" onPress={() => deleteFeed(feed.id)}>
-                        Delete
+                        Löschen
                       </Button>
                     </div>
                     <div className="mt-2 flex items-center gap-1.5">
@@ -573,14 +576,14 @@ export default function SyncPage() {
         {/* Delete Target Modal */}
         <Modal isOpen={!!deleteTargetId} onClose={() => setDeleteTargetId(null)}>
           <ModalContent>
-            <ModalHeader>Remove Sync Target</ModalHeader>
+            <ModalHeader>Sync-Ziel entfernen</ModalHeader>
             <ModalBody>
-              <p>Delete synced [Sync] events from the target calendar?</p>
+              <p>Synchronisierte [Sync]-Termine aus dem Zielkalender löschen?</p>
             </ModalBody>
             <ModalFooter>
-              <Button variant="light" onPress={() => setDeleteTargetId(null)} isDisabled={deleteLoading}>Cancel</Button>
-              <Button variant="flat" isLoading={deleteLoading} onPress={() => handleDeleteTarget(false)}>Keep events</Button>
-              <Button color="danger" isLoading={deleteLoading} onPress={() => handleDeleteTarget(true)}>Delete synced events</Button>
+              <Button variant="light" onPress={() => setDeleteTargetId(null)} isDisabled={deleteLoading}>Abbrechen</Button>
+              <Button variant="flat" isLoading={deleteLoading} onPress={() => handleDeleteTarget(false)}>Termine behalten</Button>
+              <Button color="danger" isLoading={deleteLoading} onPress={() => handleDeleteTarget(true)}>Synchronisierte Termine löschen</Button>
             </ModalFooter>
           </ModalContent>
         </Modal>

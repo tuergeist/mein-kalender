@@ -90,14 +90,14 @@ export default function AdminSourcesPage() {
       if (search) params.set("search", search);
       const res = await apiAuthFetch(`/api/admin/sources?${params}`, token);
       if (!res.ok) {
-        setError("Failed to load sources");
+        setError("Quellen konnten nicht geladen werden");
         return;
       }
       const data = await res.json();
       setSources(data.sources);
       setTotal(data.total);
     } catch {
-      setError("Failed to connect to server");
+      setError("Verbindung zum Server fehlgeschlagen");
     } finally {
       setLoading(false);
     }
@@ -140,10 +140,10 @@ export default function AdminSourcesPage() {
   return (
     <AppShell sidebarContent={<AdminSidebar />}>
       <div className="mx-auto max-w-5xl space-y-4">
-        <h1 className="text-2xl font-bold">Sources</h1>
+        <h1 className="text-2xl font-bold">Quellen</h1>
 
         <Input
-          placeholder="Search by user, label, or provider..."
+          placeholder="Nach Benutzer, Label oder Anbieter suchen..."
           value={search}
           onValueChange={(v) => {
             setSearch(v);
@@ -167,14 +167,14 @@ export default function AdminSourcesPage() {
             ) : (
               <Table aria-label="Sources" removeWrapper>
                 <TableHeader>
-                  <TableColumn>User</TableColumn>
-                  <TableColumn>Source</TableColumn>
-                  <TableColumn>Provider</TableColumn>
+                  <TableColumn>Benutzer</TableColumn>
+                  <TableColumn>Quelle</TableColumn>
+                  <TableColumn>Anbieter</TableColumn>
                   <TableColumn>Status</TableColumn>
-                  <TableColumn>Last Sync</TableColumn>
-                  <TableColumn>Interval</TableColumn>
+                  <TableColumn>Letzter Sync</TableColumn>
+                  <TableColumn>Intervall</TableColumn>
                 </TableHeader>
-                <TableBody emptyContent="No sources found">
+                <TableBody emptyContent="Keine Quellen gefunden">
                   {sources.map((s) => (
                     <TableRow key={s.id}>
                       <TableCell>
@@ -202,7 +202,7 @@ export default function AdminSourcesPage() {
                       <TableCell className="text-xs text-default-500">
                         {s.lastSyncAt
                           ? new Date(s.lastSyncAt).toLocaleString()
-                          : "never"}
+                          : "nie"}
                       </TableCell>
                       <TableCell>
                         <Select
@@ -234,7 +234,7 @@ export default function AdminSourcesPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between text-sm text-default-500">
             <span>
-              {total} sources — page {page} of {totalPages}
+              {total} Quellen — Seite {page} von {totalPages}
             </span>
             <div className="flex gap-2">
               <Button
@@ -243,7 +243,7 @@ export default function AdminSourcesPage() {
                 isDisabled={page <= 1}
                 onPress={() => setPage(page - 1)}
               >
-                Previous
+                Zurück
               </Button>
               <Button
                 size="sm"
@@ -251,7 +251,7 @@ export default function AdminSourcesPage() {
                 isDisabled={page >= totalPages}
                 onPress={() => setPage(page + 1)}
               >
-                Next
+                Weiter
               </Button>
             </div>
           </div>

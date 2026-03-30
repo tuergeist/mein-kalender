@@ -17,7 +17,7 @@ function OAuthCallbackContent() {
     const tokensParam = searchParams.get("tokens");
 
     if (!provider || !tokensParam) {
-      setError("Missing provider or tokens in callback URL.");
+      setError("Fehlender Anbieter oder Token in der Callback-URL.");
       return;
     }
 
@@ -27,7 +27,7 @@ function OAuthCallbackContent() {
       const base64 = tokensParam.replace(/-/g, "+").replace(/_/g, "/");
       tokens = JSON.parse(atob(base64));
     } catch {
-      setError("Invalid token data.");
+      setError("Ungültige Token-Daten.");
       return;
     }
 
@@ -41,13 +41,13 @@ function OAuthCallbackContent() {
       .then(async (res) => {
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          setError(data.error || "Failed to connect calendar.");
+          setError(data.error || "Kalender-Verbindung fehlgeschlagen.");
           return;
         }
         router.push("/settings?connected=true");
       })
       .catch(() => {
-        setError("Network error. Please try again.");
+        setError("Netzwerkfehler. Bitte versuche es erneut.");
       });
   }, [searchParams, session, router]);
 
@@ -55,10 +55,10 @@ function OAuthCallbackContent() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <p className="text-lg font-semibold text-red-600">Connection Failed</p>
+          <p className="text-lg font-semibold text-red-600">Verbindung fehlgeschlagen</p>
           <p className="mt-2 text-default-500">{error}</p>
           <a href="/settings" className="mt-4 inline-block text-rose-700 underline">
-            Back to Settings
+            Zurück zu Einstellungen
           </a>
         </div>
       </div>
@@ -69,7 +69,7 @@ function OAuthCallbackContent() {
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">
         <Spinner size="lg" />
-        <p className="mt-4 text-default-500">Connecting your calendar...</p>
+        <p className="mt-4 text-default-500">Kalender wird verbunden...</p>
       </div>
     </div>
   );

@@ -92,7 +92,7 @@ export default function AdminSyncPage() {
       if (search) params.set("search", search);
       const res = await apiAuthFetch(`/api/admin/sync?${params}`, token);
       if (!res.ok) {
-        setError("Failed to load sync data");
+        setError("Sync-Daten konnten nicht geladen werden");
         return;
       }
       const data = await res.json();
@@ -100,7 +100,7 @@ export default function AdminSyncPage() {
       setJobs(data.jobs);
       setTotal(data.total);
     } catch {
-      setError("Failed to connect to server");
+      setError("Verbindung zum Server fehlgeschlagen");
     } finally {
       setLoading(false);
     }
@@ -120,14 +120,14 @@ export default function AdminSyncPage() {
     <AppShell sidebarContent={<AdminSidebar />}>
       <div className="mx-auto max-w-5xl space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Sync Queue</h1>
+          <h1 className="text-2xl font-bold">Sync-Warteschlange</h1>
           <Button size="sm" variant="flat" onPress={fetchSync} isLoading={loading}>
-            Refresh
+            Aktualisieren
           </Button>
         </div>
 
         <Input
-          placeholder="Search by user, source, state, or error..."
+          placeholder="Nach Benutzer, Quelle, Status oder Fehler suchen..."
           value={search}
           onValueChange={(v) => {
             setSearch(v);
@@ -146,10 +146,10 @@ export default function AdminSyncPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {(
               [
-                ["Active", counts.active, "warning"],
-                ["Waiting", counts.waiting, "default"],
-                ["Completed", counts.completed, "success"],
-                ["Failed", counts.failed, "danger"],
+                ["Aktiv", counts.active, "warning"],
+                ["Wartend", counts.waiting, "default"],
+                ["Abgeschlossen", counts.completed, "success"],
+                ["Fehlgeschlagen", counts.failed, "danger"],
               ] as const
             ).map(([label, count, color]) => (
               <Card key={label}>
@@ -175,15 +175,15 @@ export default function AdminSyncPage() {
             ) : (
               <Table aria-label="Sync jobs" removeWrapper>
                 <TableHeader>
-                  <TableColumn>User</TableColumn>
-                  <TableColumn>Source</TableColumn>
-                  <TableColumn>State</TableColumn>
-                  <TableColumn>Started</TableColumn>
-                  <TableColumn>Finished</TableColumn>
-                  <TableColumn>Error</TableColumn>
-                  <TableColumn>Attempts</TableColumn>
+                  <TableColumn>Benutzer</TableColumn>
+                  <TableColumn>Quelle</TableColumn>
+                  <TableColumn>Status</TableColumn>
+                  <TableColumn>Gestartet</TableColumn>
+                  <TableColumn>Beendet</TableColumn>
+                  <TableColumn>Fehler</TableColumn>
+                  <TableColumn>Versuche</TableColumn>
                 </TableHeader>
-                <TableBody emptyContent="No sync jobs">
+                <TableBody emptyContent="Keine Sync-Jobs">
                   {jobs.map((j) => (
                     <TableRow key={j.id}>
                       <TableCell>
@@ -246,7 +246,7 @@ export default function AdminSyncPage() {
           return totalPages > 1 ? (
             <div className="flex items-center justify-between text-sm text-default-500">
               <span>
-                {total} jobs — page {page} of {totalPages}
+                {total} Jobs — Seite {page} von {totalPages}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -255,7 +255,7 @@ export default function AdminSyncPage() {
                   isDisabled={page <= 1}
                   onPress={() => setPage(page - 1)}
                 >
-                  Previous
+                  Zurück
                 </Button>
                 <Button
                   size="sm"
@@ -263,7 +263,7 @@ export default function AdminSyncPage() {
                   isDisabled={page >= totalPages}
                   onPress={() => setPage(page + 1)}
                 >
-                  Next
+                  Weiter
                 </Button>
               </div>
             </div>
@@ -276,9 +276,9 @@ export default function AdminSyncPage() {
           {selectedError && (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                <span>Error Details</span>
+                <span>Fehlerdetails</span>
                 <span className="text-sm font-normal text-default-500">
-                  {selectedError.job.userEmail || "Unknown user"} — {selectedError.job.sourceLabel || selectedError.job.data?.sourceId || "Unknown source"}
+                  {selectedError.job.userEmail || "Unbekannter Benutzer"} — {selectedError.job.sourceLabel || selectedError.job.data?.sourceId || "Unbekannte Quelle"}
                 </span>
               </ModalHeader>
               <ModalBody className="pb-6">

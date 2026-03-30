@@ -60,14 +60,14 @@ export default function AdminUsersPage() {
       if (search) params.set("search", search);
       const res = await apiAuthFetch(`/api/admin/users?${params}`, token);
       if (!res.ok) {
-        setError("Failed to load users");
+        setError("Benutzer konnten nicht geladen werden");
         return;
       }
       const data = await res.json();
       setUsers(data.users);
       setTotal(data.total);
     } catch {
-      setError("Failed to connect to server");
+      setError("Verbindung zum Server fehlgeschlagen");
     } finally {
       setLoading(false);
     }
@@ -88,10 +88,10 @@ export default function AdminUsersPage() {
   return (
     <AppShell sidebarContent={<AdminSidebar />}>
       <div className="mx-auto max-w-5xl space-y-4">
-        <h1 className="text-2xl font-bold">Users</h1>
+        <h1 className="text-2xl font-bold">Benutzer</h1>
 
         <Input
-          placeholder="Search by email or name..."
+          placeholder="Nach E-Mail oder Name suchen..."
           value={search}
           onValueChange={(v) => {
             setSearch(v);
@@ -115,13 +115,13 @@ export default function AdminUsersPage() {
             ) : (
               <Table aria-label="Users" removeWrapper>
                 <TableHeader>
-                  <TableColumn>Email</TableColumn>
+                  <TableColumn>E-Mail</TableColumn>
                   <TableColumn>Name</TableColumn>
-                  <TableColumn>Providers</TableColumn>
-                  <TableColumn>Calendars</TableColumn>
-                  <TableColumn>Joined</TableColumn>
+                  <TableColumn>Anbieter</TableColumn>
+                  <TableColumn>Kalender</TableColumn>
+                  <TableColumn>Beigetreten</TableColumn>
                 </TableHeader>
-                <TableBody emptyContent="No users found">
+                <TableBody emptyContent="Keine Benutzer gefunden">
                   {users.map((u) => (
                     <TableRow key={u.id}>
                       <TableCell>
@@ -163,7 +163,7 @@ export default function AdminUsersPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between text-sm text-default-500">
             <span>
-              {total} users — page {page} of {totalPages}
+              {total} Benutzer — Seite {page} von {totalPages}
             </span>
             <div className="flex gap-2">
               <Button
@@ -172,7 +172,7 @@ export default function AdminUsersPage() {
                 isDisabled={page <= 1}
                 onPress={() => setPage(page - 1)}
               >
-                Previous
+                Zurück
               </Button>
               <Button
                 size="sm"
@@ -180,7 +180,7 @@ export default function AdminUsersPage() {
                 isDisabled={page >= totalPages}
                 onPress={() => setPage(page + 1)}
               >
-                Next
+                Weiter
               </Button>
             </div>
           </div>

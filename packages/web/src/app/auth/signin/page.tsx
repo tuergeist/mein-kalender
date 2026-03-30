@@ -23,7 +23,7 @@ export default function SignInPage() {
     });
 
     if (result?.error) {
-      setError("Invalid email or password");
+      setError("Ungültige E-Mail oder Passwort");
     } else {
       window.location.href = "/dashboard";
     }
@@ -34,20 +34,20 @@ export default function SignInPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col gap-1 px-6 pt-6">
-          <h1 className="text-2xl font-bold">Sign In</h1>
-          <p className="text-sm text-default-500">Sign in to your Calendar Sync account</p>
+          <h1 className="text-2xl font-bold">Anmelden</h1>
+          <p className="text-sm text-default-500">Melde dich bei deinem Mein Kalender Konto an</p>
         </CardHeader>
         <CardBody className="px-6 pb-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
-              label="Email"
+              label="E-Mail"
               type="email"
               value={email}
               onValueChange={setEmail}
               isRequired
             />
             <Input
-              label="Password"
+              label="Passwort"
               type="password"
               value={password}
               onValueChange={setPassword}
@@ -55,7 +55,7 @@ export default function SignInPage() {
             />
             {error && <p className="text-sm text-danger">{error}</p>}
             <Button type="submit" color="primary" isLoading={loading}>
-              Sign In
+              Anmelden
             </Button>
           </form>
 
@@ -66,20 +66,20 @@ export default function SignInPage() {
               variant="bordered"
               onPress={() => signIn("google", { callbackUrl: "/dashboard" })}
             >
-              Continue with Google
+              Weiter mit Google
             </Button>
             <Button
               variant="bordered"
               onPress={() => signIn("azure-ad", { callbackUrl: "/dashboard" })}
             >
-              Continue with Microsoft
+              Weiter mit Microsoft
             </Button>
           </div>
 
           <p className="mt-4 text-center text-sm text-default-500">
-            Don&apos;t have an account?{" "}
+            Noch kein Konto?{" "}
             <Link href="/auth/signup" className="text-primary">
-              Sign up
+              Registrieren
             </Link>
           </p>
         </CardBody>

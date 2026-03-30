@@ -108,14 +108,14 @@ export default function ShortBookingPage() {
   }, [confirmation, eventType?.redirectUrl, eventType?.redirectDelaySecs]);
 
   async function handleSubmit() {
-    if (!guestName.trim() || !guestEmail.trim() || !host || !eventType) { setFormError("Name and email are required."); return; }
+    if (!guestName.trim() || !guestEmail.trim() || !host || !eventType) { setFormError("Name und E-Mail sind erforderlich."); return; }
     setSubmitting(true); setFormError("");
     const res = await apiFetch(`/api/public/book/${host.username}/${eventType.slug}`, {
       method: "POST",
       body: JSON.stringify({ startTime: selectedSlot, guestName, guestEmail, notes }),
     });
     if (res.ok) { const data = await res.json(); setConfirmation(data.booking); setStep("confirmed"); }
-    else { const data = await res.json().catch(() => ({})); setFormError(data.error || "Booking failed."); }
+    else { const data = await res.json().catch(() => ({})); setFormError(data.error || "Buchung fehlgeschlagen."); }
     setSubmitting(false);
   }
 
@@ -129,8 +129,8 @@ export default function ShortBookingPage() {
 
   const currentStep = confirmation ? "confirmed" : selectedSlot ? "form" : selectedDate ? "time" : step;
 
-  if (step === "loading") return <div className="flex min-h-screen items-center justify-center bg-gray-50"><p className="text-gray-400">Loading...</p></div>;
-  if (step === "error") return <div className="flex min-h-screen items-center justify-center bg-gray-50"><Card className="max-w-md"><CardBody className="text-center"><p className="text-lg font-medium text-gray-600">Booking page not found</p></CardBody></Card></div>;
+  if (step === "loading") return <div className="flex min-h-screen items-center justify-center bg-gray-50"><p className="text-gray-400">Laden...</p></div>;
+  if (step === "error") return <div className="flex min-h-screen items-center justify-center bg-gray-50"><Card className="max-w-md"><CardBody className="text-center"><p className="text-lg font-medium text-gray-600">Buchungsseite nicht gefunden</p></CardBody></Card></div>;
   if (!eventType || !host) return null;
 
   const brandColor = branding?.brandColor || undefined;
@@ -163,36 +163,36 @@ export default function ShortBookingPage() {
             {currentStep === "confirmed" && confirmation && (
               <div className="text-center">
                 <div className="mb-4 text-4xl">&#10003;</div>
-                <h2 className="text-xl font-bold">Booking confirmed</h2>
+                <h2 className="text-xl font-bold">Buchung bestätigt</h2>
                 <p className="mt-2 text-gray-600">{formatDate(confirmation.startTime)}, {formatTime(confirmation.startTime)} – {formatTime(confirmation.endTime)}</p>
-                <p className="mt-1 text-sm text-gray-500">You will receive a calendar invitation by email.</p>
+                <p className="mt-1 text-sm text-gray-500">Du erhältst eine Kalendereinladung per E-Mail.</p>
                 {eventType.redirectUrl && (
                   <div className="mt-6">
                     <a href={eventType.redirectUrl} className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90" style={{ backgroundColor: brandColor || "var(--heroui-primary)" }}>
-                      {eventType.redirectTitle || "Continue"}
+                      {eventType.redirectTitle || "Weiter"}
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </a>
-                    {redirectCountdown !== null && redirectCountdown > 0 && <p className="mt-2 text-xs text-gray-400">Redirecting in {redirectCountdown}s...</p>}
+                    {redirectCountdown !== null && redirectCountdown > 0 && <p className="mt-2 text-xs text-gray-400">Weiterleitung in {redirectCountdown}s...</p>}
                   </div>
                 )}
               </div>
             )}
             {currentStep === "form" && (
               <div>
-                <div className="mb-4 flex items-center gap-2"><Button size="sm" variant="light" onPress={() => setSelectedSlot(null)}>&larr; Back</Button><h2 className="text-lg font-semibold">Your details</h2></div>
+                <div className="mb-4 flex items-center gap-2"><Button size="sm" variant="light" onPress={() => setSelectedSlot(null)}>&larr; Zurück</Button><h2 className="text-lg font-semibold">Deine Angaben</h2></div>
                 <div className="space-y-4">
                   <Input label="Name" isRequired value={guestName} onValueChange={setGuestName} />
-                  <Input label="Email" type="email" isRequired value={guestEmail} onValueChange={setGuestEmail} />
-                  <Textarea label="Notes (optional)" value={notes} onValueChange={setNotes} minRows={2} />
+                  <Input label="E-Mail" type="email" isRequired value={guestEmail} onValueChange={setGuestEmail} />
+                  <Textarea label="Notizen (optional)" value={notes} onValueChange={setNotes} minRows={2} />
                   {formError && <p className="text-sm text-red-500">{formError}</p>}
-                  <Button color={brandColor ? undefined : "primary"} className="w-full text-white" style={brandColor ? { backgroundColor: brandColor } : undefined} isLoading={submitting} onPress={handleSubmit}>Book appointment</Button>
+                  <Button color={brandColor ? undefined : "primary"} className="w-full text-white" style={brandColor ? { backgroundColor: brandColor } : undefined} isLoading={submitting} onPress={handleSubmit}>Termin buchen</Button>
                 </div>
               </div>
             )}
             {(currentStep === "date" || currentStep === "time") && (
               <div>
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Date &amp; time</h2>
+                  <h2 className="text-lg font-semibold">Datum &amp; Uhrzeit</h2>
                   <div className="flex gap-1">
                     <Button size="sm" variant="light" isIconOnly onPress={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>&lsaquo;</Button>
                     <Button size="sm" variant="light" isIconOnly onPress={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>&rsaquo;</Button>
@@ -220,7 +220,7 @@ export default function ShortBookingPage() {
                     <div className="w-36 shrink-0">
                       <p className="mb-2 text-center text-sm font-medium text-gray-500">{new Date(selectedDate + "T00:00:00").toLocaleDateString("de-DE", { day: "numeric", month: "short" })}</p>
                       <div className="max-h-72 space-y-1.5 overflow-y-auto">
-                        {slotsLoading ? <p className="text-center text-xs text-gray-400">Loading...</p> : slots.length === 0 ? <p className="text-center text-xs text-gray-400">No available slots</p> : slots.map((slot) => <Button key={slot} size="sm" variant="bordered" className="w-full" style={accentColor ? { borderColor: accentColor, color: accentColor } : undefined} onPress={() => setSelectedSlot(slot)}>{formatTime(slot)}</Button>)}
+                        {slotsLoading ? <p className="text-center text-xs text-gray-400">Laden...</p> : slots.length === 0 ? <p className="text-center text-xs text-gray-400">Keine verfügbaren Zeitslots</p> : slots.map((slot) => <Button key={slot} size="sm" variant="bordered" className="w-full" style={accentColor ? { borderColor: accentColor, color: accentColor } : undefined} onPress={() => setSelectedSlot(slot)}>{formatTime(slot)}</Button>)}
                       </div>
                     </div>
                   )}

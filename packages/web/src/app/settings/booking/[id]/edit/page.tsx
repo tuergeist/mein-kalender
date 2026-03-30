@@ -11,7 +11,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { apiAuthFetch } from "@/lib/api";
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_NAMES = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const DEFAULT_RULES = [
   { dayOfWeek: 0, startTime: "09:00", endTime: "17:00", enabled: false },
   { dayOfWeek: 1, startTime: "09:00", endTime: "17:00", enabled: true },
@@ -172,7 +172,7 @@ export default function EditEventTypePage() {
   if (loading) {
     return (
       <AppShell section="settings" settingsSection="booking">
-        <div className="mx-auto max-w-3xl py-12 text-center text-default-400">Loading...</div>
+        <div className="mx-auto max-w-3xl py-12 text-center text-default-400">Laden...</div>
       </AppShell>
     );
   }
@@ -185,33 +185,33 @@ export default function EditEventTypePage() {
             <Button variant="light" size="sm" isIconOnly className="text-stone-500" onPress={() => router.back()}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </Button>
-            <h1 className="font-display text-2xl font-bold tracking-tight">Edit Event Type</h1>
+            <h1 className="font-display text-2xl font-bold tracking-tight">Terminart bearbeiten</h1>
           </div>
-          <Button color="primary" isLoading={saving} isDisabled={!formName.trim()} onPress={handleSave}>Save</Button>
+          <Button color="primary" isLoading={saving} isDisabled={!formName.trim()} onPress={handleSave}>Speichern</Button>
         </div>
 
         {/* Basic Info */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Basic Info</h2></CardHeader>
+          <CardHeader><h2 className="text-lg font-semibold">Grunddaten</h2></CardHeader>
           <CardBody className="space-y-4">
-            <Input label="Name" isRequired value={formName} onValueChange={setFormName} placeholder="e.g. 30-min Call" />
+            <Input label="Name" isRequired value={formName} onValueChange={setFormName} placeholder="z.B. 30-Min. Gespräch" />
             <div className="flex gap-4">
-              <Input label="Duration (minutes)" type="number" value={formDuration} onValueChange={setFormDuration} className="w-40" />
-              <Input label="Location (optional)" value={formLocation} onValueChange={setFormLocation} placeholder="e.g. Google Meet link" className="flex-1" />
+              <Input label="Dauer (Minuten)" type="number" value={formDuration} onValueChange={setFormDuration} className="w-40" />
+              <Input label="Ort (optional)" value={formLocation} onValueChange={setFormLocation} placeholder="z.B. Google Meet Link" className="flex-1" />
             </div>
-            <Input label="Description (optional)" value={formDescription} onValueChange={setFormDescription} />
+            <Input label="Beschreibung (optional)" value={formDescription} onValueChange={setFormDescription} />
           </CardBody>
         </Card>
 
         {/* After Booking */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">After Booking</h2></CardHeader>
+          <CardHeader><h2 className="text-lg font-semibold">Nach der Buchung</h2></CardHeader>
           <CardBody className="space-y-4">
-            <Input label="Redirect URL" value={formRedirectUrl} onValueChange={setFormRedirectUrl} placeholder="https://..." />
+            <Input label="Weiterleitungs-URL" value={formRedirectUrl} onValueChange={setFormRedirectUrl} placeholder="https://..." />
             {formRedirectUrl && (
               <div className="flex gap-4">
-                <Input label="Link title" value={formRedirectTitle} onValueChange={setFormRedirectTitle} placeholder="e.g. Join the meeting" className="flex-1" />
-                <Input label="Delay (s)" type="number" value={formRedirectDelay} onValueChange={setFormRedirectDelay} className="w-24" />
+                <Input label="Link-Titel" value={formRedirectTitle} onValueChange={setFormRedirectTitle} placeholder="z.B. Zum Meeting beitreten" className="flex-1" />
+                <Input label="Verzögerung (s)" type="number" value={formRedirectDelay} onValueChange={setFormRedirectDelay} className="w-24" />
               </div>
             )}
           </CardBody>
@@ -223,7 +223,7 @@ export default function EditEventTypePage() {
           <CardBody>
             <div className="flex items-center gap-2">
               <Switch size="sm" isSelected={formShortLink} onValueChange={setFormShortLink} />
-              <span className="text-sm font-medium">Short booking link</span>
+              <span className="text-sm font-medium">Kurzer Buchungslink</span>
             </div>
             {formShortLink && shortHash && (
               <div className="mt-2 flex items-center gap-1.5">
@@ -233,15 +233,15 @@ export default function EditEventTypePage() {
                 </Button>
               </div>
             )}
-            {formShortLink && !shortHash && <p className="mt-2 text-xs text-default-400">Short link will be generated on save.</p>}
+            {formShortLink && !shortHash && <p className="mt-2 text-xs text-default-400">Kurzlink wird beim Speichern erstellt.</p>}
           </CardBody>
         </Card>
 
         {/* Booking Calendar */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Booking Calendar</h2></CardHeader>
+          <CardHeader><h2 className="text-lg font-semibold">Buchungskalender</h2></CardHeader>
           <CardBody>
-            <Select label="Booking calendar" placeholder="Use default" selectedKeys={formBookingCalendarId ? new Set([formBookingCalendarId]) : new Set()} onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; setFormBookingCalendarId(s || ""); }} size="sm">
+            <Select label="Buchungskalender" placeholder="Standard verwenden" selectedKeys={formBookingCalendarId ? new Set([formBookingCalendarId]) : new Set()} onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; setFormBookingCalendarId(s || ""); }} size="sm">
               {allCalendarEntries.map((entry) => (<SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>{entry.name} ({entry.sourceName})</SelectItem>))}
             </Select>
           </CardBody>
@@ -249,11 +249,11 @@ export default function EditEventTypePage() {
 
         {/* Working Hours */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Working Hours</h2></CardHeader>
+          <CardHeader><h2 className="text-lg font-semibold">Arbeitszeiten</h2></CardHeader>
           <CardBody>
             <div className="mb-3 flex items-center gap-2">
               <Switch size="sm" isSelected={formCustomHours} onValueChange={setFormCustomHours} />
-              <span className="text-sm font-medium">Custom working hours</span>
+              <span className="text-sm font-medium">Eigene Arbeitszeiten</span>
             </div>
             {formCustomHours && (
               <div className="space-y-2">
@@ -273,34 +273,34 @@ export default function EditEventTypePage() {
 
         {/* Branding Override */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Branding Override</h2></CardHeader>
+          <CardHeader><h2 className="text-lg font-semibold">Branding-Überschreibung</h2></CardHeader>
           <CardBody>
-            <p className="mb-4 text-xs text-default-400">Override your default branding for this event type. Leave empty to use defaults.</p>
+            <p className="mb-4 text-xs text-default-400">Überschreibe dein Standard-Branding für diese Terminart. Leer lassen, um die Standardwerte zu verwenden.</p>
             <div className="space-y-4">
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="mb-1 block text-sm font-medium">Brand Color</label>
+                  <label className="mb-1 block text-sm font-medium">Markenfarbe</label>
                   <div className="flex items-center gap-2">
                     <input type="color" value={formBrandColor || "#3b82f6"} onChange={(e) => setFormBrandColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
-                    <Input size="sm" placeholder="Use default" value={formBrandColor} onValueChange={setFormBrandColor} className="flex-1" />
+                    <Input size="sm" placeholder="Standard verwenden" value={formBrandColor} onValueChange={setFormBrandColor} className="flex-1" />
                   </div>
                 </div>
                 <div className="flex-1">
-                  <label className="mb-1 block text-sm font-medium">Accent Color</label>
+                  <label className="mb-1 block text-sm font-medium">Akzentfarbe</label>
                   <div className="flex items-center gap-2">
                     <input type="color" value={formAccentColor || "#6366f1"} onChange={(e) => setFormAccentColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
-                    <Input size="sm" placeholder="Use default" value={formAccentColor} onValueChange={setFormAccentColor} className="flex-1" />
+                    <Input size="sm" placeholder="Standard verwenden" value={formAccentColor} onValueChange={setFormAccentColor} className="flex-1" />
                   </div>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="flex flex-1 items-end gap-2">
-                  <Input label="Profile Photo" size="sm" value={formAvatarUrl} onValueChange={setFormAvatarUrl} placeholder="Use default" className="flex-1" />
-                  <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Upload</Button>
+                  <Input label="Profilfoto" size="sm" value={formAvatarUrl} onValueChange={setFormAvatarUrl} placeholder="Standard verwenden" className="flex-1" />
+                  <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Hochladen</Button>
                 </div>
                 <div className="flex flex-1 items-end gap-2">
-                  <Input label="Background Image" size="sm" value={formBackgroundUrl} onValueChange={setFormBackgroundUrl} placeholder="Use default" className="flex-1" />
-                  <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Upload</Button>
+                  <Input label="Hintergrundbild" size="sm" value={formBackgroundUrl} onValueChange={setFormBackgroundUrl} placeholder="Standard verwenden" className="flex-1" />
+                  <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Hochladen</Button>
                 </div>
               </div>
               {formBackgroundUrl && (
@@ -316,9 +316,9 @@ export default function EditEventTypePage() {
 
         {/* Availability Calendars */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Availability Calendars</h2></CardHeader>
+          <CardHeader><h2 className="text-lg font-semibold">Verfügbarkeitskalender</h2></CardHeader>
           <CardBody>
-            <p className="mb-2 text-xs text-default-400">{formCalendarIds.length === 0 ? "All calendars (default)" : `${formCalendarIds.length} selected`}</p>
+            <p className="mb-2 text-xs text-default-400">{formCalendarIds.length === 0 ? "Alle Kalender (Standard)" : `${formCalendarIds.length} ausgewählt`}</p>
             <CheckboxGroup size="sm" value={formCalendarIds} onChange={(vals) => setFormCalendarIds(vals as string[])}>
               {allCalendarEntries.map((entry) => (<Checkbox key={entry.id} value={entry.id}><span className="text-sm">{entry.name} ({entry.sourceName})</span></Checkbox>))}
             </CheckboxGroup>
@@ -327,7 +327,7 @@ export default function EditEventTypePage() {
 
         {/* Bottom save button */}
         <div className="flex justify-end pb-6">
-          <Button color="primary" isLoading={saving} isDisabled={!formName.trim()} onPress={handleSave}>Save</Button>
+          <Button color="primary" isLoading={saving} isDisabled={!formName.trim()} onPress={handleSave}>Speichern</Button>
         </div>
       </div>
     </AppShell>

@@ -27,7 +27,7 @@ interface AvailabilityRule {
   enabled: boolean;
 }
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_NAMES = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
 export default function BookingSettingsPage() {
   const { data: session } = useSession();
@@ -112,7 +112,7 @@ export default function BookingSettingsPage() {
     setUsernameSaving(true); setUsernameError("");
     const res = await apiAuthFetch("/api/profile/username", accessToken, { method: "PUT", body: JSON.stringify({ username }) });
     if (res.ok) { const data = await res.json(); setSavedUsername(data.username); }
-    else { const data = await res.json().catch(() => ({})); setUsernameError(data.error || "Failed to save"); }
+    else { const data = await res.json().catch(() => ({})); setUsernameError(data.error || "Speichern fehlgeschlagen"); }
     setUsernameSaving(false);
   }
 
@@ -173,15 +173,15 @@ export default function BookingSettingsPage() {
   return (
     <AppShell section="settings" settingsSection="booking">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Booking Settings</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Buchungseinstellungen</h1>
 
         {/* Booking URL */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Booking URL</h2></CardHeader>
+          <CardHeader><h2 className="text-lg font-semibold">Buchungs-URL</h2></CardHeader>
           <CardBody>
             <div className="flex items-end gap-2">
-              <Input label="Username" value={username} onValueChange={setUsername} description={savedUsername ? `Your booking URL: ${bookingBaseUrl}/...` : undefined} errorMessage={usernameError} isInvalid={!!usernameError} className="flex-1" />
-              <Button size="sm" color="primary" isLoading={usernameSaving} isDisabled={username === savedUsername} onPress={saveUsername} className="shrink-0">Save</Button>
+              <Input label="Benutzername" value={username} onValueChange={setUsername} description={savedUsername ? `Deine Buchungs-URL: ${bookingBaseUrl}/...` : undefined} errorMessage={usernameError} isInvalid={!!usernameError} className="flex-1" />
+              <Button size="sm" color="primary" isLoading={usernameSaving} isDisabled={username === savedUsername} onPress={saveUsername} className="shrink-0">Speichern</Button>
             </div>
           </CardBody>
         </Card>
@@ -189,23 +189,23 @@ export default function BookingSettingsPage() {
         {/* Branding + Working Hours + Booking Calendar — single save */}
         <Card>
           <CardHeader className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Branding &amp; Defaults</h2>
-            <Button size="sm" color="primary" isLoading={saving} onPress={saveAll}>Save</Button>
+            <h2 className="text-lg font-semibold">Branding &amp; Standards</h2>
+            <Button size="sm" color="primary" isLoading={saving} onPress={saveAll}>Speichern</Button>
           </CardHeader>
           <CardBody className="space-y-6">
-            <p className="text-sm text-default-400">These are your defaults. Each event type can override branding and working hours in its own settings.</p>
+            <p className="text-sm text-default-400">Das sind deine Standardwerte. Jede Terminart kann Branding und Arbeitszeiten in den eigenen Einstellungen überschreiben.</p>
 
             {/* Colors */}
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="mb-1 block text-sm font-medium">Brand Color</label>
+                <label className="mb-1 block text-sm font-medium">Markenfarbe</label>
                 <div className="flex items-center gap-2">
                   <input type="color" value={brandColor || "#3b82f6"} onChange={(e) => setBrandColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
                   <Input size="sm" placeholder="#3b82f6" value={brandColor} onValueChange={setBrandColor} className="flex-1" />
                 </div>
               </div>
               <div className="flex-1">
-                <label className="mb-1 block text-sm font-medium">Accent Color</label>
+                <label className="mb-1 block text-sm font-medium">Akzentfarbe</label>
                 <div className="flex items-center gap-2">
                   <input type="color" value={accentColor || "#6366f1"} onChange={(e) => setAccentColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
                   <Input size="sm" placeholder="#6366f1" value={accentColor} onValueChange={setAccentColor} className="flex-1" />
@@ -217,8 +217,8 @@ export default function BookingSettingsPage() {
             <div className="flex gap-4">
               <div className="flex-1">
                 <div className="flex items-end gap-2">
-                  <Input label="Profile Photo" size="sm" value={avatarUrl} onValueChange={setAvatarUrl} placeholder="https://... or upload" className="flex-1" />
-                  <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Upload</Button>
+                  <Input label="Profilfoto" size="sm" value={avatarUrl} onValueChange={setAvatarUrl} placeholder="https://... oder hochladen" className="flex-1" />
+                  <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Hochladen</Button>
                 </div>
                 {avatarUrl && (
                   <div className="mt-2">
@@ -228,8 +228,8 @@ export default function BookingSettingsPage() {
               </div>
               <div className="flex-1">
                 <div className="flex items-end gap-2">
-                  <Input label="Background Image" size="sm" value={backgroundUrl} onValueChange={setBackgroundUrl} placeholder="https://... or upload" className="flex-1" />
-                  <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Upload</Button>
+                  <Input label="Hintergrundbild" size="sm" value={backgroundUrl} onValueChange={setBackgroundUrl} placeholder="https://... oder hochladen" className="flex-1" />
+                  <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Hochladen</Button>
                 </div>
                 {backgroundUrl && (
                   <>
@@ -246,14 +246,14 @@ export default function BookingSettingsPage() {
 
             {/* Booking Calendar */}
             {allCalendarEntries.length > 0 && (
-              <Select label="Default Booking Calendar" placeholder="Select a calendar" selectedKeys={bookingCalendarId ? new Set([bookingCalendarId]) : new Set()} onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) handleSetBookingCalendar(s); }} size="sm">
+              <Select label="Standard-Buchungskalender" placeholder="Kalender auswählen" selectedKeys={bookingCalendarId ? new Set([bookingCalendarId]) : new Set()} onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) handleSetBookingCalendar(s); }} size="sm">
                 {allCalendarEntries.map((entry) => (<SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>{entry.name} ({entry.sourceName})</SelectItem>))}
               </Select>
             )}
 
             {/* Working Hours */}
             <div>
-              <p className="mb-2 text-sm font-medium">Default Working Hours</p>
+              <p className="mb-2 text-sm font-medium">Standard-Arbeitszeiten</p>
               <div className="space-y-2">
                 {rules.map((rule) => (
                   <div key={rule.dayOfWeek} className="flex items-center gap-3">
@@ -271,14 +271,14 @@ export default function BookingSettingsPage() {
         {/* Username change warning modal */}
         <Modal isOpen={showUsernameWarning} onClose={() => setShowUsernameWarning(false)}>
           <ModalContent>
-            <ModalHeader>Change Booking URL?</ModalHeader>
+            <ModalHeader>Buchungs-URL ändern?</ModalHeader>
             <ModalBody>
-              <p>You have {eventTypes.length} event type{eventTypes.length > 1 ? "s" : ""}. Changing your username will break all existing booking links.</p>
-              <p className="mt-2 text-sm text-default-500">Anyone with the old URL will get a &quot;not found&quot; page. Short links (if any) will still work.</p>
+              <p>Du hast {eventTypes.length} Terminart{eventTypes.length > 1 ? "en" : ""}. Eine Änderung deines Benutzernamens macht alle bestehenden Buchungslinks ungültig.</p>
+              <p className="mt-2 text-sm text-default-500">Wer die alte URL nutzt, erhält eine &quot;Nicht gefunden&quot;-Seite. Kurzlinks (falls vorhanden) funktionieren weiterhin.</p>
             </ModalBody>
             <ModalFooter>
-              <Button variant="light" onPress={() => setShowUsernameWarning(false)}>Cancel</Button>
-              <Button color="danger" onPress={doSaveUsername}>Change Username</Button>
+              <Button variant="light" onPress={() => setShowUsernameWarning(false)}>Abbrechen</Button>
+              <Button color="danger" onPress={doSaveUsername}>Benutzername ändern</Button>
             </ModalFooter>
           </ModalContent>
         </Modal>

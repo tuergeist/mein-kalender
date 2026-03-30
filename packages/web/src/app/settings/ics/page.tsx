@@ -39,7 +39,7 @@ export default function ICSSettingsPage() {
     reader.onload = (ev) => {
       setIcsData(ev.target?.result as string);
     };
-    reader.onerror = () => setError("Failed to read file");
+    reader.onerror = () => setError("Datei konnte nicht gelesen werden");
     reader.readAsText(file);
   }
 
@@ -48,7 +48,7 @@ export default function ICSSettingsPage() {
     if (!token) return;
 
     if (!icsData) {
-      setError("Please select an ICS file first");
+      setError("Bitte zuerst eine ICS-Datei auswählen");
       return;
     }
 
@@ -64,14 +64,14 @@ export default function ICSSettingsPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "Upload failed");
+        setError(data.error || "Hochladen fehlgeschlagen");
       } else {
         const data = await res.json();
-        setSuccess(`Imported ${data.eventsImported} events`);
+        setSuccess(`${data.eventsImported} Termine importiert`);
         setTimeout(() => router.push("/settings"), 1500);
       }
     } catch {
-      setError("Failed to connect to server");
+      setError("Verbindung zum Server fehlgeschlagen");
     }
     setLoading(false);
   }
@@ -81,7 +81,7 @@ export default function ICSSettingsPage() {
     if (!token) return;
 
     if (!url) {
-      setError("Please enter an ICS URL");
+      setError("Bitte eine ICS-URL eingeben");
       return;
     }
 
@@ -97,14 +97,14 @@ export default function ICSSettingsPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "Subscription failed");
+        setError(data.error || "Abonnement fehlgeschlagen");
       } else {
         const data = await res.json();
-        setSuccess(`Subscribed with ${data.eventsImported} events`);
+        setSuccess(`Abonniert mit ${data.eventsImported} Terminen`);
         setTimeout(() => router.push("/settings"), 1500);
       }
     } catch {
-      setError("Failed to connect to server");
+      setError("Verbindung zum Server fehlgeschlagen");
     }
     setLoading(false);
   }
@@ -114,18 +114,18 @@ export default function ICSSettingsPage() {
       <div className="mx-auto max-w-lg space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="light" size="sm" onPress={() => router.push("/settings")}>
-            &larr; Back
+            &larr; Zurück
           </Button>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Import ICS Calendar</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">ICS-Kalender importieren</h1>
         </div>
 
         <Card>
           <CardHeader className="px-6 pt-6">
             <Input
-              label="Calendar Name (optional)"
+              label="Kalendername (optional)"
               value={label}
               onValueChange={setLabel}
-              placeholder="e.g. Work Schedule, Holidays"
+              placeholder="z.B. Arbeitsplan, Feiertage"
             />
           </CardHeader>
           <CardBody className="px-6 pb-6">
@@ -137,7 +137,7 @@ export default function ICSSettingsPage() {
                 setSuccess("");
               }}
             >
-              <Tab key="file" title="Upload File">
+              <Tab key="file" title="Datei hochladen">
                 <div className="flex flex-col gap-4 pt-4">
                   <input
                     ref={fileInputRef}
@@ -151,15 +151,15 @@ export default function ICSSettingsPage() {
                       variant="bordered"
                       onPress={() => fileInputRef.current?.click()}
                     >
-                      Choose File
+                      Datei wählen
                     </Button>
                     <span className="text-sm text-default-500">
-                      {fileName || "No file selected"}
+                      {fileName || "Keine Datei ausgewählt"}
                     </span>
                   </div>
                   {icsData && (
                     <p className="text-sm text-default-400">
-                      File loaded ({Math.round(icsData.length / 1024)} KB)
+                      Datei geladen ({Math.round(icsData.length / 1024)} KB)
                     </p>
                   )}
                   <Button
@@ -168,11 +168,11 @@ export default function ICSSettingsPage() {
                     onPress={handleUpload}
                     isDisabled={!icsData}
                   >
-                    Import
+                    Importieren
                   </Button>
                 </div>
               </Tab>
-              <Tab key="url" title="Subscribe to URL">
+              <Tab key="url" title="URL abonnieren">
                 <div className="flex flex-col gap-4 pt-4">
                   <Input
                     label="ICS URL"
@@ -182,7 +182,7 @@ export default function ICSSettingsPage() {
                     placeholder="https://example.com/calendar.ics"
                   />
                   <p className="text-xs text-default-400">
-                    The calendar will be refreshed automatically every hour.
+                    Der Kalender wird automatisch stündlich aktualisiert.
                   </p>
                   <Button
                     color="primary"
@@ -190,7 +190,7 @@ export default function ICSSettingsPage() {
                     onPress={handleSubscribe}
                     isDisabled={!url}
                   >
-                    Subscribe
+                    Abonnieren
                   </Button>
                 </div>
               </Tab>

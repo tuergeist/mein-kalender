@@ -30,14 +30,14 @@ export default function SignUpPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "Registration failed");
+        setError(data.error || "Registrierung fehlgeschlagen");
         setLoading(false);
         return;
       }
 
       setSuccess(true);
     } catch {
-      setError("Failed to connect to server");
+      setError("Verbindung zum Server fehlgeschlagen");
     }
     setLoading(false);
   };
@@ -47,14 +47,14 @@ export default function SignUpPage() {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardBody className="p-6 text-center">
-            <h1 className="text-2xl font-bold">Check your email</h1>
+            <h1 className="text-2xl font-bold">Prüfe deine E-Mails</h1>
             <p className="mt-2 text-default-500">
-              We sent a verification link to <strong>{email}</strong>.
-              Please verify your email to continue.
+              Wir haben einen Bestätigungslink an <strong>{email}</strong> gesendet.
+              Bitte bestätige deine E-Mail, um fortzufahren.
             </p>
             <Link href="/auth/signin">
               <Button className="mt-4" color="primary">
-                Go to Sign In
+                Zur Anmeldung
               </Button>
             </Link>
           </CardBody>
@@ -67,34 +67,34 @@ export default function SignUpPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col gap-1 px-6 pt-6">
-          <h1 className="text-2xl font-bold">Create Account</h1>
-          <p className="text-sm text-default-500">Sign up for Calendar Sync</p>
+          <h1 className="text-2xl font-bold">Konto erstellen</h1>
+          <p className="text-sm text-default-500">Registriere dich bei Mein Kalender</p>
         </CardHeader>
         <CardBody className="px-6 pb-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
-              label="Display Name"
+              label="Anzeigename"
               value={displayName}
               onValueChange={setDisplayName}
             />
             <Input
-              label="Email"
+              label="E-Mail"
               type="email"
               value={email}
               onValueChange={setEmail}
               isRequired
             />
             <Input
-              label="Password"
+              label="Passwort"
               type="password"
               value={password}
               onValueChange={setPassword}
               isRequired
-              description="Minimum 8 characters"
+              description="Mindestens 8 Zeichen"
             />
             {error && <p className="text-sm text-danger">{error}</p>}
             <Button type="submit" color="primary" isLoading={loading}>
-              Create Account
+              Konto erstellen
             </Button>
           </form>
 
@@ -105,20 +105,20 @@ export default function SignUpPage() {
               variant="bordered"
               onPress={() => signIn("google", { callbackUrl: "/dashboard" })}
             >
-              Sign up with Google
+              Registrieren mit Google
             </Button>
             <Button
               variant="bordered"
               onPress={() => signIn("azure-ad", { callbackUrl: "/dashboard" })}
             >
-              Sign up with Microsoft
+              Registrieren mit Microsoft
             </Button>
           </div>
 
           <p className="mt-4 text-center text-sm text-default-500">
-            Already have an account?{" "}
+            Bereits ein Konto?{" "}
             <Link href="/auth/signin" className="text-primary">
-              Sign in
+              Anmelden
             </Link>
           </p>
         </CardBody>

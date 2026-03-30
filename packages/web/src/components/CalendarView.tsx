@@ -239,7 +239,7 @@ export function CalendarView() {
                 }
               }}
             >
-              Today
+              Heute
             </Button>
             <Button
               size="sm"
@@ -286,29 +286,29 @@ export function CalendarView() {
             className={currentView === "dayGridMonth" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}
             onPress={() => handleViewChange("dayGridMonth")}
           >
-            Month
+            Monat
           </Button>
           <Button
             className={currentView === "timeGridWeek" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}
             onPress={() => handleViewChange("timeGridWeek")}
           >
-            Week
+            Woche
           </Button>
           <Button
             className={currentView === "timeGridDay" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}
             onPress={() => handleViewChange("timeGridDay")}
           >
-            Day
+            Tag
           </Button>
           <Button
             className={currentView === "listWeek" ? "bg-rose-100 text-rose-700 font-medium" : "text-gray-600"}
             onPress={() => handleViewChange("listWeek")}
           >
-            List
+            Liste
           </Button>
         </ButtonGroup>
         <Switch size="sm" isSelected={hideSyncEvents} onValueChange={setHideSyncEvents}>
-          <span className="text-xs text-gray-500">Hide [Sync]</span>
+          <span className="text-xs text-gray-500">[Sync] ausblenden</span>
         </Switch>
         <Button
           size="sm"
@@ -317,7 +317,7 @@ export function CalendarView() {
             window.location.href = "/sync?openFeed=1";
           }}
         >
-          Export ICS
+          ICS exportieren
         </Button>
       </div>
 

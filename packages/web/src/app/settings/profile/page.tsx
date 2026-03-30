@@ -34,7 +34,7 @@ export default function ProfileSettingsPage() {
   return (
     <AppShell section="settings" settingsSection="profile">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Profile</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Profil</h1>
 
         <Card>
           <CardBody className="flex flex-col gap-4 p-6">
@@ -45,20 +45,20 @@ export default function ProfileSettingsPage() {
                 size="lg"
               />
               <div>
-                <p className="font-medium">{session?.user?.name || "User"}</p>
+                <p className="font-medium">{session?.user?.name || "Benutzer"}</p>
                 <p className="text-sm text-default-500">{session?.user?.email}</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <Input
-                label="Email"
+                label="E-Mail"
                 value={session?.user?.email || ""}
                 isReadOnly
                 variant="bordered"
               />
               <Input
-                label="Display Name"
+                label="Anzeigename"
                 value={displayName}
                 onValueChange={setDisplayName}
                 variant="bordered"
@@ -69,7 +69,7 @@ export default function ProfileSettingsPage() {
                 onPress={handleSave}
                 className="w-full"
               >
-                Save Changes
+                Änderungen speichern
               </Button>
             </div>
           </CardBody>
