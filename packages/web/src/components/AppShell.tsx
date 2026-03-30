@@ -101,6 +101,13 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
         </div>
 
         <div className="flex items-center gap-2">
+          {heartbeat !== "unknown" && (
+            <span className={`inline-block h-2 w-2 rounded-full ${
+              heartbeat === "ok" ? "bg-[#059669]" :
+              heartbeat === "warning" ? "bg-[var(--color-amber-500)] animate-pulse" :
+              "bg-red-500 animate-pulse"
+            }`} title={heartbeat === "ok" ? "Sync läuft" : heartbeat === "warning" ? "Sync verzögert" : "Sync-Fehler"} />
+          )}
           {(session as any)?.role === "admin" && (
             <Link href="/admin">
               <Button variant="light" size="sm" className="hidden text-stone-600 sm:flex">
@@ -169,20 +176,6 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
               </Link>
             ))}
           </nav>
-
-          {/* Sync heartbeat */}
-          {heartbeat !== "unknown" && (
-            <div className="mx-3 flex items-center gap-2 rounded-md px-2 py-1.5">
-              <span className={`inline-block h-2 w-2 rounded-full ${
-                heartbeat === "ok" ? "bg-[#059669] animate-pulse" :
-                heartbeat === "warning" ? "bg-[var(--color-amber-500)]" :
-                "bg-red-500"
-              }`} />
-              <span className="text-xs text-stone-500">
-                {heartbeat === "ok" ? "Sync OK" : heartbeat === "warning" ? "Sync verzögert" : "Sync-Fehler"}
-              </span>
-            </div>
-          )}
 
           {/* Settings sub-navigation */}
           {section === "settings" && (
