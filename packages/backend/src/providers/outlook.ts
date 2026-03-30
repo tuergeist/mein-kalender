@@ -314,17 +314,25 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
     // when it hasn't changed. We must distinguish between:
     //   - subject missing from response (delta didn't include it) → keep existing title
     //   - subject present but empty string → genuine no-title event
-    const subjectPresent = "subject" in item;
-    let title = (item.subject as string) || "";
-    if (subjectPresent && !title) {
+    // subject can be: present with value, present but empty/null/undefined, or absent entirely
+    const subjectPresent = "subject" in item && item.subject != null && item.subject !== "";
+    let title = typeof item.subject === "string" ? item.subject.trim() : "";
+    if (!title && subjectPresent) {
+      // subject key exists but trimmed to empty — shouldn't happen, but guard
+      title = "(No title)";
+    }
+    if (!title && !subjectPresent && "subject" in item) {
+      // subject key exists but is null/undefined/empty — genuine no-title event
       if (rawShowAs === "oof") title = "Out of Office";
       else if (rawShowAs === "workingElsewhere") title = "Working Elsewhere";
       else if (rawShowAs === "free") title = "Free";
       else if (rawShowAs === "tentative") title = "Tentative";
       else title = "(No title)";
     }
-    if (!subjectPresent) {
+    if (!("subject" in item)) {
+      // subject entirely absent from response — delta didn't include it
       metadata._subjectMissing = true;
+      title = "(No title)";  // placeholder, sync-job will skip overwriting
     }
     if (!("body" in item)) {
       metadata._bodyMissing = true;

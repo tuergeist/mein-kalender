@@ -139,8 +139,25 @@ async function syncCalendarEntry(
   // Process created events in a single transaction
   if (delta.created.length > 0) {
     await prisma.$transaction(
-      delta.created.map((event) =>
-        prisma.event.upsert({
+      delta.created.map((event) => {
+        const meta = event.providerMetadata as Record<string, unknown> | null;
+        const subjectMissing = meta?._subjectMissing === true;
+        const bodyMissing = meta?._bodyMissing === true;
+        const locationMissing = meta?._locationMissing === true;
+        const cleaned = cleanMetadata(meta);
+
+        // For upsert updates: only overwrite fields the provider actually returned
+        const updateData: Record<string, unknown> = {
+          startTime: event.startTime,
+          endTime: event.endTime,
+          allDay: event.allDay,
+        };
+        if (!subjectMissing) updateData.title = event.title;
+        if (!bodyMissing) updateData.description = event.description;
+        if (!locationMissing) updateData.location = event.location;
+        if (cleaned) updateData.providerMetadata = cleaned;
+
+        return prisma.event.upsert({
           where: {
             calendarEntryId_sourceEventId: {
               calendarEntryId: entry.id,
@@ -156,19 +173,11 @@ async function syncCalendarEntry(
             startTime: event.startTime,
             endTime: event.endTime,
             allDay: event.allDay,
-            providerMetadata: cleanMetadata(event.providerMetadata),
+            providerMetadata: cleaned,
           },
-          update: {
-            title: event.title,
-            description: event.description,
-            location: event.location,
-            startTime: event.startTime,
-            endTime: event.endTime,
-            allDay: event.allDay,
-            providerMetadata: cleanMetadata(event.providerMetadata),
-          },
-        })
-      )
+          update: updateData,
+        });
+      })
     );
   }
 
