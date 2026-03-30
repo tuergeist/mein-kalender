@@ -249,20 +249,23 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {briefing.events.map((e) => (
-                <div key={e.id} className="flex items-center gap-3 rounded-xl border border-[var(--border-default)] bg-white px-4 py-3 shadow-sm">
-                  <div className="h-9 w-1 shrink-0 rounded-full" style={{ backgroundColor: e.color || "#9F1239" }} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-[var(--text-primary)]">{e.title}</p>
-                    <p className="font-mono text-xs text-[var(--text-tertiary)]">
-                      {e.allDay ? "Ganztägig" : `${formatTime(e.startTime)} – ${formatTime(e.endTime)}`}
-                    </p>
+              {briefing.events.map((e) => {
+                const isPast = !e.allDay && new Date(e.endTime) < now;
+                return (
+                  <div key={e.id} className={`flex items-center gap-3 rounded-xl border border-[var(--border-default)] bg-white px-4 py-3 shadow-sm ${isPast ? "opacity-40" : ""}`}>
+                    <div className="h-9 w-1 shrink-0 rounded-full" style={{ backgroundColor: e.color || "#9F1239" }} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-[var(--text-primary)]">{e.title || "(Kein Titel)"}</p>
+                      <p className="font-mono text-xs text-[var(--text-tertiary)]">
+                        {e.allDay ? "Ganztägig" : `${formatTime(e.startTime)} – ${formatTime(e.endTime)}`}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-[var(--text-secondary)]">
+                      {e.source}
+                    </span>
                   </div>
-                  <span className="shrink-0 rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-[var(--text-secondary)]">
-                    {providerName(e.provider)}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
