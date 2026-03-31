@@ -33,7 +33,7 @@ export async function eventsRoutes(app: FastifyInstance) {
       where,
       include: {
         calendarEntry: {
-          select: { id: true, name: true, color: true, readOnly: true, sourceId: true },
+          select: { id: true, name: true, color: true, userColor: true, readOnly: true, sourceId: true },
         },
       },
       orderBy: { startTime: "asc" },

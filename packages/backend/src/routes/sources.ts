@@ -109,7 +109,7 @@ export async function sourcesRoutes(app: FastifyInstance) {
   // Toggle calendar entry enabled state
   app.patch<{
     Params: { id: string };
-    Body: { enabled: boolean };
+    Body: { enabled?: boolean };
   }>("/api/calendar-entries/:id", async (request, reply) => {
     const { user } = request as unknown as AuthenticatedRequest;
 
@@ -126,7 +126,35 @@ export async function sourcesRoutes(app: FastifyInstance) {
 
     const updated = await prisma.calendarEntry.update({
       where: { id: request.params.id },
-      data: { enabled: request.body.enabled },
+      data: {
+        ...(request.body.enabled !== undefined && { enabled: request.body.enabled }),
+      },
+    });
+
+    return updated;
+  });
+
+  // Update calendar entry user color
+  app.patch<{
+    Params: { id: string };
+    Body: { userColor: string | null };
+  }>("/api/calendar-entries/:id/color", async (request, reply) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+
+    const entry = await prisma.calendarEntry.findFirst({
+      where: {
+        id: request.params.id,
+        source: { userId: user.id },
+      },
+    });
+
+    if (!entry) {
+      return reply.code(404).send({ error: "Not found" });
+    }
+
+    const updated = await prisma.calendarEntry.update({
+      where: { id: request.params.id },
+      data: { userColor: request.body.userColor },
     });
 
     return updated;

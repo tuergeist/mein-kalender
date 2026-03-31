@@ -96,28 +96,32 @@ export function CalendarView({ initialDate }: { initialDate?: string }) {
               id: string;
               name: string;
               color: string;
+              userColor: string | null;
               readOnly: boolean;
             };
-          }) => ({
-            id: e.id,
-            title: e.title,
-            start: e.startTime,
-            end: e.endTime,
-            allDay: e.allDay,
-            backgroundColor: e.calendarEntry.color,
-            borderColor: e.calendarEntry.color,
-            extendedProps: {
-              description: e.description,
-              location: e.location,
-              calendarEntryId: e.calendarEntry.id,
-              calendarName: e.calendarEntry.name,
-              calendarColor: e.calendarEntry.color,
-              readOnly: e.calendarEntry.readOnly,
-              sourceEventId: e.sourceEventId,
-              providerMetadata: e.providerMetadata,
-              ignored: e.ignored,
-            },
-          })
+          }) => {
+            const effectiveColor = e.calendarEntry.userColor ?? e.calendarEntry.color;
+            return {
+              id: e.id,
+              title: e.title,
+              start: e.startTime,
+              end: e.endTime,
+              allDay: e.allDay,
+              backgroundColor: effectiveColor,
+              borderColor: effectiveColor,
+              extendedProps: {
+                description: e.description,
+                location: e.location,
+                calendarEntryId: e.calendarEntry.id,
+                calendarName: e.calendarEntry.name,
+                calendarColor: effectiveColor,
+                readOnly: e.calendarEntry.readOnly,
+                sourceEventId: e.sourceEventId,
+                providerMetadata: e.providerMetadata,
+                ignored: e.ignored,
+              },
+            };
+          }
         );
         setAllEvents(mapped);
       }
@@ -125,11 +129,21 @@ export function CalendarView({ initialDate }: { initialDate?: string }) {
     [accessToken]
   );
 
+  const [colorVersion, setColorVersion] = useState(0);
+
+  useEffect(() => {
+    function handleColorChange() {
+      setColorVersion((v) => v + 1);
+    }
+    window.addEventListener("calendar-color-change", handleColorChange);
+    return () => window.removeEventListener("calendar-color-change", handleColorChange);
+  }, []);
+
   useEffect(() => {
     if (accessToken && dateRange) {
       fetchEvents(dateRange.start, dateRange.end);
     }
-  }, [accessToken, dateRange, fetchEvents]);
+  }, [accessToken, dateRange, fetchEvents, colorVersion]);
 
   const events = useMemo(
     () => {

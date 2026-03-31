@@ -82,6 +82,7 @@ model CalendarEntry {
   sourceId           String
   name               String
   color              String  @default("#3b82f6")
+  userColor          String?
   providerCalendarId String
   isTarget           Boolean @default(false)
   syncMode           String  @default("full") // "full" or "blocked"
