@@ -181,6 +181,36 @@ export default function ICSSettingsPage() {
                     onValueChange={setUrl}
                     placeholder="https://example.com/calendar.ics"
                   />
+                  <details className="group rounded-lg border border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800">
+                    <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-stone-600 dark:text-stone-300 hover:text-stone-800 dark:hover:text-stone-100">
+                      <span className="ml-1">Proton Kalender? So findest du die ICS-URL</span>
+                    </summary>
+                    <div className="border-t border-stone-200 px-4 py-3 dark:border-stone-700">
+                      <ol className="list-decimal space-y-1.5 pl-5 text-sm text-stone-600 dark:text-stone-400">
+                        <li>
+                          Öffne{" "}
+                          <a
+                            href="https://account.proton.me"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-500"
+                          >
+                            account.proton.me
+                          </a>{" "}
+                          &rarr; <span className="font-medium text-stone-800 dark:text-stone-200">Kalender-Einstellungen</span>
+                        </li>
+                        <li>
+                          Finde den Kalender &rarr; <span className="font-medium text-stone-800 dark:text-stone-200">Aktionen</span>
+                        </li>
+                        <li>
+                          Link kopieren: <span className="font-medium text-stone-800 dark:text-stone-200">Vollansicht</span>{" "}
+                          (alle Details) oder <span className="font-medium text-stone-800 dark:text-stone-200">Eingeschränkte Ansicht</span>{" "}
+                          (nur Verfügbarkeit)
+                        </li>
+                        <li>ICS-Link hier einfügen</li>
+                      </ol>
+                    </div>
+                  </details>
                   <p className="text-xs text-default-400">
                     Der Kalender wird automatisch stündlich aktualisiert.
                   </p>

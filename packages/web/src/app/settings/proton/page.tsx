@@ -67,32 +67,37 @@ export default function ProtonSettingsPage() {
             <ol className="list-decimal space-y-2 pl-5 text-sm text-default-600">
               <li>
                 Öffne{" "}
+                <a
+                  href="https://account.proton.me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-500"
+                >
+                  account.proton.me
+                </a>{" "}
+                und navigiere zu{" "}
                 <span className="font-medium text-default-800">
-                  Proton Kalender
-                </span>{" "}
-                im Browser
-              </li>
-              <li>
-                Klicke auf das{" "}
-                <span className="font-medium text-default-800">
-                  Drei-Punkte-Menü
-                </span>{" "}
-                neben dem Kalender, den du teilen möchtest
-              </li>
-              <li>
-                Wähle{" "}
-                <span className="font-medium text-default-800">
-                  Teilen
+                  Kalender-Einstellungen
                 </span>
               </li>
               <li>
-                Aktiviere{" "}
+                Finde den gewünschten Kalender und klicke auf{" "}
                 <span className="font-medium text-default-800">
-                  Mit jedem teilen
-                </span>{" "}
-                und kopiere den Link
+                  Aktionen
+                </span>
               </li>
-              <li>Füge den Link unten ein</li>
+              <li>
+                Kopiere den Link für{" "}
+                <span className="font-medium text-default-800">
+                  Vollansicht
+                </span>{" "}
+                (alle Details) oder{" "}
+                <span className="font-medium text-default-800">
+                  Eingeschränkte Ansicht
+                </span>{" "}
+                (nur Verfügbarkeit)
+              </li>
+              <li>Füge den ICS-Link unten ein</li>
             </ol>
           </CardHeader>
           <CardBody className="flex flex-col gap-4 px-6 pb-6">
