@@ -207,6 +207,7 @@ model Booking {
   endTime         DateTime
   status          String   @default("confirmed") // confirmed, cancelled
   providerEventId String?
+  managementToken String?  @unique
   createdAt       DateTime @default(now())
 
   eventType EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
