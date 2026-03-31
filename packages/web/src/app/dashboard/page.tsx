@@ -103,14 +103,6 @@ export default function DashboardPage() {
     return new Date(iso).toLocaleString("de-DE", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   }
 
-  function providerName(p: string) {
-    if (p === "google") return "Google";
-    if (p === "microsoft" || p === "outlook") return "Outlook";
-    if (p === "proton") return "Proton";
-    if (p === "ics") return "ICS";
-    return p;
-  }
-
   // Getting started steps
   const steps = [
     { done: sources.length >= 1, label: "Kalender verbinden", href: "/settings", linkText: "Kalender hinzufügen" },
@@ -156,7 +148,7 @@ export default function DashboardPage() {
               <p className="font-display text-2xl font-bold">{weekly.calendarsConnected}</p>
               <p className="text-xs text-[var(--text-tertiary)]">Kalender verbunden</p>
             </Link>
-            <div className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)]">
+            <Link href="/sync-status" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
               {weekly.syncSuccessRate >= 97 ? (
                 <>
                   <p className="font-display text-2xl font-bold text-[#059669]">Alles OK</p>
@@ -173,7 +165,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-[var(--text-tertiary)]">Sync-Probleme erkannt</p>
                 </>
               )}
-            </div>
+            </Link>
           </div>
         )}
 
@@ -259,39 +251,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Sync Health Detail (collapsible) */}
-        {sources.length > 0 && !loading && (
-          <details className="group">
-            <summary className="cursor-pointer font-display text-sm font-medium text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]">
-              Sync-Status Details ▸
-            </summary>
-            <div className="mt-3 space-y-2">
-              {sources.map((s) => (
-                <div key={s.id} className="flex items-center gap-3 rounded-xl border border-[var(--border-default)] bg-white px-4 py-3">
-                  <span className={`inline-block h-2.5 w-2.5 rounded-full ${
-                    s.syncStatus === "ok" ? "bg-[#059669]" :
-                    s.syncStatus === "syncing" ? "bg-[var(--color-amber-500)] animate-pulse" :
-                    "bg-red-500"
-                  }`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-[var(--text-primary)]">{s.label || providerName(s.provider)}</p>
-                    {s.syncError && <p className="text-xs text-red-600">{s.syncError}</p>}
-                  </div>
-                  {s.lastSyncAt && (
-                    <span className="font-mono text-xs text-[var(--text-tertiary)]">
-                      {formatTime(s.lastSyncAt)}
-                    </span>
-                  )}
-                </div>
-              ))}
-              {weekly && weekly.syncCycles > 0 && (
-                <p className="px-1 font-mono text-xs text-[var(--text-tertiary)]">
-                  {weekly.syncCycles} Sync-Zyklen diese Woche · p50: {weekly.latency.p50}ms · p95: {weekly.latency.p95}ms
-                </p>
-              )}
-            </div>
-          </details>
-        )}
       </div>
     </AppShell>
   );
