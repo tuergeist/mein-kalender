@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { decrypt } from "../encryption";
 import { getProvider } from "../providers";
 import { TokenSet } from "../types";
+import { syncQueue } from "../queues";
 
 interface SlotParams {
   username: string;
@@ -147,6 +148,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       // Create calendar event on host's booking calendar (or target, or first writable)
       let providerEventId: string | null = null;
+      let bookingSourceId: string | null = null;
       try {
         let bookingEntry = null;
 
@@ -207,6 +209,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
             attendees: [{ email: guestEmail, name: guestName }],
           });
           providerEventId = calEvent.sourceEventId;
+          bookingSourceId = bookingEntry.source.id;
         }
       } catch (err) {
         console.error("[booking] Failed to create calendar event:", err);
@@ -225,6 +228,17 @@ export async function publicBookingRoutes(app: FastifyInstance) {
           managementToken,
         },
       });
+
+      // Trigger immediate sync so the booking event appears in the calendar view
+      if (bookingSourceId) {
+        syncQueue.add("sync-source", { sourceId: bookingSourceId, userId: user.id }, {
+          jobId: `sync-${bookingSourceId}-booking-${Date.now()}`,
+          removeOnComplete: 10,
+          removeOnFail: 5,
+        }).catch((err) => {
+          console.warn("[booking] Failed to queue immediate sync:", err);
+        });
+      }
 
       return reply.code(201).send({
         booking: {
@@ -383,6 +397,16 @@ export async function publicBookingRoutes(app: FastifyInstance) {
         where: { id: booking.id },
         data: { status: "cancelled" },
       });
+
+      // Trigger sync so cancellation reflects in calendar view
+      const cancelEntry = await findBookingCalendarEntry(booking.userId, booking.eventTypeId);
+      if (cancelEntry) {
+        syncQueue.add("sync-source", { sourceId: cancelEntry.source.id, userId: booking.userId }, {
+          jobId: `sync-${cancelEntry.source.id}-cancel-${Date.now()}`,
+          removeOnComplete: 10,
+          removeOnFail: 5,
+        }).catch(() => {});
+      }
 
       return { success: true };
     }
@@ -563,6 +587,16 @@ export async function publicBookingRoutes(app: FastifyInstance) {
           where: { id: booking.id },
           data: { startTime: newStart, endTime: newEnd },
         });
+      }
+
+      // Trigger sync so reschedule reflects in calendar view
+      const rescheduleEntry = await findBookingCalendarEntry(booking.userId, booking.eventTypeId);
+      if (rescheduleEntry) {
+        syncQueue.add("sync-source", { sourceId: rescheduleEntry.source.id, userId: booking.userId }, {
+          jobId: `sync-${rescheduleEntry.source.id}-reschedule-${Date.now()}`,
+          removeOnComplete: 10,
+          removeOnFail: 5,
+        }).catch(() => {});
       }
 
       return {
