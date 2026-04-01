@@ -39,6 +39,11 @@ function dateParam(iso: string) {
   return new Date(iso).toISOString().slice(0, 10);
 }
 
+function timeParam(iso: string) {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 export default function ConflictsPage() {
   const { data: session } = useSession();
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
@@ -118,7 +123,7 @@ export default function ConflictsPage() {
                 </div>
                 <div className="mt-3 flex gap-2">
                   <Link
-                    href={`/calendar?date=${dateParam(c.eventAStart)}`}
+                    href={`/calendar?date=${dateParam(c.eventAStart)}&time=${timeParam(c.eventAStart)}`}
                     className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-rose-700)] shadow-sm border border-[var(--border-default)] hover:shadow-md transition-shadow"
                   >
                     Im Kalender anzeigen

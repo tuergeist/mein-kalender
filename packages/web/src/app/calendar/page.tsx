@@ -9,10 +9,11 @@ import { CalendarSidebar } from "@/components/CalendarSidebar";
 function CalendarContent() {
   const searchParams = useSearchParams();
   const initialDate = searchParams.get("date") || undefined;
+  const initialTime = searchParams.get("time") || undefined;
 
   return (
     <AppShell section="calendar" sidebarContent={<CalendarSidebar />}>
-      <CalendarView initialDate={initialDate} />
+      <CalendarView initialDate={initialDate} initialTime={initialTime} />
     </AppShell>
   );
 }

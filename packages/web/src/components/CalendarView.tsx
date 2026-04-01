@@ -33,7 +33,7 @@ interface CalendarEvent {
   };
 }
 
-export function CalendarView({ initialDate }: { initialDate?: string }) {
+export function CalendarView({ initialDate, initialTime }: { initialDate?: string; initialTime?: string }) {
   const { data: session } = useSession();
   const calendarRef = useRef<FullCalendar>(null);
   const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
@@ -66,6 +66,20 @@ export function CalendarView({ initialDate }: { initialDate?: string }) {
       calendarRef.current?.getApi().changeView("listWeek");
     }
   }, [isMobile]);
+
+  useEffect(() => {
+    if (initialTime) {
+      const match = initialTime.match(/^(\d{1,2}):(\d{2})$/);
+      if (match) {
+        const hours = Math.max(0, parseInt(match[1], 10) - 1);
+        // Small delay to ensure calendar is rendered
+        const t = setTimeout(() => {
+          calendarRef.current?.getApi().scrollToTime({ hours, minutes: 0, seconds: 0 });
+        }, 200);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [initialTime]);
 
   const accessToken = (session as { accessToken?: string })?.accessToken;
 
