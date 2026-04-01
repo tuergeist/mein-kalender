@@ -114,6 +114,11 @@ export async function processSyncJob(
     }).catch((err) => {
       console.warn("[sync] Failed to queue conflict detection:", err);
     });
+
+    // Reconcile bookings: cancel confirmed bookings whose provider event no longer exists
+    reconcileBookings(prisma, userId).catch((err) => {
+      console.warn("[sync] Failed to reconcile bookings:", err);
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error(`[sync] Error syncing source ${sourceId}:`, message);
@@ -639,6 +644,42 @@ function logSyncHealth(
   }).catch((err) => {
     console.warn("[sync] Failed to log sync health:", err);
   });
+}
+
+async function reconcileBookings(prisma: PrismaClient, userId: string): Promise<void> {
+  // Find confirmed future bookings that have a provider event ID
+  const bookings = await prisma.booking.findMany({
+    where: {
+      userId,
+      status: "confirmed",
+      providerEventId: { not: null },
+      startTime: { gt: new Date() },
+    },
+    select: { id: true, providerEventId: true },
+  });
+
+  if (bookings.length === 0) return;
+
+  // Check which provider event IDs still exist in our events table
+  const providerEventIds = bookings.map((b) => b.providerEventId!);
+  const existingEvents = await prisma.event.findMany({
+    where: { sourceEventId: { in: providerEventIds } },
+    select: { sourceEventId: true },
+  });
+  const existingIds = new Set(existingEvents.map((e) => e.sourceEventId));
+
+  // Cancel bookings whose events no longer exist
+  const staleBookingIds = bookings
+    .filter((b) => !existingIds.has(b.providerEventId!))
+    .map((b) => b.id);
+
+  if (staleBookingIds.length > 0) {
+    await prisma.booking.updateMany({
+      where: { id: { in: staleBookingIds } },
+      data: { status: "cancelled" },
+    });
+    console.log(`[sync] Cancelled ${staleBookingIds.length} bookings for user ${userId} (provider events deleted)`);
+  }
 }
 
 function parseIcsDate(dateStr: string): Date {
