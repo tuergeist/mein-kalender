@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { apiAuthFetch } from "@/lib/api";
+import { extractColorsFromImage } from "@/lib/extract-colors";
 
 const DAY_NAMES = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const DEFAULT_RULES = [
@@ -76,6 +77,7 @@ export default function EditEventTypePage() {
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [suggestedColors, setSuggestedColors] = useState<{ brand: string; accent: string } | null>(null);
 
   useEffect(() => {
     if (accessToken) {
@@ -140,8 +142,16 @@ export default function EditEventTypePage() {
       });
       if (res.ok) {
         const data = await res.json();
-        if (type === "avatar") setFormAvatarUrl(data.url);
-        else setFormBackgroundUrl(data.url);
+        if (type === "avatar") {
+          setFormAvatarUrl(data.url);
+        } else {
+          setFormBackgroundUrl(data.url);
+          // Extract colors from background image and suggest them
+          const localUrl = URL.createObjectURL(file);
+          const colors = await extractColorsFromImage(localUrl);
+          URL.revokeObjectURL(localUrl);
+          if (colors) setSuggestedColors(colors);
+        }
       }
       setUploading(null);
     };
@@ -306,6 +316,23 @@ export default function EditEventTypePage() {
           <CardBody>
             <p className="mb-4 text-xs text-default-400">Überschreibe dein Standard-Branding für diese Terminart. Leer lassen, um die Standardwerte zu verwenden.</p>
             <div className="space-y-4">
+              {suggestedColors && !formBrandColor && !formAccentColor && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormBrandColor(suggestedColors.brand);
+                    setFormAccentColor(suggestedColors.accent);
+                    setSuggestedColors(null);
+                  }}
+                  className="flex items-center gap-3 rounded-lg border border-[var(--color-amber-200)] bg-[var(--color-amber-50)] px-4 py-3 text-left transition-shadow hover:shadow-md"
+                >
+                  <div className="flex gap-1.5">
+                    <span className="inline-block h-6 w-6 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: suggestedColors.brand }} />
+                    <span className="inline-block h-6 w-6 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: suggestedColors.accent }} />
+                  </div>
+                  <span className="text-xs font-medium text-[var(--color-amber-800)]">Farben aus Hintergrundbild übernehmen</span>
+                </button>
+              )}
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="mb-1 block text-sm font-medium">Markenfarbe</label>
