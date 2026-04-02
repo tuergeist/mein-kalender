@@ -74,7 +74,7 @@ export default function ConflictsPage() {
     <AppShell>
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">
+          <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">
             Terminüberschneidungen
           </h1>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">

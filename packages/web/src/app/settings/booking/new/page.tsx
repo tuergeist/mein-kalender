@@ -146,7 +146,7 @@ export default function NewEventTypePage() {
             <Button variant="light" size="sm" isIconOnly className="text-stone-500" onPress={() => router.back()}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </Button>
-            <h1 className="font-display text-2xl font-bold tracking-tight">Neue Terminart</h1>
+            <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Neue Terminart</h1>
           </div>
           <Button color="primary" isLoading={saving} isDisabled={!formName.trim()} onPress={handleSave}>Erstellen</Button>
         </div>

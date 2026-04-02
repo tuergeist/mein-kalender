@@ -94,7 +94,7 @@ export default function ProfileSettingsPage() {
   return (
     <AppShell section="settings" settingsSection="profile">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Profil</h1>
+        <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Profil</h1>
 
         <Card>
           <CardBody className="flex flex-col gap-4 p-6">

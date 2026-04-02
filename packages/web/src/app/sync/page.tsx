@@ -255,7 +255,7 @@ export default function SyncPage() {
   return (
     <AppShell section="sync">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Kalender-Sync</h1>
+        <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Kalender-Sync</h1>
 
         {/* Fetch Window */}
         <Card>

@@ -92,7 +92,7 @@ export default function AvailabilityPreviewPage() {
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </Button>
           </Link>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Verfügbarkeitsvorschau</h1>
+          <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Verfügbarkeitsvorschau</h1>
         </div>
 
         <div className="flex items-center gap-3">

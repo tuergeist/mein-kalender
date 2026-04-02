@@ -95,7 +95,7 @@ function SettingsPageContent() {
   return (
     <AppShell section="settings" settingsSection="sources">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Kalenderquellen</h1>
+        <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Kalenderquellen</h1>
 
         {/* OAuth Error Banner */}
         {oauthError && (

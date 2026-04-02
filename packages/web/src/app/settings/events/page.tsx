@@ -60,7 +60,7 @@ export default function EventTypesPage() {
   return (
     <AppShell section="settings" settingsSection="events">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Terminarten</h1>
+        <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Terminarten</h1>
 
         <Card>
           <CardHeader className="flex items-center justify-between">

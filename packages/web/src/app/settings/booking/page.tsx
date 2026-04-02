@@ -175,7 +175,7 @@ export default function BookingSettingsPage() {
   return (
     <AppShell section="settings" settingsSection="booking">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Buchungseinstellungen</h1>
+        <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Buchungseinstellungen</h1>
         <p className="text-sm text-default-400">Terminarten werden unter <Link href="/settings/events" className="text-primary hover:underline">Einstellungen &gt; Terminarten</Link> verwaltet.</p>
 
         {/* Booking URL */}

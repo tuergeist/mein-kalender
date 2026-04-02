@@ -56,7 +56,7 @@ export default function ProtonSettingsPage() {
           >
             &larr; Zurück
           </Button>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Proton Kalender hinzufügen</h1>
+          <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Proton Kalender hinzufügen</h1>
         </div>
 
         <Card>

@@ -76,7 +76,7 @@ export default function SyncStatusPage() {
     <AppShell>
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Sync-Status</h1>
+          <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Sync-Status</h1>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Übersicht aller verbundenen Kalenderquellen und deren Synchronisation.
           </p>
