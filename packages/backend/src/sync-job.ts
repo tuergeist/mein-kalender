@@ -413,10 +413,10 @@ async function cloneToSingleTarget(
     where: {
       calendarEntry: {
         source: { userId },
-        isTarget: false,
+        // Exclude only THIS target's own calendar (not other targets used as sources)
         ...(sourceCalendarIds && sourceCalendarIds.length > 0
-          ? { id: { in: sourceCalendarIds } }
-          : { enabled: true }),
+          ? { id: { in: sourceCalendarIds.filter((id) => id !== targetEntry.id) } }
+          : { enabled: true, id: { not: targetEntry.id } }),
       },
       // Loop prevention: skip events that were synced in from another target
       title: { not: { startsWith: "[Sync]" } },
