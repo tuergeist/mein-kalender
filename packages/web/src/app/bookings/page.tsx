@@ -102,10 +102,10 @@ export default function BookingsPage() {
             <CardBody>
               <div className="space-y-3">
                 {past.map((b) => (
-                  <div key={b.id} className="flex items-center justify-between rounded-lg border border-default-200 p-4 opacity-60">
+                  <div key={b.id} className={`flex items-center justify-between rounded-lg border p-4 ${b.status === "cancelled" ? "border-red-200 bg-red-50/50 opacity-60" : "border-default-200 opacity-50"}`}>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{b.guestName}</span>
+                        <span className={`font-medium ${b.status === "cancelled" ? "line-through text-default-400" : ""}`}>{b.guestName}</span>
                         <Chip size="sm" variant="flat">{b.eventType.name}</Chip>
                         {b.status === "cancelled" && <Chip size="sm" color="danger" variant="flat">Storniert</Chip>}
                       </div>
