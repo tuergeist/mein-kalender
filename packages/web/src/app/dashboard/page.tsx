@@ -118,7 +118,7 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Greeting */}
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">
+          <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">
             {greeting}{userName ? `, ${userName}` : ""}.
           </h1>
           {briefing && !loading && (
