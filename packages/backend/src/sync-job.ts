@@ -7,7 +7,7 @@ import {
 } from "./types";
 import { ProviderError, ProviderErrorCode } from "./errors";
 import { getProvider } from "./providers";
-import { conflictQueue } from "./queues";
+import { conflictQueue, targetSyncQueue } from "./queues";
 
 export async function processSyncJob(
   prisma: PrismaClient,
@@ -90,8 +90,14 @@ export async function processSyncJob(
       }
     }
 
-    // Clone to target calendar if configured
-    await cloneToTarget(prisma, provider, token, userId);
+    // Queue target sync as a separate job (runs with concurrency 1 to avoid races)
+    targetSyncQueue.add("target-sync", { userId }, {
+      jobId: `target-sync-${userId}-${Date.now()}`,
+      removeOnComplete: 50,
+      removeOnFail: 20,
+    }).catch((err) => {
+      console.warn("[sync] Failed to queue target sync:", err);
+    });
 
     // Mark sync success
     await prisma.calendarSource.update({
@@ -308,10 +314,8 @@ async function syncCalendarEntry(
   }
 }
 
-async function cloneToTarget(
+export async function cloneToTarget(
   prisma: PrismaClient,
-  provider: CalendarProviderInterface,
-  token: TokenSet,
   userId: string
 ): Promise<void> {
   // Find ALL target calendars for this user
@@ -325,8 +329,13 @@ async function cloneToTarget(
 
   if (targetEntries.length === 0) return;
 
+  console.log(`[sync] cloneToTarget: found ${targetEntries.length} target(s) for user ${userId}`);
   for (const targetEntry of targetEntries) {
-    await cloneToSingleTarget(prisma, userId, targetEntry);
+    try {
+      await cloneToSingleTarget(prisma, userId, targetEntry);
+    } catch (err) {
+      console.error(`[sync] cloneToSingleTarget failed for target ${targetEntry.id} (${targetEntry.source.provider}):`, err);
+    }
   }
 }
 
@@ -464,6 +473,8 @@ async function cloneToSingleTarget(
       allDay: event.allDay,
     };
   }
+
+  console.log(`[sync] Target ${targetEntry.id}: ${unmappedEvents.length} unmapped, ${filteredEvents.length} after filter, ${existingMappings.length} existing mappings`);
 
   for (const event of filteredEvents) {
     const fp = eventFingerprint(event.title, event.startTime, event.endTime);

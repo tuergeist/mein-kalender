@@ -11,4 +11,6 @@ export const syncQueue = new Queue("calendar-sync", { connection });
 
 export const conflictQueue = new Queue("conflict-detection", { connection });
 
+export const targetSyncQueue = new Queue("target-sync", { connection });
+
 export { connection };

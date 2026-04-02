@@ -2,6 +2,7 @@ import { Worker } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import { processSyncJob } from "./sync-job";
 import { detectConflicts } from "./conflict-detection";
+import { cloneToTarget } from "./sync-job";
 import { connection, syncQueue } from "./queues";
 
 const prisma = new PrismaClient();
@@ -27,6 +28,24 @@ conflictWorker.on("completed", (job) => {
 
 conflictWorker.on("failed", (job, err) => {
   console.error(`[conflicts] Job ${job?.id} failed:`, err.message);
+});
+
+const targetSyncWorker = new Worker(
+  "target-sync",
+  async (job) => {
+    const { userId } = job.data;
+    console.log(`[target-sync] Running target sync for user ${userId}`);
+    await cloneToTarget(prisma, userId);
+  },
+  { connection, concurrency: 1 }
+);
+
+targetSyncWorker.on("completed", (job) => {
+  console.log(`[target-sync] Job ${job.id} completed`);
+});
+
+targetSyncWorker.on("failed", (job, err) => {
+  console.error(`[target-sync] Job ${job?.id} failed:`, err.message);
 });
 
 const worker = new Worker(
