@@ -838,5 +838,47 @@
     "tool_name": "Bash",
     "command": "cd /Users/cb/git/calendar-sync && git add \\\n  packages/backend/prisma/schema.prisma \\\n  packages/backend/prisma/migrations/ \\\n  packages/backend/src/sync-job.ts \\\n  packages/backend/src/routes/dashboard.ts \\\n  packages/backend/src/server.ts \\\n  packages/web/src/app/dashboard/page.tsx \\\n  packages/web/src/components/AppShell.tsx \\\n&& git commit -m \"$(cat <<'EOF'\nAdd sync health dashboard, conflict detection, and heartbeat indicator\n\nBackend:\n- New tables: SyncHealth (per-cycle metrics), Conflict (detected \n  overlaps), BookingPageView (daily aggregates)\n- Sync health logging in sync-job.ts (fire-and-forget, never blocks sync)\n- Dashboard API: /api/dashboard/briefing, weekly-summary, sync-status, \n  conflicts endpoints\n\nFrontend:\n- Dashboard rewrite: daily briefing with greeting, conflict banners, \n  weekly summary card (meetings, overlaps, integrity score), today's \n  events, upcoming bookings, collapsible sync health details\n- Heartbeat indicator in sidebar (green/amber/red, polls every 5 min)\n- Empty states: \"Keine Termine heute. Das ist das Ziel.\"\nEOF\n)\" && git push origin main 2>&1",
     "description": "Commit and push Ship 2 core"
+  },
+  {
+    "timestamp": "2026-03-30T18:53:43.484078",
+    "session_id": "afaa69f0-5293-4bff-a53b-206d54fe0d68",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/web/src/app/dashboard/page.tsx packages/web/src/app/calendar/page.tsx packages/web/src/components/CalendarView.tsx packages/web/src/app/conflicts/page.tsx packages/backend/src/routes/dashboard.ts && git commit -m \"$(cat <<'EOF'\nAdd conflicts detail page, calendar date navigation, manual resolve\n\n- New /conflicts page showing all unresolved conflicts with dismiss button\n- CalendarView accepts initialDate prop; /calendar?date=YYYY-MM-DD navigates\n- Each conflict links to calendar at the right date\n- Dashboard: remove conflict banner, link \u00dcberschneidungen card to /conflicts\n- Simplify dashboard to use briefing.unresolvedConflicts instead of full fetch\n- POST /api/dashboard/conflicts/:id/resolve for manual conflict resolution\n- Remove take(10) limit on conflicts endpoint to return all unresolved\nEOF\n)\"",
+    "description": "Commit all changes"
+  },
+  {
+    "timestamp": "2026-03-31T12:14:08.650999",
+    "session_id": "afaa69f0-5293-4bff-a53b-206d54fe0d68",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/routes/public-booking.ts && git commit -m \"$(cat <<'EOF'\nAdd guest as attendee when creating booking calendar event\n\nPass attendees array to provider.createEvent so the guest receives\nan actual calendar invite (Outlook) or email notification (Google\nwith sendUpdates=all). Previously the guest email was only in the\nevent description.\nEOF\n)\" && git push",
+    "description": "Commit and push fix"
+  },
+  {
+    "timestamp": "2026-04-01T14:47:59.398650",
+    "session_id": "afaa69f0-5293-4bff-a53b-206d54fe0d68",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/sync-job.ts && git commit -m \"$(cat <<'EOF'\nReconcile booking status when provider events are deleted\n\nAfter sync, check confirmed future bookings against events table.\nIf the booking's provider event no longer exists (deleted or declined\nby guest), mark the booking as cancelled. Runs fire-and-forget after\nconflict detection.\nEOF\n)\" && git push",
+    "description": "Commit and push booking reconciliation"
+  },
+  {
+    "timestamp": "2026-04-01T16:43:03.840121",
+    "session_id": "afaa69f0-5293-4bff-a53b-206d54fe0d68",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/routes/public-booking.ts && git commit -m \"$(cat <<'EOF'\nTrigger immediate sync after booking create, cancel, and reschedule\n\nQueue a sync job for the affected calendar source after any booking\nmutation so the event appears/disappears in the built-in calendar\nview immediately, without waiting for the next scheduled sync cycle.\nEOF\n)\" && git push",
+    "description": "Commit and push"
+  },
+  {
+    "timestamp": "2026-04-02T09:59:36.581071",
+    "session_id": "afaa69f0-5293-4bff-a53b-206d54fe0d68",
+    "tool_name": "Bash",
+    "command": "npx tsc --noEmit 2>&1 | tail -5",
+    "description": "Type-check web"
+  },
+  {
+    "timestamp": "2026-04-02T09:59:46.619345",
+    "session_id": "afaa69f0-5293-4bff-a53b-206d54fe0d68",
+    "tool_name": "Bash",
+    "command": "cd /Users/cb/git/calendar-sync && git add packages/backend/src/routes/user-images.ts packages/web/src/app/settings/booking/\\[id\\]/edit/page.tsx && git commit -m \"$(cat <<'EOF'\nFix event type background images showing wrong image\n\nThe UserImage table had @@unique([userId, type]) \u2014 only one background\nper user. All event types shared the same record, so uploading for\nevent type B overwrote event type A's image.\n\nFix: add scope query param to upload endpoint. Event type edit page\npasses scope=et-{eventTypeId}, which gets stored as type \"background:et-{id}\"\ngiving each event type its own image record.\nEOF\n)\" && git push",
+    "description": "Commit and push"
   }
 ]
