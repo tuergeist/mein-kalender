@@ -197,7 +197,7 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
                 key={item.key}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
                   section === item.key
                     ? "border-l-2 border-rose-700 bg-rose-50 text-rose-700"
                     : "border-l-2 border-transparent text-stone-600 hover:bg-stone-50 hover:text-stone-900"
