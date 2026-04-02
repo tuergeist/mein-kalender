@@ -264,7 +264,11 @@ export default function BookingPage() {
             </h1>
             <p className="mt-2 text-sm text-gray-500">{eventType.durationMinutes} min</p>
             {eventType.location && (
-              <p className="mt-1 text-sm text-gray-500">{eventType.location}</p>
+              <p className="mt-1 text-sm text-gray-500">
+                {/^https?:\/\/.*(meet\.google|teams\.microsoft|zoom\.(us|com))/i.test(eventType.location)
+                  ? "Online-Meeting"
+                  : eventType.location}
+              </p>
             )}
             {eventType.description && (
               <p className="mt-4 text-sm text-gray-600">{eventType.description}</p>

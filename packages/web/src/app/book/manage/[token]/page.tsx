@@ -226,7 +226,7 @@ export default function ManageBookingPage() {
           <div className="mb-6">
             <p className="text-xs font-medium uppercase tracking-wider text-stone-400">{host.displayName}</p>
             <h1 className="mt-1 font-display text-xl font-bold tracking-tight text-stone-900">{eventType.name}</h1>
-            <p className="mt-0.5 font-mono text-xs text-stone-500">{eventType.durationMinutes} min{eventType.location ? ` · ${eventType.location}` : ""}</p>
+            <p className="mt-0.5 font-mono text-xs text-stone-500">{eventType.durationMinutes} min{eventType.location ? ` · ${/^https?:\/\/.*(meet\.google|teams\.microsoft|zoom\.(us|com))/i.test(eventType.location) ? "Online-Meeting" : eventType.location}` : ""}</p>
           </div>
 
           {view === "cancelled" && (
