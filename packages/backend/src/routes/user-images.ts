@@ -11,13 +11,14 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function userImageRoutes(app: FastifyInstance) {
   // Upload avatar or background (authenticated)
-  app.post<{ Params: { type: string }; Querystring: { skipUserUpdate?: string } }>(
+  app.post<{ Params: { type: string }; Querystring: { skipUserUpdate?: string; scope?: string } }>(
     "/api/profile/image/:type",
     { preHandler: authenticate },
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
       const { type } = request.params;
       const skipUserUpdate = request.query.skipUserUpdate === "true";
+      const scope = request.query.scope || "";
 
       if (type !== "avatar" && type !== "background") {
         return reply.code(400).send({ error: "Type must be 'avatar' or 'background'" });
@@ -42,9 +43,13 @@ export async function userImageRoutes(app: FastifyInstance) {
         return reply.code(400).send({ error: "File too large (max 5MB)" });
       }
 
+      // Scope allows per-entity images (e.g., scope=et-{eventTypeId} for event types)
+      // Without scope, upserts on userId+type (one image per type per user)
+      const storageType = scope ? `${type}:${scope}` : type;
+
       const image = await prisma.userImage.upsert({
-        where: { userId_type: { userId: user.id, type } },
-        create: { userId: user.id, type, data, mimeType: file.mimetype },
+        where: { userId_type: { userId: user.id, type: storageType } },
+        create: { userId: user.id, type: storageType, data, mimeType: file.mimetype },
         update: { data, mimeType: file.mimetype },
       });
 

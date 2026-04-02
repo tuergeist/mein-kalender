@@ -133,7 +133,7 @@ export default function EditEventTypePage() {
       setUploading(type);
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(`/api/profile/image/${type}?skipUserUpdate=true`, {
+      const res = await fetch(`/api/profile/image/${type}?skipUserUpdate=true&scope=et-${id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${accessToken}` },
         body: formData,
