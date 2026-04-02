@@ -55,7 +55,7 @@ export default function BookingsPage() {
   }
 
   return (
-    <AppShell section="bookings">
+    <AppShell>
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Buchungen</h1>

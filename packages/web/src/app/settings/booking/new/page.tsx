@@ -139,7 +139,7 @@ export default function NewEventTypePage() {
   }
 
   return (
-    <AppShell section="settings" settingsSection="booking">
+    <AppShell section="event-types">
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -151,17 +151,22 @@ export default function NewEventTypePage() {
           <Button color="primary" isLoading={saving} isDisabled={!formName.trim()} onPress={handleSave}>Erstellen</Button>
         </div>
 
-        {/* Basic Info */}
+        {/* Section 1: Allgemein */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Grunddaten</h2></CardHeader>
+          <CardHeader><h2 className="text-lg font-semibold">Allgemein</h2></CardHeader>
           <CardBody className="space-y-4">
             <Input label="Name" isRequired value={formName} onValueChange={setFormName} placeholder="z.B. 30-Min. Gespräch" />
-            <Input label="URL-Pfad (optional)" value={formSlug} onValueChange={(v) => { setFormSlug(v); setSlugError(""); }} placeholder="Wird automatisch aus dem Namen erzeugt" description="Mindestens 3 Zeichen. Leer lassen für automatische Generierung." errorMessage={slugError} isInvalid={!!slugError} />
+            <Input label="Beschreibung (optional)" value={formDescription} onValueChange={setFormDescription} />
             <div className="flex gap-4">
               <Input label="Dauer (Minuten)" type="number" value={formDuration} onValueChange={setFormDuration} className="w-40" />
               <Input label="Ort (optional)" value={formLocation} onValueChange={setFormLocation} placeholder="z.B. Google Meet Link" className="flex-1" />
             </div>
-            <Input label="Beschreibung (optional)" value={formDescription} onValueChange={setFormDescription} />
+            <Input label="URL-Pfad (optional)" value={formSlug} onValueChange={(v) => { setFormSlug(v); setSlugError(""); }} placeholder="Wird automatisch aus dem Namen erzeugt" description="Mindestens 3 Zeichen. Leer lassen für automatische Generierung." errorMessage={slugError} isInvalid={!!slugError} />
+            <div className="flex items-center gap-2">
+              <Switch size="sm" isSelected={formShortLink} onValueChange={setFormShortLink} />
+              <span className="text-sm font-medium">Kurzer Buchungslink</span>
+            </div>
+            {formShortLink && <p className="text-xs text-default-400">Kurzlink wird beim Speichern erstellt.</p>}
           </CardBody>
         </Card>
 
@@ -169,119 +174,106 @@ export default function NewEventTypePage() {
           <div className="rounded-lg bg-danger-50 px-4 py-3 text-sm text-danger">{saveError}</div>
         )}
 
-        {/* After Booking */}
+        {/* Section 2: Verfügbarkeit */}
         <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Nach der Buchung</h2></CardHeader>
-          <CardBody className="space-y-4">
-            <Input label="Weiterleitungs-URL" value={formRedirectUrl} onValueChange={setFormRedirectUrl} placeholder="https://..." />
-            {formRedirectUrl && (
-              <div className="flex gap-4">
-                <Input label="Link-Titel" value={formRedirectTitle} onValueChange={setFormRedirectTitle} placeholder="z.B. Zum Meeting beitreten" className="flex-1" />
-                <Input label="Verzögerung (s)" type="number" value={formRedirectDelay} onValueChange={setFormRedirectDelay} className="w-24" />
-              </div>
-            )}
-          </CardBody>
-        </Card>
-
-        {/* Links */}
-        <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Links</h2></CardHeader>
-          <CardBody>
-            <div className="flex items-center gap-2">
-              <Switch size="sm" isSelected={formShortLink} onValueChange={setFormShortLink} />
-              <span className="text-sm font-medium">Kurzer Buchungslink</span>
+          <CardHeader><h2 className="text-lg font-semibold">Verfügbarkeit</h2></CardHeader>
+          <CardBody className="space-y-5">
+            <div>
+              <Select label="Buchungskalender" placeholder="Standard verwenden" selectedKeys={formBookingCalendarId ? new Set([formBookingCalendarId]) : new Set()} onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; setFormBookingCalendarId(s || ""); }} size="sm">
+                {allCalendarEntries.map((entry) => (<SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>{entry.name} ({entry.sourceName})</SelectItem>))}
+              </Select>
+              <p className="mt-1 text-xs text-default-400">In diesem Kalender werden bestätigte Buchungen erstellt.</p>
             </div>
-            {formShortLink && <p className="mt-2 text-xs text-default-400">Kurzlink wird beim Speichern erstellt.</p>}
-          </CardBody>
-        </Card>
-
-        {/* Booking Calendar */}
-        <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Buchungskalender</h2></CardHeader>
-          <CardBody>
-            <Select label="Buchungskalender" placeholder="Standard verwenden" selectedKeys={formBookingCalendarId ? new Set([formBookingCalendarId]) : new Set()} onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; setFormBookingCalendarId(s || ""); }} size="sm">
-              {allCalendarEntries.map((entry) => (<SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>{entry.name} ({entry.sourceName})</SelectItem>))}
-            </Select>
-          </CardBody>
-        </Card>
-
-        {/* Working Hours */}
-        <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Arbeitszeiten</h2></CardHeader>
-          <CardBody>
-            <div className="mb-3 flex items-center gap-2">
-              <Switch size="sm" isSelected={formCustomHours} onValueChange={setFormCustomHours} />
-              <span className="text-sm font-medium">Eigene Arbeitszeiten</span>
+            <div>
+              <label className="mb-2 block text-sm font-medium">Verfügbarkeitskalender</label>
+              <p className="mb-2 text-xs text-default-400">{formCalendarIds.length === 0 ? "Alle Kalender werden geprüft (Standard)" : `${formCalendarIds.length} ausgewählt`}</p>
+              <CheckboxGroup size="sm" value={formCalendarIds} onChange={(vals) => setFormCalendarIds(vals as string[])}>
+                {allCalendarEntries.map((entry) => (<Checkbox key={entry.id} value={entry.id}><span className="text-sm">{entry.name} ({entry.sourceName})</span></Checkbox>))}
+              </CheckboxGroup>
             </div>
-            {formCustomHours && (
-              <div className="space-y-2">
-                {formRules.map((rule, idx) => (
-                  <div key={rule.dayOfWeek} className="flex items-center gap-3">
-                    <Switch size="sm" isSelected={rule.enabled} onValueChange={(v) => { const u = [...formRules]; u[idx] = { ...rule, enabled: v }; setFormRules(u); }} />
-                    <span className="w-10 text-sm font-medium">{DAY_NAMES[rule.dayOfWeek]}</span>
-                    <Input type="time" size="sm" value={rule.startTime} onValueChange={(v) => { const u = [...formRules]; u[idx] = { ...rule, startTime: v }; setFormRules(u); }} isDisabled={!rule.enabled} className="w-28" />
-                    <span className="text-sm text-default-400">–</span>
-                    <Input type="time" size="sm" value={rule.endTime} onValueChange={(v) => { const u = [...formRules]; u[idx] = { ...rule, endTime: v }; setFormRules(u); }} isDisabled={!rule.enabled} className="w-28" />
-                  </div>
-                ))}
+            <div className="border-t border-default-100 pt-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Switch size="sm" isSelected={formCustomHours} onValueChange={setFormCustomHours} />
+                <span className="text-sm font-medium">Eigene Arbeitszeiten</span>
               </div>
-            )}
-          </CardBody>
-        </Card>
-
-        {/* Branding */}
-        <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Branding</h2></CardHeader>
-          <CardBody>
-            <p className="mb-4 text-xs text-default-400">Passe das Erscheinungsbild deiner Buchungsseite an. Leer lassen, um die Standardwerte zu verwenden.</p>
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="mb-1 block text-sm font-medium">Markenfarbe</label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={formBrandColor || "#9F1239"} onChange={(e) => setFormBrandColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
-                    <Input size="sm" placeholder="Standard verwenden" value={formBrandColor} onValueChange={setFormBrandColor} className="flex-1" />
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <label className="mb-1 block text-sm font-medium">Akzentfarbe</label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={formAccentColor || "#D97706"} onChange={(e) => setFormAccentColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
-                    <Input size="sm" placeholder="Standard verwenden" value={formAccentColor} onValueChange={setFormAccentColor} className="flex-1" />
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="flex flex-1 items-end gap-2">
-                  <Input label="Profilfoto" size="sm" value={formAvatarUrl} onValueChange={setFormAvatarUrl} placeholder="Standard verwenden" className="flex-1" />
-                  <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Hochladen</Button>
-                </div>
-                <div className="flex flex-1 items-end gap-2">
-                  <Input label="Hintergrundbild" size="sm" value={formBackgroundUrl} onValueChange={setFormBackgroundUrl} placeholder="Standard verwenden" className="flex-1" />
-                  <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Hochladen</Button>
-                </div>
-              </div>
-              {formBackgroundUrl && (
-                <div className="flex items-center gap-2">
-                  <span className="shrink-0 text-xs text-default-400">Overlay</span>
-                  <input type="range" min="0" max="1" step="0.05" value={formBackgroundOpacity} onChange={(e) => setFormBackgroundOpacity(parseFloat(e.target.value))} className="flex-1" />
-                  <span className="w-8 text-xs text-default-400">{Math.round(formBackgroundOpacity * 100)}%</span>
+              {formCustomHours && (
+                <div className="space-y-2">
+                  {formRules.map((rule, idx) => (
+                    <div key={rule.dayOfWeek} className="flex items-center gap-3">
+                      <Switch size="sm" isSelected={rule.enabled} onValueChange={(v) => { const u = [...formRules]; u[idx] = { ...rule, enabled: v }; setFormRules(u); }} />
+                      <span className="w-10 text-sm font-medium">{DAY_NAMES[rule.dayOfWeek]}</span>
+                      <Input type="time" size="sm" value={rule.startTime} onValueChange={(v) => { const u = [...formRules]; u[idx] = { ...rule, startTime: v }; setFormRules(u); }} isDisabled={!rule.enabled} className="w-28" />
+                      <span className="text-sm text-default-400">–</span>
+                      <Input type="time" size="sm" value={rule.endTime} onValueChange={(v) => { const u = [...formRules]; u[idx] = { ...rule, endTime: v }; setFormRules(u); }} isDisabled={!rule.enabled} className="w-28" />
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           </CardBody>
         </Card>
 
-        {/* Availability Calendars */}
-        <Card>
-          <CardHeader><h2 className="text-lg font-semibold">Verfügbarkeitskalender</h2></CardHeader>
-          <CardBody>
-            <p className="mb-2 text-xs text-default-400">{formCalendarIds.length === 0 ? "Alle Kalender (Standard)" : `${formCalendarIds.length} ausgewählt`}</p>
-            <CheckboxGroup size="sm" value={formCalendarIds} onChange={(vals) => setFormCalendarIds(vals as string[])}>
-              {allCalendarEntries.map((entry) => (<Checkbox key={entry.id} value={entry.id}><span className="text-sm">{entry.name} ({entry.sourceName})</span></Checkbox>))}
-            </CheckboxGroup>
-          </CardBody>
-        </Card>
+        {/* Section 3: Erweitert */}
+        <details className="group">
+          <summary className="cursor-pointer font-display text-sm font-medium text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]">
+            Erweitert ▸
+          </summary>
+          <div className="mt-3 space-y-4">
+            <Card>
+              <CardHeader><h2 className="text-lg font-semibold">Nach der Buchung</h2></CardHeader>
+              <CardBody className="space-y-4">
+                <Input label="Weiterleitungs-URL" value={formRedirectUrl} onValueChange={setFormRedirectUrl} placeholder="https://..." />
+                {formRedirectUrl && (
+                  <div className="flex gap-4">
+                    <Input label="Link-Titel" value={formRedirectTitle} onValueChange={setFormRedirectTitle} placeholder="z.B. Zum Meeting beitreten" className="flex-1" />
+                    <Input label="Verzögerung (s)" type="number" value={formRedirectDelay} onValueChange={setFormRedirectDelay} className="w-24" />
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+            <Card>
+              <CardHeader><h2 className="text-lg font-semibold">Branding</h2></CardHeader>
+              <CardBody>
+                <p className="mb-4 text-xs text-default-400">Passe das Erscheinungsbild deiner Buchungsseite an. Leer lassen, um die Standardwerte zu verwenden.</p>
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="mb-1 block text-sm font-medium">Markenfarbe</label>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={formBrandColor || "#9F1239"} onChange={(e) => setFormBrandColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
+                        <Input size="sm" placeholder="Standard verwenden" value={formBrandColor} onValueChange={setFormBrandColor} className="flex-1" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <label className="mb-1 block text-sm font-medium">Akzentfarbe</label>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={formAccentColor || "#D97706"} onChange={(e) => setFormAccentColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border border-default-200 p-0.5" />
+                        <Input size="sm" placeholder="Standard verwenden" value={formAccentColor} onValueChange={setFormAccentColor} className="flex-1" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex flex-1 items-end gap-2">
+                      <Input label="Profilfoto" size="sm" value={formAvatarUrl} onValueChange={setFormAvatarUrl} placeholder="Standard verwenden" className="flex-1" />
+                      <Button size="sm" variant="bordered" isLoading={uploading === "avatar"} onPress={() => uploadImage("avatar")} className="shrink-0">Hochladen</Button>
+                    </div>
+                    <div className="flex flex-1 items-end gap-2">
+                      <Input label="Hintergrundbild" size="sm" value={formBackgroundUrl} onValueChange={setFormBackgroundUrl} placeholder="Standard verwenden" className="flex-1" />
+                      <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Hochladen</Button>
+                    </div>
+                  </div>
+                  {formBackgroundUrl && (
+                    <div className="flex items-center gap-2">
+                      <span className="shrink-0 text-xs text-default-400">Overlay</span>
+                      <input type="range" min="0" max="1" step="0.05" value={formBackgroundOpacity} onChange={(e) => setFormBackgroundOpacity(parseFloat(e.target.value))} className="flex-1" />
+                      <span className="w-8 text-xs text-default-400">{Math.round(formBackgroundOpacity * 100)}%</span>
+                    </div>
+                  )}
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        </details>
 
         {/* Bottom save button */}
         <div className="flex justify-end pb-6">

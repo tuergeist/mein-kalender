@@ -58,7 +58,7 @@ export default function EventTypesPage() {
   const bookingBaseUrl = typeof window !== "undefined" ? `${window.location.origin}/book/${savedUsername}` : "";
 
   return (
-    <AppShell section="settings" settingsSection="events">
+    <AppShell section="event-types">
       <div className="mx-auto max-w-3xl space-y-6">
         <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">Terminarten</h1>
 

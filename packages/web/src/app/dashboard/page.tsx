@@ -106,7 +106,7 @@ export default function DashboardPage() {
   // Getting started steps
   const steps = [
     { done: sources.length >= 1, label: "Kalender verbinden", href: "/settings", linkText: "Kalender hinzufügen" },
-    { done: eventTypeCount > 0, label: "Event-Typ erstellen", href: "/settings/booking/new", linkText: "Event-Typ anlegen" },
+    { done: eventTypeCount > 0, label: "Terminart erstellen", href: "/settings/booking/new", linkText: "Terminart anlegen" },
     { done: sources.length >= 2, label: "Zweiten Kalender verbinden", href: "/settings", linkText: "Weiteren Kalender hinzufügen" },
     { done: syncTargetCount > 0, label: "Sync einrichten", href: "/sync", linkText: "Sync konfigurieren" },
   ];
