@@ -63,6 +63,7 @@ export default function DashboardPage() {
   const [eventTypeCount, setEventTypeCount] = useState(0);
   const [syncTargetCount, setSyncTargetCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [justCompleted, setJustCompleted] = useState(false);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -112,6 +113,18 @@ export default function DashboardPage() {
   ];
   const allStepsDone = !loading && steps.every((s) => s.done);
   const doneCount = steps.filter((s) => s.done).length;
+
+  useEffect(() => {
+    if (loading) return;
+    if (allStepsDone) {
+      if (sessionStorage.getItem("mk-setup-incomplete")) {
+        sessionStorage.removeItem("mk-setup-incomplete");
+        setJustCompleted(true);
+      }
+    } else {
+      sessionStorage.setItem("mk-setup-incomplete", "1");
+    }
+  }, [loading, allStepsDone]);
 
   return (
     <AppShell section="dashboard">
@@ -182,6 +195,14 @@ export default function DashboardPage() {
                 </>
               )}
             </Link>
+          </div>
+        )}
+
+        {/* Onboarding completion */}
+        {justCompleted && (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5" style={{ animation: "fadeInUp 0.4s ease-out both" }}>
+            <p className="font-display text-base font-semibold text-emerald-800">Einrichtung abgeschlossen.</p>
+            <p className="mt-1 text-sm text-emerald-600">Ab jetzt läuft alles automatisch.</p>
           </div>
         )}
 
