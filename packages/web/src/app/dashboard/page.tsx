@@ -115,7 +115,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell section="dashboard">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-3xl space-y-6">
         {/* Greeting */}
         <div>
           <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">
