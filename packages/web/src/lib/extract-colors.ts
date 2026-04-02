@@ -77,7 +77,7 @@ function kMeans(
 ): { center: [number, number, number]; count: number }[] {
   // Initialize centroids by sampling evenly
   const step = Math.floor(pixels.length / k);
-  let centroids: [number, number, number][] = [];
+  const centroids: [number, number, number][] = [];
   for (let i = 0; i < k; i++) {
     centroids.push([...pixels[i * step]]);
   }
