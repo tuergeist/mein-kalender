@@ -198,8 +198,24 @@ export default function BookingPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-400">Laden...</p>
+      <div className="flex min-h-screen items-center justify-center bg-stone-50 p-4">
+        <div className="w-full max-w-3xl overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
+          <div className="flex flex-col md:flex-row">
+            <div className="border-b border-stone-200 p-6 md:w-64 md:border-b-0 md:border-r">
+              <div className="h-4 w-20 animate-pulse rounded bg-stone-100" />
+              <div className="mt-3 h-6 w-36 animate-pulse rounded bg-stone-100" />
+              <div className="mt-4 h-3 w-16 animate-pulse rounded bg-stone-100" />
+            </div>
+            <div className="flex-1 p-6">
+              <div className="h-5 w-32 animate-pulse rounded bg-stone-100" />
+              <div className="mt-4 grid grid-cols-7 gap-2">
+                {Array.from({ length: 35 }).map((_, i) => (
+                  <div key={i} className="h-8 animate-pulse rounded-full bg-stone-50" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -271,14 +287,20 @@ export default function BookingPage() {
           <div className="flex-1 p-6 md:min-h-[420px]">
             {step === "confirmed" && confirmation && (
               <div className="text-center">
-                <div className="mb-4 text-4xl">&#10003;</div>
-                <h2 className="text-xl font-bold">Buchung bestätigt</h2>
-                <p className="mt-2 text-gray-600">
-                  {formatDate(confirmation.startTime)}, {formatTime(confirmation.startTime)} – {formatTime(confirmation.endTime)}
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                  Du erhältst eine Kalendereinladung per E-Mail.
-                </p>
+                <h2 className="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]" style={{ animation: "fadeInUp 0.4s ease-out both" }}>
+                  Steht.
+                </h2>
+                <div className="mt-6" style={{ animation: "fadeInUp 0.5s ease-out 0.3s both", opacity: 0 }}>
+                  <p className="text-sm text-stone-500">
+                    {formatDate(confirmation.startTime)}
+                  </p>
+                  <p className="mt-1 font-mono text-lg font-medium text-stone-800">
+                    {formatTime(confirmation.startTime)} – {formatTime(confirmation.endTime)}
+                  </p>
+                  <p className="mt-3 text-sm text-stone-400">
+                    Kalendereinladung ist unterwegs.
+                  </p>
+                </div>
                 {eventType.redirectUrl && (
                   <div className="mt-6">
                     <a

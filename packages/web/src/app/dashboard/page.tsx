@@ -121,47 +121,63 @@ export default function DashboardPage() {
           <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">
             {greeting}{userName ? `, ${userName}` : ""}.
           </h1>
-          {briefing && !loading && (
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              {briefing.totalEvents === 0
-                ? "Keine Termine heute. Genieß den freien Tag."
-                : `${briefing.totalEvents} Termine heute${briefing.organizationCount > 1 ? ` in ${briefing.organizationCount} Kalendern` : ""}.`}
-              {briefing.nextMeeting && briefing.nextMeeting.minutesUntil > 0 && (
-                <> Nächster: <span className="font-medium text-[var(--text-primary)]">{briefing.nextMeeting.title}</span> in {briefing.nextMeeting.minutesUntil} min.</>
-              )}
-            </p>
-          )}
+          {briefing && !loading && (() => {
+            const dayOfYear = Math.floor((+now - +new Date(now.getFullYear(), 0, 0)) / 86400000);
+            const dayOfWeek = now.getDay();
+            let subtitle = "";
+            if (briefing.totalEvents === 0) {
+              const opts = ["Keine Termine heute. Ein seltenes Gut.", "Terminfreier Tag. Selten, aber verdient.", "Heute: nur du und deine Ruhe."];
+              subtitle = opts[dayOfYear % opts.length];
+            } else if (briefing.totalEvents === 1) {
+              subtitle = "Nur ein Termin. Fast schon Urlaub.";
+            } else if (briefing.totalEvents >= 5) {
+              const opts = ["Voller Tag. Kaffee steht bereit?", `${briefing.totalEvents} Termine. Du schaffst das.`];
+              subtitle = opts[dayOfYear % opts.length];
+            } else {
+              subtitle = `${briefing.totalEvents} Termine heute${briefing.organizationCount > 1 ? ` in ${briefing.organizationCount} Kalendern` : ""}.`;
+            }
+            if (dayOfWeek === 1 && briefing.totalEvents > 0) subtitle = "Montag. Aber immerhin -- alles synchron.";
+            if (dayOfWeek === 5 && hour >= 14) subtitle = "Freitag Nachmittag. Die Kalender können warten.";
+            return (
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                {subtitle}
+                {briefing.nextMeeting && briefing.nextMeeting.minutesUntil > 0 && (
+                  <> Nächster: <span className="font-medium text-[var(--text-primary)]">{briefing.nextMeeting.title}</span> in {briefing.nextMeeting.minutesUntil} min.</>
+                )}
+              </p>
+            );
+          })()}
         </div>
 
         {/* Weekly Summary */}
         {weekly && !loading && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Link href="/calendar" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
-              <p className="font-display text-2xl font-bold">{weekly.meetings}</p>
+            <Link href="/calendar" className="group rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-all duration-200 ease-out hover:shadow-md hover:-translate-y-0.5">
+              <p className="font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left">{weekly.meetings}</p>
               <p className="text-xs text-[var(--text-tertiary)]">Termine diese Woche</p>
             </Link>
-            <Link href="/conflicts" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
-              <p className={`font-display text-2xl font-bold ${briefing && briefing.unresolvedConflicts > 0 ? "text-[var(--color-amber-600)]" : ""}`}>{briefing?.unresolvedConflicts ?? 0}</p>
+            <Link href="/conflicts" className="group rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-all duration-200 ease-out hover:shadow-md hover:-translate-y-0.5">
+              <p className={`font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left ${briefing && briefing.unresolvedConflicts > 0 ? "text-[var(--color-amber-600)]" : ""}`}>{briefing?.unresolvedConflicts ?? 0}</p>
               <p className="text-xs text-[var(--text-tertiary)]">Überschneidungen</p>
             </Link>
-            <Link href="/settings" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
-              <p className="font-display text-2xl font-bold">{weekly.calendarsConnected}</p>
+            <Link href="/settings" className="group rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-all duration-200 ease-out hover:shadow-md hover:-translate-y-0.5">
+              <p className="font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left">{weekly.calendarsConnected}</p>
               <p className="text-xs text-[var(--text-tertiary)]">Kalender verbunden</p>
             </Link>
-            <Link href="/sync-status" className="rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-shadow hover:shadow-md">
+            <Link href="/sync-status" className="group rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-all duration-200 ease-out hover:shadow-md hover:-translate-y-0.5">
               {weekly.syncSuccessRate >= 97 ? (
                 <>
-                  <p className="font-display text-2xl font-bold text-[#059669]">Alles OK</p>
+                  <p className="font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left text-[#059669]">Alles OK</p>
                   <p className="text-xs text-[var(--text-tertiary)]">Alle Kalender synchron</p>
                 </>
               ) : weekly.syncSuccessRate >= 90 ? (
                 <>
-                  <p className="font-display text-2xl font-bold text-[var(--color-amber-600)]">Teilweise</p>
+                  <p className="font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left text-[var(--color-amber-600)]">Teilweise</p>
                   <p className="text-xs text-[var(--text-tertiary)]">Einzelne Syncs verzögert</p>
                 </>
               ) : (
                 <>
-                  <p className="font-display text-2xl font-bold text-red-600">Gestört</p>
+                  <p className="font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left text-red-600">Gestört</p>
                   <p className="text-xs text-[var(--text-tertiary)]">Sync-Probleme erkannt</p>
                 </>
               )}
@@ -212,8 +228,8 @@ export default function DashboardPage() {
               {briefing.events.map((e) => {
                 const isPast = !e.allDay && new Date(e.endTime) < now;
                 return (
-                  <div key={e.id} className={`flex items-center gap-3 rounded-xl border border-[var(--border-default)] bg-white px-4 py-3 shadow-sm ${isPast ? "opacity-40" : ""}`}>
-                    <div className="h-9 w-1 shrink-0 rounded-full" style={{ backgroundColor: e.color || "#9F1239" }} />
+                  <div key={e.id} className={`group flex items-center gap-3 rounded-xl border border-[var(--border-default)] bg-white px-4 py-3 shadow-sm ${isPast ? "opacity-40" : ""}`}>
+                    <div className="h-9 w-1 shrink-0 rounded-full transition-all duration-150 ease-out group-hover:w-1.5" style={{ background: `linear-gradient(to bottom, ${e.color || "#9F1239"}, ${e.color || "#9F1239"}88)` }} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-[var(--text-primary)]">{e.title || "(Kein Titel)"}</p>
                       <p className="font-mono text-xs text-[var(--text-tertiary)]">

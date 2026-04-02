@@ -133,9 +133,9 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
         <div className="flex items-center gap-2">
           {heartbeat !== "unknown" && (
             <span className={`inline-block h-2 w-2 rounded-full ${
-              heartbeat === "ok" ? "bg-[#059669]" :
-              heartbeat === "warning" ? "bg-[var(--color-amber-500)] animate-pulse" :
-              "bg-red-500 animate-pulse"
+              heartbeat === "ok" ? "sync-heartbeat-ok" :
+              heartbeat === "warning" ? "sync-heartbeat-warning" :
+              "sync-heartbeat-error"
             }`} title={heartbeat === "ok" ? "Sync läuft" : heartbeat === "warning" ? "Sync verzögert" : "Sync-Fehler"} />
           )}
           {(session as any)?.role === "admin" && (
@@ -242,6 +242,12 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
               {sidebarContent}
             </div>
           )}
+
+          <div className="mt-auto border-t border-stone-100 px-3 py-3">
+            <p className="font-mono text-[10px] font-medium uppercase tracking-widest text-stone-300">
+              Mein Kalender
+            </p>
+          </div>
         </aside>
 
         {/* Main content */}

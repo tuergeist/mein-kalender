@@ -90,8 +90,10 @@ export default function ConflictsPage() {
           </div>
         ) : conflicts.length === 0 ? (
           <div className="rounded-xl border border-[var(--border-default)] bg-white p-8 text-center">
-            <p className="text-sm text-[var(--text-tertiary)]">
-              Keine Überschneidungen erkannt. Alles im grünen Bereich.
+            <div className="mx-auto mb-4 h-px w-32 origin-left bg-[#059669]" style={{ animation: "drawLine 1.2s ease-out both" }} />
+            <p className="font-display text-base font-semibold text-[#059669]">Alles synchron.</p>
+            <p className="mt-1 text-sm text-[var(--text-tertiary)]">
+              Keine Überschneidungen in den nächsten 30 Tagen.
             </p>
           </div>
         ) : (
