@@ -428,23 +428,36 @@ async function cloneToSingleTarget(
   });
 
   const DAY_MS = 24 * 60 * 60 * 1000;
+  const filterReasons: Record<string, number> = {};
   const filteredEvents = unmappedEvents.filter((event) => {
     const meta = event.providerMetadata as Record<string, unknown> | null;
-    if (targetEntry.skipWorkLocation) {
-      if (meta?.eventType === "workingLocation") return false;
+    if (targetEntry.skipWorkLocation && meta?.eventType === "workingLocation") {
+      filterReasons["workLocation"] = (filterReasons["workLocation"] || 0) + 1;
+      return false;
     }
     if (targetEntry.skipSingleDayAllDay && event.allDay) {
       const duration = new Date(event.endTime).getTime() - new Date(event.startTime).getTime();
-      if (duration <= DAY_MS) return false;
+      if (duration <= DAY_MS) {
+        filterReasons["singleDayAllDay"] = (filterReasons["singleDayAllDay"] || 0) + 1;
+        return false;
+      }
     }
-    if (targetEntry.skipDeclined) {
-      if (meta?.responseStatus === "declined") return false;
+    if (targetEntry.skipDeclined && meta?.responseStatus === "declined") {
+      filterReasons["declined"] = (filterReasons["declined"] || 0) + 1;
+      return false;
     }
     if (targetEntry.skipFree) {
-      if (meta?.showAs === "free" || meta?.showAs === "tentative" || meta?.transparency === "transparent") return false;
+      if (meta?.showAs === "free" || meta?.showAs === "tentative" || meta?.transparency === "transparent") {
+        filterReasons["free"] = (filterReasons["free"] || 0) + 1;
+        return false;
+      }
     }
     return true;
   });
+
+  if (Object.keys(filterReasons).length > 0) {
+    console.log(`[sync] Target ${targetEntry.id} filter breakdown: ${JSON.stringify(filterReasons)}`);
+  }
 
   // Build a fingerprint set from already-mapped events to avoid duplicating
   // events that appear across multiple source calendars
