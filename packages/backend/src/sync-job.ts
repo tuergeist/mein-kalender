@@ -330,12 +330,23 @@ export async function cloneToTarget(
   if (targetEntries.length === 0) return;
 
   console.log(`[sync] cloneToTarget: found ${targetEntries.length} target(s) for user ${userId}`);
+  const modifiedSourceIds = new Set<string>();
   for (const targetEntry of targetEntries) {
     try {
       await cloneToSingleTarget(prisma, userId, targetEntry);
+      modifiedSourceIds.add(targetEntry.source.id);
     } catch (err) {
       console.error(`[sync] cloneToSingleTarget failed for target ${targetEntry.id} (${targetEntry.source.provider}):`, err);
     }
+  }
+
+  // Reset sync tokens for target sources so the next source-sync picks up
+  // the [Sync] events we just created (Google delta doesn't return self-created events)
+  if (modifiedSourceIds.size > 0) {
+    await prisma.calendarSource.updateMany({
+      where: { id: { in: Array.from(modifiedSourceIds) } },
+      data: { syncToken: null },
+    });
   }
 }
 
