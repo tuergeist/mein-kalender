@@ -252,6 +252,111 @@ export default function SyncPage() {
     setCleanupLoading(false);
   }
 
+  function renderTargetForm() {
+    const currentTargetId = editingTargetId || formTargetCalendarId;
+    return (
+      <div className="mt-3 space-y-4 rounded-lg border border-primary-200 bg-primary-50/30 p-4">
+        <p className="text-sm font-semibold">{editingTargetId ? "Sync-Ziel bearbeiten" : "Neues Sync-Ziel"}</p>
+        {!editingTargetId && (
+          <Select
+            label="Zielkalender"
+            placeholder="Kalender auswählen"
+            selectedKeys={formTargetCalendarId ? new Set([formTargetCalendarId]) : new Set()}
+            onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFormTargetCalendarId(s); }}
+            size="sm"
+          >
+            {allWritableEntries.filter((e) => !targetCalendarIds.has(e.id)).map((entry) => (
+              <SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>
+                {entry.name} ({entry.sourceName})
+              </SelectItem>
+            ))}
+          </Select>
+        )}
+        <div className="flex gap-3">
+          <Select
+            label="Sync-Modus"
+            selectedKeys={new Set([formSyncMode])}
+            onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFormSyncMode(s); }}
+            size="sm"
+            className="flex-1"
+          >
+            <SelectItem key="full">Vollständig</SelectItem>
+            <SelectItem key="blocked">Nur blockiert (Belegt)</SelectItem>
+          </Select>
+          <Select
+            label="Sync-Zeitraum"
+            selectedKeys={new Set([String(formSyncDays)])}
+            onSelectionChange={(keys) => { const d = Number(Array.from(keys)[0]); if (d) setFormSyncDays(d); }}
+            size="sm"
+            className="w-44"
+          >
+            <SelectItem key="30">30 Tage</SelectItem>
+            <SelectItem key="60">60 Tage</SelectItem>
+            <SelectItem key="90">90 Tage</SelectItem>
+          </Select>
+        </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+          <Switch size="sm" isSelected={formSkipWorkLocation} onValueChange={setFormSkipWorkLocation}>
+            <span className="text-sm">Arbeitsort-Termine überspringen</span>
+          </Switch>
+          <Switch size="sm" isSelected={formSkipSingleDayAllDay} onValueChange={setFormSkipSingleDayAllDay}>
+            <span className="text-sm">Ganztags-Termine überspringen</span>
+          </Switch>
+          <Switch size="sm" isSelected={formSkipDeclined} onValueChange={setFormSkipDeclined}>
+            <span className="text-sm">Abgelehnte überspringen</span>
+          </Switch>
+          <Switch size="sm" isSelected={formSkipFree} onValueChange={setFormSkipFree}>
+            <span className="text-sm">Freie/vorläufige überspringen</span>
+          </Switch>
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-medium">Quellkalender</p>
+          <p className="mb-2 text-xs text-default-400">
+            {formSourceCalendarIds.length === 0 ? "Alle Kalender (Standard)" : `${formSourceCalendarIds.length} ausgewählt`}
+          </p>
+          <CheckboxGroup size="sm" value={formSourceCalendarIds} onChange={(vals) => setFormSourceCalendarIds(vals as string[])}>
+            {sources.map((source) => {
+              const entries = source.calendarEntries.filter((e) => e.id !== currentTargetId);
+              if (entries.length === 0) return null;
+              return (
+                <div key={source.id} className="mb-3">
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
+                      {{ google: "G", outlook: "O", proton: "P", ics: "I" }[source.provider] || "?"}
+                    </span>
+                    <span className="text-xs font-medium text-gray-500">{source.label || source.provider}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 pl-1">
+                    {entries.map((entry) => {
+                      const isOtherTarget = targetCalendarIds.has(entry.id) && entry.id !== currentTargetId;
+                      return (
+                        <Checkbox key={entry.id} value={entry.id}>
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color || "#3b82f6" }} />
+                            <span className="text-xs">{entry.name}</span>
+                            {isOtherTarget && (
+                              <span className="rounded bg-amber-100 px-1 py-0.5 text-[10px] font-medium text-amber-700">Sync-Ziel</span>
+                            )}
+                          </div>
+                        </Checkbox>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </CheckboxGroup>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button size="sm" variant="light" onPress={() => setShowTargetForm(false)}>Abbrechen</Button>
+          <Button size="sm" color="primary" isLoading={formSaving} isDisabled={!editingTargetId && !formTargetCalendarId} onPress={saveTarget}>
+            {editingTargetId ? "Speichern" : "Erstellen"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AppShell section="sync">
       <div className="mx-auto max-w-3xl space-y-6">
@@ -305,125 +410,43 @@ export default function SyncPage() {
             ) : (
               <div className="space-y-3">
                 {syncTargets.map((t) => (
-                  <div key={t.id} className="rounded-lg border border-default-200 p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{t.name}</span>
-                        <span className="rounded bg-default-100 px-1.5 py-0.5 text-xs font-medium text-default-600">
-                          {t.syncMode === "blocked" ? "Blockiert" : "Vollständig"}
-                        </span>
-                        <span className="text-xs text-default-400">{t.source.label || t.source.provider}</span>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="light" onPress={() => openEditTarget(t)}>Bearbeiten</Button>
-                        <Button size="sm" color="danger" variant="light" onPress={() => setDeleteTargetId(t.id)}>Entfernen</Button>
+                  <div key={t.id}>
+                    <div className="rounded-lg border border-default-200 p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium uppercase tracking-wider text-default-400">Ziel</span>
+                            <span className="text-default-300">&rarr;</span>
+                            <span className="font-semibold">{t.name}</span>
+                            <span className="text-xs text-default-400">({t.source.label || t.source.provider})</span>
+                          </div>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <span className="rounded bg-default-100 px-1.5 py-0.5 text-xs font-medium text-default-600">
+                              {t.syncMode === "blocked" ? "Nur Belegt" : "Vollständig"}
+                            </span>
+                            <span className="text-xs text-default-400">{t.syncDaysInAdvance} Tage</span>
+                          </div>
+                          <p className="mt-1 text-xs text-default-400">
+                            {t.sourceCalendars.length === 0 ? "Alle Quellkalender" : `Quellen: ${t.sourceCalendars.map((c) => c.name).join(", ")}`}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant={editingTargetId === t.id ? "bordered" : "light"} onPress={() => editingTargetId === t.id ? setShowTargetForm(false) : openEditTarget(t)}>
+                            {editingTargetId === t.id ? "Schließen" : "Bearbeiten"}
+                          </Button>
+                          <Button size="sm" color="danger" variant="light" onPress={() => setDeleteTargetId(t.id)}>Entfernen</Button>
+                        </div>
                       </div>
                     </div>
-                    <p className="mt-1 text-xs text-default-400">
-                      {t.sourceCalendars.length === 0 ? "Alle Quellkalender" : `Quellen: ${t.sourceCalendars.map((c) => c.name).join(", ")}`}
-                      {" "}&bull; {t.syncDaysInAdvance} Tage
-                    </p>
+                    {/* Inline edit form — directly below THIS target */}
+                    {showTargetForm && editingTargetId === t.id && renderTargetForm()}
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Add/Edit target form */}
-            {showTargetForm && (
-              <div className="mt-4 space-y-4 rounded-lg border border-primary-200 bg-primary-50/30 p-4">
-                <p className="text-sm font-semibold">{editingTargetId ? "Sync-Ziel bearbeiten" : "Neues Sync-Ziel"}</p>
-                {!editingTargetId && (
-                  <Select
-                    label="Zielkalender"
-                    placeholder="Kalender auswählen"
-                    selectedKeys={formTargetCalendarId ? new Set([formTargetCalendarId]) : new Set()}
-                    onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFormTargetCalendarId(s); }}
-                    size="sm"
-                  >
-                    {allWritableEntries.filter((e) => !targetCalendarIds.has(e.id)).map((entry) => (
-                      <SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>
-                        {entry.name} ({entry.sourceName})
-                      </SelectItem>
-                    ))}
-                  </Select>
-                )}
-                <div className="flex gap-3">
-                  <Select
-                    label="Sync-Modus"
-                    selectedKeys={new Set([formSyncMode])}
-                    onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; if (s) setFormSyncMode(s); }}
-                    size="sm"
-                    className="flex-1"
-                  >
-                    <SelectItem key="full">Vollständig</SelectItem>
-                    <SelectItem key="blocked">Nur blockiert (Belegt)</SelectItem>
-                  </Select>
-                  <Select
-                    label="Sync-Zeitraum"
-                    selectedKeys={new Set([String(formSyncDays)])}
-                    onSelectionChange={(keys) => { const d = Number(Array.from(keys)[0]); if (d) setFormSyncDays(d); }}
-                    size="sm"
-                    className="w-44"
-                  >
-                    <SelectItem key="30">30 Tage</SelectItem>
-                    <SelectItem key="60">60 Tage</SelectItem>
-                    <SelectItem key="90">90 Tage</SelectItem>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Switch size="sm" isSelected={formSkipWorkLocation} onValueChange={setFormSkipWorkLocation}>
-                    <span className="text-sm">Arbeitsort-Termine überspringen</span>
-                  </Switch>
-                  <Switch size="sm" isSelected={formSkipSingleDayAllDay} onValueChange={setFormSkipSingleDayAllDay}>
-                    <span className="text-sm">Eintägige Ganztags-Termine überspringen</span>
-                  </Switch>
-                  <Switch size="sm" isSelected={formSkipDeclined} onValueChange={setFormSkipDeclined}>
-                    <span className="text-sm">Abgelehnte Termine überspringen</span>
-                  </Switch>
-                  <Switch size="sm" isSelected={formSkipFree} onValueChange={setFormSkipFree}>
-                    <span className="text-sm">Freie/vorläufige Termine überspringen</span>
-                  </Switch>
-                </div>
-                <div>
-                  <p className="mb-2 text-sm font-medium">Quellkalender</p>
-                  <p className="mb-2 text-xs text-default-400">
-                    {formSourceCalendarIds.length === 0 ? "Alle Kalender (Standard)" : `${formSourceCalendarIds.length} ausgewählt`}
-                  </p>
-                  <CheckboxGroup size="sm" value={formSourceCalendarIds} onChange={(vals) => setFormSourceCalendarIds(vals as string[])}>
-                    {sources.map((source) => {
-                      const entries = source.calendarEntries.filter((e) => e.id !== formTargetCalendarId);
-                      if (entries.length === 0) return null;
-                      return (
-                        <div key={source.id} className="mb-3">
-                          <div className="mb-1 flex items-center gap-1.5">
-                            <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
-                              {{ google: "G", outlook: "O", proton: "P", ics: "I" }[source.provider] || "?"}
-                            </span>
-                            <span className="text-xs font-medium text-gray-500">{source.label || source.provider}</span>
-                          </div>
-                          <div className="flex flex-col gap-0.5 pl-1">
-                            {entries.map((entry) => (
-                              <Checkbox key={entry.id} value={entry.id}>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color || "#3b82f6" }} />
-                                  <span className="text-xs">{entry.name}</span>
-                                </div>
-                              </Checkbox>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </CheckboxGroup>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="light" onPress={() => setShowTargetForm(false)}>Abbrechen</Button>
-                  <Button size="sm" color="primary" isLoading={formSaving} isDisabled={!editingTargetId && !formTargetCalendarId} onPress={saveTarget}>
-                    {editingTargetId ? "Speichern" : "Erstellen"}
-                  </Button>
-                </div>
-              </div>
-            )}
+            {/* Add form (not editing) — at the bottom */}
+            {showTargetForm && !editingTargetId && renderTargetForm()}
 
             <Divider className="my-4" />
             <p className="mb-2 text-sm font-medium">[Sync]-Termine aufräumen</p>
