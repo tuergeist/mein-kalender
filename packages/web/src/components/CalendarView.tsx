@@ -8,7 +8,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import deLocale from "@fullcalendar/core/locales/de";
-import { Button, ButtonGroup, Switch } from "@heroui/react";
+import { Button, ButtonGroup } from "@heroui/react";
 import { apiAuthFetch } from "@/lib/api";
 import { EventDetailModal } from "./EventDetailModal";
 
@@ -42,7 +42,6 @@ export function CalendarView({ initialDate, initialTime }: { initialDate?: strin
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null);
-  const [hideSyncEvents, setHideSyncEvents] = useState(true);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -164,12 +163,10 @@ export function CalendarView({ initialDate, initialTime }: { initialDate?: strin
       let filtered = visibleCalendarIds
         ? allEvents.filter((e) => visibleCalendarIds.has(e.extendedProps.calendarEntryId))
         : allEvents;
-      if (hideSyncEvents) {
-        filtered = filtered.filter((e) => !e.title.startsWith("[Sync] "));
-      }
+      filtered = filtered.filter((e) => !e.title.startsWith("[Sync] "));
       return filtered;
     },
-    [allEvents, visibleCalendarIds, hideSyncEvents]
+    [allEvents, visibleCalendarIds]
   );
 
   function handleViewChange(view: string) {
@@ -342,9 +339,6 @@ export function CalendarView({ initialDate, initialTime }: { initialDate?: strin
             Liste
           </Button>
         </ButtonGroup>
-        <Switch size="sm" isSelected={hideSyncEvents} onValueChange={setHideSyncEvents}>
-          <span className="text-xs text-gray-500">[Sync] ausblenden</span>
-        </Switch>
         <Button
           size="sm"
           variant="flat"
