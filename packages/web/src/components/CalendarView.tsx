@@ -33,12 +33,13 @@ interface CalendarEvent {
   };
 }
 
-export function CalendarView({ initialDate, initialTime }: { initialDate?: string; initialTime?: string }) {
+export function CalendarView({ initialDate, initialTime, initialView, conflictEventIds }: { initialDate?: string; initialTime?: string; initialView?: string; conflictEventIds?: string[] }) {
   const { data: session } = useSession();
   const calendarRef = useRef<FullCalendar>(null);
   const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
   const [visibleCalendarIds, setVisibleCalendarIds] = useState<Set<string> | null>(null);
-  const [currentView, setCurrentView] = useState("timeGridWeek");
+  const [currentView, setCurrentView] = useState(initialView === "day" ? "timeGridDay" : "timeGridWeek");
+  const conflictIds = conflictEventIds ? new Set(conflictEventIds) : null;
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null);
@@ -195,7 +196,8 @@ export function CalendarView({ initialDate, initialTime }: { initialDate?: strin
     }
   }
 
-  const eventContent = useCallback((arg: { event: { extendedProps: Record<string, unknown>; title: string }; timeText: string }) => {
+  const eventContent = useCallback((arg: { event: { id: string; extendedProps: Record<string, unknown>; title: string }; timeText: string }) => {
+    const isConflict = conflictIds?.has(arg.event.id) ?? false;
     const meta = arg.event.extendedProps?.providerMetadata as Record<string, unknown> | undefined;
     const eventType = meta?.eventType as string | undefined;
     const transparency = meta?.transparency as string | undefined;
@@ -230,16 +232,17 @@ export function CalendarView({ initialDate, initialTime }: { initialDate?: strin
 
     const ignoredStyle = isIgnored ? "opacity:0.45; text-decoration:line-through;" : "";
     const opacityStyle = isFree && !isIgnored ? "opacity:0.6;" : "";
+    const conflictStyle = isConflict ? "outline:2px solid #DC2626; outline-offset:-2px; border-radius:6px;" : "";
 
     return {
-      html: `<div class="fc-event-main-frame" style="${ignoredStyle}${opacityStyle}">
+      html: `<div class="fc-event-main-frame" style="${ignoredStyle}${opacityStyle}${conflictStyle}">
         ${arg.timeText ? `<div class="fc-event-time">${arg.timeText}</div>` : ""}
         <div class="fc-event-title-container">
           <div class="fc-event-title fc-sticky">${(icon ? icon + " " : "") + title}</div>
         </div>
       </div>`,
     };
-  }, []);
+  }, [conflictIds]);
 
   const calendarTitle = calendarRef.current?.getApi()?.view?.title || "";
 
@@ -355,7 +358,7 @@ export function CalendarView({ initialDate, initialTime }: { initialDate?: strin
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
           initialDate={initialDate}
-          initialView={isMobile ? "listWeek" : "timeGridWeek"}
+          initialView={initialView === "day" ? "timeGridDay" : isMobile ? "listWeek" : "timeGridWeek"}
           nowIndicator={true}
           scrollTime={`${String(Math.max(0, new Date().getHours() - 2)).padStart(2, "0")}:00:00`}
           locale={deLocale}

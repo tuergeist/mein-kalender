@@ -8,6 +8,8 @@ import { apiAuthFetch } from "@/lib/api";
 
 interface Conflict {
   id: string;
+  eventAId: string;
+  eventBId: string;
   eventATitle: string;
   eventBTitle: string;
   eventAStart: string;
@@ -125,7 +127,7 @@ export default function ConflictsPage() {
                 </div>
                 <div className="mt-3 flex gap-2">
                   <Link
-                    href={`/calendar?date=${dateParam(c.eventAStart)}&time=${timeParam(c.eventAStart)}`}
+                    href={`/calendar?date=${dateParam(c.eventAStart)}&time=${timeParam(c.eventAStart)}&view=day&conflict=${c.eventAId},${c.eventBId}`}
                     className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-rose-700)] shadow-sm border border-[var(--border-default)] hover:shadow-md transition-shadow"
                   >
                     Im Kalender anzeigen

@@ -10,10 +10,12 @@ function CalendarContent() {
   const searchParams = useSearchParams();
   const initialDate = searchParams.get("date") || undefined;
   const initialTime = searchParams.get("time") || undefined;
+  const initialView = searchParams.get("view") || undefined;
+  const conflictIds = searchParams.get("conflict")?.split(",") || undefined;
 
   return (
     <AppShell section="calendar" sidebarContent={<CalendarSidebar />}>
-      <CalendarView initialDate={initialDate} initialTime={initialTime} />
+      <CalendarView initialDate={initialDate} initialTime={initialTime} initialView={initialView} conflictEventIds={conflictIds} />
     </AppShell>
   );
 }
