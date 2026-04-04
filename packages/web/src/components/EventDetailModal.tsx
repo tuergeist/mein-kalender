@@ -15,6 +15,7 @@ import {
 } from "@heroui/react";
 import { apiAuthFetch } from "@/lib/api";
 import { LocationMap } from "./LocationMap";
+import { DayTimeline } from "./DayTimeline";
 
 function stripHtml(html: string): string {
   return html
@@ -205,11 +206,19 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
               </div>
 
               <div className="text-sm">
-                <p className="text-default-500">
-                  {new Date(event.start).toLocaleString()} &mdash;{" "}
-                  {new Date(event.end).toLocaleString()}
+                <p className="font-mono text-default-500">
+                  {new Date(event.start).toLocaleDateString("de-DE", { day: "numeric", month: "numeric", year: "numeric" })}{" "}
+                  {new Date(event.start).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                  {" – "}
+                  {new Date(event.end).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
                 </p>
               </div>
+
+              <DayTimeline
+                eventStart={event.start}
+                eventEnd={event.end}
+                eventColor={event.extendedProps.calendarColor}
+              />
 
               {event.extendedProps.location && (
                 <LocationMap location={event.extendedProps.location} />
