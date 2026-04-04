@@ -87,6 +87,17 @@ async function scheduleSyncJobs() {
     select: { id: true, userId: true, syncInterval: true },
   });
 
+  const activeIds = new Set(sources.map((s) => `sync-${s.id}`));
+
+  // Remove orphaned schedulers that no longer have a source in the DB
+  const schedulers = await syncQueue.getJobSchedulers();
+  for (const sched of schedulers) {
+    if (sched.id && !activeIds.has(sched.id)) {
+      await syncQueue.removeJobScheduler(sched.id);
+      console.log(`[sync] Removed orphaned scheduler: ${sched.id}`);
+    }
+  }
+
   for (const source of sources) {
     await syncQueue.upsertJobScheduler(
       `sync-${source.id}`,
