@@ -14,6 +14,8 @@ interface CalendarEntry {
   id: string;
   name: string;
   color: string;
+  userColor: string | null;
+  enabled: boolean;
   readOnly: boolean;
 }
 
@@ -329,10 +331,11 @@ export default function SyncPage() {
                   <div className="flex flex-col gap-0.5 pl-1">
                     {entries.map((entry) => {
                       const isOtherTarget = targetCalendarIds.has(entry.id) && entry.id !== currentTargetId;
+                      const effectiveColor = entry.userColor || entry.color || "#3b82f6";
                       return (
                         <Checkbox key={entry.id} value={entry.id}>
-                          <div className="flex items-center gap-1.5">
-                            <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color || "#3b82f6" }} />
+                          <div className={`flex items-center gap-1.5 ${!entry.enabled ? "opacity-40" : ""}`}>
+                            <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: effectiveColor }} />
                             <span className="text-xs">{entry.name}</span>
                             {isOtherTarget && (
                               <span className="rounded bg-amber-100 px-1 py-0.5 text-[10px] font-medium text-amber-700">Sync-Ziel</span>
@@ -538,8 +541,8 @@ export default function SyncPage() {
                         <div className="flex flex-col gap-0.5 pl-1">
                           {source.calendarEntries.map((entry) => (
                             <Checkbox key={entry.id} value={entry.id}>
-                              <div className="flex items-center gap-1.5">
-                                <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color || "#3b82f6" }} />
+                              <div className={`flex items-center gap-1.5 ${!entry.enabled ? "opacity-40" : ""}`}>
+                                <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.userColor || entry.color || "#3b82f6" }} />
                                 <span className="text-xs">{entry.name}</span>
                               </div>
                             </Checkbox>
