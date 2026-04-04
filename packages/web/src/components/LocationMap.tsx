@@ -16,16 +16,21 @@ export function LocationMap({ location, className = "" }: LocationMapProps) {
 
   if (provider === "none") return null;
 
-  // If location is a URL (meeting link), just show it as a link — no map
+  // Detect online meeting locations — no map for these
   const isUrl = /^https?:\/\//i.test(location);
-  if (isUrl) {
-    const isMeeting = /meet\.google|teams\.microsoft|zoom\.(us|com)/i.test(location);
+  const isMeetingText = /microsoft teams|google meet|zoom meeting|webex|goto ?meeting/i.test(location);
+
+  if (isUrl || isMeetingText) {
+    const isMeetingUrl = /meet\.google|teams\.microsoft|zoom\.(us|com)/i.test(location);
+    const label = (isMeetingUrl || isMeetingText) ? "Online-Meeting" : location;
     return (
       <p className={`text-sm ${className}`}>
         <span className="text-default-400">Ort: </span>
-        <a href={location} target="_blank" rel="noopener noreferrer" className="text-rose-700 hover:underline">
-          {isMeeting ? "Online-Meeting" : location}
-        </a>
+        {isUrl ? (
+          <a href={location} target="_blank" rel="noopener noreferrer" className="text-rose-700 hover:underline">{label}</a>
+        ) : (
+          <span className="text-default-600">{location}</span>
+        )}
       </p>
     );
   }
