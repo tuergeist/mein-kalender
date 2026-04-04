@@ -414,8 +414,7 @@ export default function SyncPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium uppercase tracking-wider text-default-400">Ziel</span>
-                            <span className="text-default-300">&rarr;</span>
+                            <span className="text-xs text-default-400">Sync-Ziel:</span>
                             <span className="font-semibold">{t.name}</span>
                             <span className="text-xs text-default-400">({t.source.label || t.source.provider})</span>
                           </div>
