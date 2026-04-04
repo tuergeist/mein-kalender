@@ -21,6 +21,17 @@ interface WeeklySummary {
   latency: { p50: number; p95: number };
 }
 
+interface CloneTarget {
+  id: string;
+  name: string;
+  provider: string;
+  label: string | null;
+  syncMode: string;
+  totalMappings: number;
+  syncedThisWeek: number;
+  lastSyncedAt: string | null;
+}
+
 function providerName(p: string) {
   if (p === "google") return "Google";
   if (p === "microsoft" || p === "outlook") return "Outlook";
@@ -48,6 +59,7 @@ export default function SyncStatusPage() {
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
   const [sources, setSources] = useState<SyncSource[]>([]);
   const [weekly, setWeekly] = useState<WeeklySummary | null>(null);
+  const [cloneTargets, setCloneTargets] = useState<CloneTarget[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,9 +67,11 @@ export default function SyncStatusPage() {
     Promise.all([
       apiAuthFetch("/api/dashboard/sync-status", accessToken).then((r) => r.ok ? r.json() : { sources: [] }),
       apiAuthFetch("/api/dashboard/weekly-summary", accessToken).then((r) => r.ok ? r.json() : null),
-    ]).then(([s, w]) => {
+      apiAuthFetch("/api/dashboard/clone-stats", accessToken).then((r) => r.ok ? r.json() : { targets: [] }),
+    ]).then(([s, w, c]) => {
       setSources(s.sources || []);
       setWeekly(w);
+      setCloneTargets(c.targets || []);
       setLoading(false);
     });
   }, [accessToken]);
@@ -146,6 +160,30 @@ export default function SyncStatusPage() {
               </div>
             )}
           </>
+        )}
+
+        {/* Clone/Target Sync Stats */}
+        {cloneTargets.length > 0 && (
+          <div className="rounded-xl border border-[var(--border-default)] bg-white px-5 py-4 shadow-sm">
+            <h2 className="font-display text-sm font-semibold text-[var(--text-secondary)]">Kalender-Sync (Clone)</h2>
+            <div className="mt-3 space-y-3">
+              {cloneTargets.map((t) => (
+                <div key={t.id} className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{t.name}</p>
+                    <p className="font-mono text-xs text-[var(--text-tertiary)]">
+                      {t.syncMode === "blocked" ? "Nur Belegt" : "Vollständig"}
+                      {t.lastSyncedAt && <> · Letzter Sync: {formatDateTime(t.lastSyncedAt)}</>}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-display text-lg font-bold">{t.totalMappings}</p>
+                    <p className="text-[10px] text-[var(--text-tertiary)]">Events</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         <Link

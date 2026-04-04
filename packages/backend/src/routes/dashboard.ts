@@ -176,4 +176,47 @@ export async function dashboardRoutes(app: FastifyInstance) {
 
     return { ok: true };
   });
+
+  // Clone/target sync statistics
+  app.get("/api/dashboard/clone-stats", async (request) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+
+    const targets = await prisma.calendarEntry.findMany({
+      where: { isTarget: true, source: { userId: user.id } },
+      select: {
+        id: true,
+        name: true,
+        syncMode: true,
+        source: { select: { provider: true, label: true } },
+      },
+    });
+
+    const stats = await Promise.all(
+      targets.map(async (t) => {
+        const [total, recentCount, lastMapping] = await Promise.all([
+          prisma.targetEventMapping.count({ where: { targetCalendarEntryId: t.id } }),
+          prisma.targetEventMapping.count({
+            where: { targetCalendarEntryId: t.id, lastSyncedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+          }),
+          prisma.targetEventMapping.findFirst({
+            where: { targetCalendarEntryId: t.id },
+            orderBy: { lastSyncedAt: "desc" },
+            select: { lastSyncedAt: true },
+          }),
+        ]);
+        return {
+          id: t.id,
+          name: t.name,
+          provider: t.source.provider,
+          label: t.source.label,
+          syncMode: t.syncMode,
+          totalMappings: total,
+          syncedThisWeek: recentCount,
+          lastSyncedAt: lastMapping?.lastSyncedAt || null,
+        };
+      })
+    );
+
+    return { targets: stats };
+  });
 }
