@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
+import { conflictQueue } from "../queues";
 
 interface AuthenticatedRequest {
   user: AuthUser;
@@ -116,6 +117,12 @@ export async function eventsRoutes(app: FastifyInstance) {
       data: { ignored: request.body.ignored },
     });
 
+    conflictQueue.add("detect-conflicts", { userId: user.id }, {
+      jobId: `conflicts-${user.id}-ignore-${Date.now()}`,
+      removeOnComplete: 50,
+      removeOnFail: 20,
+    }).catch(() => {});
+
     return updated;
   });
 
@@ -144,6 +151,12 @@ export async function eventsRoutes(app: FastifyInstance) {
       },
       data: { ignored },
     });
+
+    conflictQueue.add("detect-conflicts", { userId: user.id }, {
+      jobId: `conflicts-${user.id}-ignore-${Date.now()}`,
+      removeOnComplete: 50,
+      removeOnFail: 20,
+    }).catch(() => {});
 
     return { count: result.count };
   });
