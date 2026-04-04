@@ -183,7 +183,7 @@ export function CalendarSidebar() {
             onClick={() => setShowDisabled(!showDisabled)}
             className="text-[10px] font-medium text-stone-400 hover:text-stone-600"
           >
-            {showDisabled ? "Alle" : "Inaktive"}
+            {showDisabled ? "Nur aktive" : "Alle anzeigen"}
           </button>
         )}
       </div>
