@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Spinner, Button } from "@heroui/react";
+import { Spinner } from "@heroui/react";
 import { apiAuthFetch } from "@/lib/api";
 
 const COLOR_PALETTE = [
@@ -40,7 +40,6 @@ interface CalendarSource {
 export function CalendarSidebar() {
   const { data: session } = useSession();
   const [sources, setSources] = useState<CalendarSource[]>([]);
-  const [syncing, setSyncing] = useState(false);
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
   useEffect(() => {
@@ -111,17 +110,6 @@ export function CalendarSidebar() {
     });
   }
 
-  async function handleSyncNow() {
-    if (!accessToken) return;
-
-    setSyncing(true);
-    await apiAuthFetch("/api/sync-all", accessToken, { method: "POST" });
-    setTimeout(() => {
-      loadSources();
-      setSyncing(false);
-    }, 3000);
-  }
-
   const [colorPickerOpen, setColorPickerOpen] = useState<string | null>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
 
@@ -180,21 +168,24 @@ export function CalendarSidebar() {
     ics: "I",
   };
 
+  const [showDisabled, setShowDisabled] = useState(false);
+  const hasDisabled = sources.some((s) => s.calendarEntries.some((e) => !e.enabled));
+
   return (
     <div className="flex flex-col gap-1 overflow-hidden p-3">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="font-mono text-[10px] font-medium uppercase tracking-widest text-stone-400">
           Kalender
         </h2>
-        <Button
-          size="sm"
-          variant="light"
-          isLoading={syncing}
-          onPress={handleSyncNow}
-          className="h-7 min-w-0 px-2 text-xs text-stone-500"
-        >
-          {syncing ? "" : "Sync"}
-        </Button>
+        {hasDisabled && (
+          <button
+            type="button"
+            onClick={() => setShowDisabled(!showDisabled)}
+            className="text-[10px] font-medium text-stone-400 hover:text-stone-600"
+          >
+            {showDisabled ? "Alle" : "Inaktive"}
+          </button>
+        )}
       </div>
 
       {sources.length === 0 && (
@@ -217,7 +208,7 @@ export function CalendarSidebar() {
           </div>
 
           <div className="flex flex-col">
-            {source.calendarEntries.map((entry) => {
+            {source.calendarEntries.filter((e) => showDisabled || e.enabled).map((entry) => {
               const effectiveColor = getEffectiveColor(entry);
               return (
                 <div key={entry.id} className="relative flex min-w-0 items-center gap-1.5 rounded px-1 py-1 hover:bg-stone-50">
