@@ -52,6 +52,13 @@ interface Booking {
   eventType: { name: string };
 }
 
+interface BillingInfo {
+  plan: "monthly" | "yearly" | null;
+  status: "active" | "pending" | "cancelled" | null;
+  trialEndsAt: string | null;
+  isActive: boolean;
+}
+
 export default function DashboardPage() {
   const { data: session } = useSession();
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
@@ -62,6 +69,7 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [eventTypeCount, setEventTypeCount] = useState(0);
   const [syncTargetCount, setSyncTargetCount] = useState(0);
+  const [billing, setBilling] = useState<BillingInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [justCompleted, setJustCompleted] = useState(false);
 
@@ -75,13 +83,15 @@ export default function DashboardPage() {
       apiAuthFetch("/api/bookings", accessToken).then((r) => r.ok ? r.json() : []),
       apiAuthFetch("/api/event-types", accessToken).then((r) => r.ok ? r.json() : []),
       apiAuthFetch("/api/sync-targets", accessToken).then((r) => r.ok ? r.json() : []),
-    ]).then(([b, w, s, bks, et, st]) => {
+      apiAuthFetch("/api/billing", accessToken).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([b, w, s, bks, et, st, bl]) => {
       setBriefing(b);
       setWeekly(w);
       setSources(s.sources || []);
       setBookings(bks);
       setEventTypeCount(Array.isArray(et) ? et.length : 0);
       setSyncTargetCount(Array.isArray(st?.targets) ? st.targets.length : Array.isArray(st) ? st.length : 0);
+      if (bl) setBilling(bl);
       setLoading(false);
     });
   }, [accessToken]);
@@ -90,6 +100,10 @@ export default function DashboardPage() {
   const userName = session?.user?.name || session?.user?.email?.split("@")[0] || "";
   const hour = now.getHours();
   const greeting = hour < 12 ? "Guten Morgen" : hour < 18 ? "Guten Tag" : "Guten Abend";
+
+  const trialDaysLeft = billing?.trialEndsAt && !billing.plan
+    ? Math.max(0, Math.ceil((new Date(billing.trialEndsAt).getTime() - Date.now()) / 86400000))
+    : null;
 
   const upcomingBookings = bookings
     .filter((b) => b.status === "confirmed" && new Date(b.startTime) > now)
@@ -161,6 +175,17 @@ export default function DashboardPage() {
             );
           })()}
         </div>
+
+        {/* Trial banner */}
+        {!loading && trialDaysLeft !== null && trialDaysLeft > 0 && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
+            <span>Testphase: noch {trialDaysLeft} {trialDaysLeft === 1 ? "Tag" : "Tage"}</span>
+            <span className="text-amber-300">·</span>
+            <Link href="/settings/billing" className="font-medium text-rose-700 hover:underline">
+              Jetzt upgraden →
+            </Link>
+          </div>
+        )}
 
         {/* Weekly Summary */}
         {weekly && !loading && (

@@ -28,12 +28,16 @@ export async function authRoutes(app: FastifyInstance) {
 
     const skipVerification = process.env.SKIP_EMAIL_VERIFICATION === "true";
 
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
     const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
         displayName: displayName || null,
         emailVerified: skipVerification,
+        trialEndsAt,
       },
     });
 
@@ -83,11 +87,15 @@ export async function authRoutes(app: FastifyInstance) {
     let user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
       user = await prisma.user.create({
         data: {
           email,
           displayName: name || null,
           emailVerified: true, // OAuth emails are pre-verified
+          trialEndsAt,
         },
       });
     }

@@ -25,6 +25,7 @@ import { userImageRoutes } from "./routes/user-images";
 import { syncTargetsRoutes } from "./routes/sync-targets";
 import { dashboardRoutes } from "./routes/dashboard";
 import { feedbackRoutes } from "./routes/feedback";
+import { billingRoutes } from "./routes/billing";
 
 validateEnv();
 
@@ -53,6 +54,7 @@ server.register(userImageRoutes);
 server.register(syncTargetsRoutes);
 server.register(dashboardRoutes);
 server.register(feedbackRoutes);
+server.register(billingRoutes);
 
 async function seedAdminUser() {
   const email = "admin@admin.local";

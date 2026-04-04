@@ -23,7 +23,7 @@ import Link from "next/link";
 import { apiAuthFetch } from "@/lib/api";
 
 export type AppSection = "dashboard" | "calendar" | "event-types" | "sync" | "settings";
-export type SettingsSubSection = "sources" | "events" | "booking" | "profile" | "other";
+export type SettingsSubSection = "sources" | "events" | "booking" | "profile" | "billing" | "other";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -36,6 +36,7 @@ const SETTINGS_NAV: { key: SettingsSubSection; label: string; href: string; icon
   { key: "sources", label: "Kalenderquellen", href: "/settings", icon: "M4 4v5h5M20 20v-5h-5M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" },
   { key: "booking", label: "Buchungsstandards", href: "/settings/booking", icon: "M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2M9 14l2 2 4-4M12 2v4" },
   { key: "profile", label: "Profil", href: "/settings/profile", icon: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z" },
+  { key: "billing", label: "Abrechnung", href: "/settings/billing", icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" },
   { key: "other", label: "Einstellungen", href: "/settings/preferences", icon: "M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" },
 ];
 

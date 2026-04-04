@@ -21,6 +21,11 @@ model User {
   backgroundUrl          String?
   backgroundOpacity      Float?
   bookingCalendarEntryId String?
+  mollieCustomerId       String?
+  subscriptionId         String?
+  subscriptionStatus     String?  // "active", "pending", "cancelled", "suspended"
+  subscriptionPlan       String?  // "monthly", "yearly"
+  trialEndsAt            DateTime?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
