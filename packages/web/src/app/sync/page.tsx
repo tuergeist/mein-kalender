@@ -254,10 +254,10 @@ export default function SyncPage() {
     setCleanupLoading(false);
   }
 
-  function renderTargetForm() {
+  function renderTargetFormContent() {
     const currentTargetId = editingTargetId || formTargetCalendarId;
     return (
-      <div className="mt-3 space-y-4 rounded-lg border border-primary-200 bg-primary-50/30 p-4">
+      <>
         <p className="text-sm font-semibold">{editingTargetId ? "Sync-Ziel bearbeiten" : "Neues Sync-Ziel"}</p>
         {!editingTargetId && (
           <Select
@@ -346,13 +346,7 @@ export default function SyncPage() {
             })}
           </CheckboxGroup>
         </div>
-        <div className="flex justify-end gap-2">
-          <Button size="sm" variant="light" onPress={() => setShowTargetForm(false)}>Abbrechen</Button>
-          <Button size="sm" color="primary" isLoading={formSaving} isDisabled={!editingTargetId && !formTargetCalendarId} onPress={saveTarget}>
-            {editingTargetId ? "Speichern" : "Erstellen"}
-          </Button>
-        </div>
-      </div>
+      </>
     );
   }
 
@@ -410,41 +404,61 @@ export default function SyncPage() {
               <div className="space-y-3">
                 {syncTargets.map((t) => (
                   <div key={t.id}>
-                    <div className="rounded-lg border border-default-200 p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-default-400">Sync-Ziel:</span>
-                            <span className="font-semibold">{t.name}</span>
-                            <span className="text-xs text-default-400">({t.source.label || t.source.provider})</span>
-                          </div>
-                          <div className="mt-1.5 flex items-center gap-2">
-                            <span className="rounded bg-default-100 px-1.5 py-0.5 text-xs font-medium text-default-600">
-                              {t.syncMode === "blocked" ? "Nur Belegt" : "Vollständig"}
-                            </span>
-                            <span className="text-xs text-default-400">{t.syncDaysInAdvance} Tage</span>
-                          </div>
-                          <p className="mt-1 text-xs text-default-400">
-                            {t.sourceCalendars.length === 0 ? "Alle Quellkalender" : `Quellen: ${t.sourceCalendars.map((c) => c.name).join(", ")}`}
-                          </p>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button size="sm" variant={editingTargetId === t.id ? "bordered" : "light"} onPress={() => editingTargetId === t.id ? setShowTargetForm(false) : openEditTarget(t)}>
-                            {editingTargetId === t.id ? "Schließen" : "Bearbeiten"}
-                          </Button>
-                          <Button size="sm" color="danger" variant="light" onPress={() => setDeleteTargetId(t.id)}>Entfernen</Button>
+                    {showTargetForm && editingTargetId === t.id ? (
+                      /* Edit mode — full form with actions */
+                      <div className="space-y-4 rounded-lg border border-primary-200 bg-primary-50/30 p-4">
+                        {renderTargetFormContent()}
+                        <div className="flex items-center gap-2 border-t border-primary-100 pt-3">
+                          <Button size="sm" color="danger" variant="flat" onPress={() => { setShowTargetForm(false); setDeleteTargetId(t.id); }}>Löschen</Button>
+                          <div className="flex-1" />
+                          <Button size="sm" variant="light" onPress={() => setShowTargetForm(false)}>Abbrechen</Button>
+                          <Button size="sm" color="primary" isLoading={formSaving} onPress={saveTarget}>Speichern</Button>
                         </div>
                       </div>
-                    </div>
-                    {/* Inline edit form — directly below THIS target */}
-                    {showTargetForm && editingTargetId === t.id && renderTargetForm()}
+                    ) : (
+                      /* Read mode — clickable 2-column card */
+                      <button
+                        type="button"
+                        onClick={() => openEditTarget(t)}
+                        className="w-full rounded-lg border border-default-200 p-4 text-left transition-all hover:border-default-300 hover:shadow-sm"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-default-400">Quellen</p>
+                            <p className="mt-0.5 text-sm font-medium truncate">
+                              {t.sourceCalendars.length === 0 ? "Alle Kalender" : t.sourceCalendars.map((c) => c.name).join(", ")}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-default-300">&rarr;</span>
+                          <div className="min-w-0 flex-1 text-right">
+                            <p className="text-xs text-default-400">Zielkalender</p>
+                            <p className="mt-0.5 text-sm font-medium truncate">{t.name}</p>
+                            <p className="text-[10px] text-default-400">{t.source.label || t.source.provider}</p>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="rounded bg-default-100 px-1.5 py-0.5 text-[10px] font-medium text-default-500">
+                            {t.syncMode === "blocked" ? "Nur Belegt" : "Vollständig"}
+                          </span>
+                          <span className="text-[10px] text-default-400">{t.syncDaysInAdvance} Tage</span>
+                        </div>
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
             )}
 
             {/* Add form (not editing) — at the bottom */}
-            {showTargetForm && !editingTargetId && renderTargetForm()}
+            {showTargetForm && !editingTargetId && (
+              <div className="space-y-4 rounded-lg border border-primary-200 bg-primary-50/30 p-4">
+                {renderTargetFormContent()}
+                <div className="flex justify-end gap-2 border-t border-primary-100 pt-3">
+                  <Button size="sm" variant="light" onPress={() => setShowTargetForm(false)}>Abbrechen</Button>
+                  <Button size="sm" color="primary" isLoading={formSaving} isDisabled={!formTargetCalendarId} onPress={saveTarget}>Erstellen</Button>
+                </div>
+              </div>
+            )}
 
             <Divider className="my-4" />
             <p className="mb-2 text-sm font-medium">[Sync]-Termine aufräumen</p>
