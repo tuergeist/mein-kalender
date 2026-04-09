@@ -219,7 +219,7 @@ export default function ManageBookingPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#FAFAF9] px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#FAFAF9] px-4 py-12">
       <Card className="w-full max-w-lg shadow-md">
         <CardBody className="p-6 sm:p-8">
           {/* Header */}
