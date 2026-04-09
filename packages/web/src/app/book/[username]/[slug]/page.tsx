@@ -131,6 +131,10 @@ export default function BookingPage() {
       setFormError("Name und E-Mail sind erforderlich.");
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())) {
+      setFormError("Bitte gib eine gültige E-Mail-Adresse ein.");
+      return;
+    }
     setSubmitting(true);
     setFormError("");
 

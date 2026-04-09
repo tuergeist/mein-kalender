@@ -121,6 +121,10 @@ export async function publicBookingRoutes(app: FastifyInstance) {
         return reply.code(400).send({ error: "guestName, guestEmail, and startTime are required" });
       }
 
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+        return reply.code(400).send({ error: "Please provide a valid email address" });
+      }
+
       const user = await prisma.user.findUnique({ where: { username } });
       if (!user) return reply.code(404).send({ error: "Not found" });
 
@@ -144,7 +148,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       // Generate management token for guest self-service
       const managementToken = crypto.randomUUID();
-      const manageUrl = `https://meinkalender.link/book/manage/${managementToken}`;
+      const manageUrl = `https://app.mein-kalender.link/book/manage/${managementToken}`;
 
       // Create calendar event on host's booking calendar (or target, or first writable)
       let providerEventId: string | null = null;
@@ -529,7 +533,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       }
 
       // Update or recreate calendar event
-      const manageUrl = `https://meinkalender.link/book/manage/${token}`;
+      const manageUrl = `https://app.mein-kalender.link/book/manage/${token}`;
       const descriptionLines = [
         `Guest: ${booking.guestName} <${booking.guestEmail}>`,
         ...(booking.notes ? [`Notes: ${booking.notes}`] : []),
