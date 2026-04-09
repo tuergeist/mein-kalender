@@ -334,6 +334,11 @@ export default function ManageBookingPage() {
           )}
         </CardBody>
       </Card>
+      <p className="mt-4 text-center text-[11px] text-stone-300">
+        <a href="https://mein-kalender.link" target="_blank" rel="noopener noreferrer" className="hover:text-stone-400 transition-colors">
+          Nie wieder doppelt gebucht — mein-kalender.link
+        </a>
+      </p>
     </div>
   );
 }
