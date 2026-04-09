@@ -230,9 +230,17 @@ export default function ManageBookingPage() {
           </div>
 
           {view === "cancelled" && (
-            <div className="rounded-xl bg-red-50 p-5 text-center">
-              <p className="text-sm font-medium text-red-800">Buchung abgesagt</p>
-              <p className="mt-1 text-xs text-red-600">Diese Buchung wurde storniert.</p>
+            <div className="space-y-4">
+              <div className="rounded-xl bg-red-50 p-5 text-center">
+                <p className="text-sm font-medium text-red-800">Buchung abgesagt</p>
+              </div>
+              <a
+                href={`/book/${host.username}/${eventType.slug}`}
+                className="block rounded-xl border border-stone-200 px-4 py-3 text-center text-sm font-medium transition-shadow hover:shadow-md"
+                style={{ color: brandColor }}
+              >
+                Neuen Termin suchen
+              </a>
             </div>
           )}
 
