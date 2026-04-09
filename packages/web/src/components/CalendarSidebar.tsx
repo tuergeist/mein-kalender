@@ -246,7 +246,7 @@ export function CalendarSidebar() {
                   {colorPickerOpen === entry.id && (
                     <div
                       ref={colorPickerRef}
-                      className="absolute left-0 top-full z-50 mt-1 rounded-lg border border-stone-200 bg-white p-2 shadow-md"
+                      className="absolute left-0 bottom-full z-50 mb-1 rounded-lg border border-stone-200 bg-white p-2 shadow-md"
                     >
                       <div className="grid grid-cols-4 gap-1.5">
                         {COLOR_PALETTE.map((c) => (
