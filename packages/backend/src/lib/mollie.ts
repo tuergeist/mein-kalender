@@ -1,9 +1,12 @@
 import createMollieClient, { SequenceType } from "@mollie/api-client";
 import { prisma } from "./prisma";
 
-const mollieClient = createMollieClient({
-  apiKey: process.env.MOLLIE_API_KEY!,
-});
+function getMollieClient() {
+  if (!process.env.MOLLIE_API_KEY) {
+    throw new Error("MOLLIE_API_KEY not configured");
+  }
+  return createMollieClient({ apiKey: process.env.MOLLIE_API_KEY });
+}
 
 const PLANS = {
   monthly: { amount: { currency: "EUR", value: "19.00" }, interval: "1 month", description: "Mein Kalender Monthly" },
@@ -24,7 +27,7 @@ export async function getOrCreateCustomer(
     return user.mollieCustomerId;
   }
 
-  const customer = await mollieClient.customers.create({
+  const customer = await getMollieClient().customers.create({
     name,
     email,
     metadata: JSON.stringify({ userId }),
@@ -44,7 +47,7 @@ export async function createFirstPayment(
   redirectUrl: string,
   webhookUrl: string
 ) {
-  const payment = await mollieClient.customerPayments.create({
+  const payment = await getMollieClient().customerPayments.create({
     customerId,
     amount: { currency: "EUR", value: "0.01" },
     description: `Mein Kalender – setup ${plan} subscription`,
@@ -67,7 +70,7 @@ export async function createSubscription(
 ) {
   const planConfig = PLANS[plan];
 
-  const subscription = await mollieClient.customerSubscriptions.create({
+  const subscription = await getMollieClient().customerSubscriptions.create({
     customerId,
     amount: planConfig.amount,
     interval: planConfig.interval,
@@ -82,11 +85,11 @@ export async function cancelSubscription(
   customerId: string,
   subscriptionId: string
 ) {
-  await mollieClient.customerSubscriptions.cancel(subscriptionId, {
+  await getMollieClient().customerSubscriptions.cancel(subscriptionId, {
     customerId,
   });
 }
 
 export async function getPayment(paymentId: string) {
-  return mollieClient.payments.get(paymentId);
+  return getMollieClient().payments.get(paymentId);
 }
