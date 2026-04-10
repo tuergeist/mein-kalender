@@ -129,11 +129,14 @@ export async function processSyncJob(
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error(`[sync] Error syncing source ${sourceId}:`, message);
 
+    // Reset syncToken on failure so next run does a full fetch
+    // (delta sync may skip events created during the outage)
     await prisma.calendarSource.update({
       where: { id: sourceId },
       data: {
         syncStatus: "error",
         syncError: message,
+        syncToken: null,
       },
     });
 
