@@ -4,6 +4,7 @@ import { processSyncJob } from "./sync-job";
 import { detectConflicts } from "./conflict-detection";
 import { cloneToTarget } from "./sync-job";
 import { connection, syncQueue } from "./queues";
+import { sendEmail } from "./lib/email";
 
 const prisma = new PrismaClient();
 
@@ -78,6 +79,18 @@ worker.on("completed", (job) => {
 
 worker.on("failed", (job, err) => {
   console.error(`[sync] Job ${job?.id} failed:`, err.message);
+});
+
+const emailWorker = new Worker(
+  "booking-email",
+  async (job) => {
+    await sendEmail(job.data);
+  },
+  { connection, concurrency: 3 }
+);
+
+emailWorker.on("failed", (job, err) => {
+  console.error(`[email] Job ${job?.id} failed:`, err.message);
 });
 
 // Schedule repeating sync jobs for all active sources

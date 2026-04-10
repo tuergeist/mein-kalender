@@ -52,7 +52,7 @@ export default function EditEventTypePage() {
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
   const [loading, setLoading] = useState(true);
-  const [allCalendarEntries, setAllCalendarEntries] = useState<Array<{ id: string; name: string; sourceName: string }>>([]);
+  const [allCalendarEntries, setAllCalendarEntries] = useState<Array<{ id: string; name: string; sourceName: string; viaEmail?: boolean }>>([]);
 
   const [formName, setFormName] = useState("");
   const [formSlug, setFormSlug] = useState("");
@@ -90,8 +90,14 @@ export default function EditEventTypePage() {
     const res = await apiAuthFetch("/api/sources", accessToken);
     if (res.ok) {
       const sources = await res.json();
-      setAllCalendarEntries(sources.flatMap((s: { calendarEntries: Array<{ id: string; name: string; readOnly: boolean }>; label: string | null; provider: string }) =>
-        s.calendarEntries.filter((e: { readOnly: boolean }) => !e.readOnly).map((e: { id: string; name: string }) => ({ ...e, sourceName: s.label || s.provider }))
+      setAllCalendarEntries(sources.flatMap((s: { calendarEntries: Array<{ id: string; name: string; readOnly: boolean }>; label: string | null; provider: string; emailForInvitations?: string | null }) =>
+        s.calendarEntries
+          .filter((e: { readOnly: boolean }) => !e.readOnly || !!s.emailForInvitations)
+          .map((e: { id: string; name: string; readOnly: boolean }) => ({
+            ...e,
+            sourceName: s.label || s.provider,
+            viaEmail: e.readOnly && !!s.emailForInvitations,
+          }))
       ));
     }
   }
@@ -261,7 +267,7 @@ export default function EditEventTypePage() {
           <CardBody className="space-y-5">
             <div>
               <Select label="Buchungskalender" placeholder="Standard verwenden" selectedKeys={formBookingCalendarId ? new Set([formBookingCalendarId]) : new Set()} onSelectionChange={(keys) => { const s = Array.from(keys)[0] as string; setFormBookingCalendarId(s || ""); }} size="sm">
-                {allCalendarEntries.map((entry) => (<SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})`}>{entry.name} ({entry.sourceName})</SelectItem>))}
+                {allCalendarEntries.map((entry) => (<SelectItem key={entry.id} textValue={`${entry.name} (${entry.sourceName})${entry.viaEmail ? " (via E-Mail)" : ""}`}>{entry.name} ({entry.sourceName}){entry.viaEmail && <span className="ml-1 text-xs text-default-400">(via E-Mail)</span>}</SelectItem>))}
               </Select>
               <p className="mt-1 text-xs text-default-400">In diesem Kalender werden bestätigte Buchungen erstellt.</p>
               {formBookingCalendarId && !formBrandColor && !formBackgroundUrl && (

@@ -4,7 +4,8 @@ import { prisma } from "../lib/prisma";
 import { decrypt } from "../encryption";
 import { getProvider } from "../providers";
 import { TokenSet } from "../types";
-import { syncQueue } from "../queues";
+import { syncQueue, emailQueue } from "../queues";
+import { buildIcsInvitation } from "../lib/ics-invitation";
 
 interface SlotParams {
   username: string;
@@ -153,6 +154,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       // Create calendar event on host's booking calendar (or target, or first writable)
       let providerEventId: string | null = null;
       let bookingSourceId: string | null = null;
+      let icsUid: string | null = null;
       try {
         let bookingEntry = null;
 
@@ -184,7 +186,55 @@ export async function publicBookingRoutes(app: FastifyInstance) {
           });
         }
 
-        if (bookingEntry) {
+        const descriptionLines = [
+          `Guest: ${guestName} <${guestEmail}>`,
+          ...(notes ? [`Notes: ${notes}`] : []),
+          "",
+          `Manage this booking (cancel or reschedule):`,
+          manageUrl,
+        ];
+
+        if (bookingEntry && bookingEntry.source.emailForInvitations) {
+          // Email-based invitation flow (Proton Calendar / ICS sources)
+          const hostEmail = bookingEntry.source.emailForInvitations;
+          icsUid = `${crypto.randomUUID()}@mein-kalender.link`;
+
+          const icsContent = buildIcsInvitation({
+            method: "REQUEST",
+            uid: icsUid,
+            sequence: 0,
+            organizer: { name: "Mein Kalender", email: process.env.SMTP_FROM || "noreply@mein-kalender.link" },
+            attendees: [
+              { name: user.displayName || user.email, email: hostEmail },
+              { name: guestName, email: guestEmail },
+            ],
+            summary: `[Booking] ${guestName} — ${eventType.name}`,
+            description: descriptionLines.join("\n"),
+            location: eventType.location,
+            dtStart: start,
+            dtEnd: end,
+          });
+
+          // Send to host via queue
+          emailQueue.add("send", {
+            to: hostEmail,
+            subject: `Neue Buchung: ${guestName} — ${eventType.name}`,
+            text: `${guestName} hat einen Termin gebucht:\n\n${eventType.name}\n${start.toLocaleString("de-DE")} - ${end.toLocaleString("de-DE")}\n\nGast: ${guestName} <${guestEmail}>${notes ? `\nNotizen: ${notes}` : ""}`,
+            icalEvent: { method: "REQUEST", content: icsContent },
+          }, { removeOnComplete: 100, removeOnFail: 50 }).catch((err) => console.error("[booking] Failed to queue host invitation email:", err));
+
+          // Send to guest via queue
+          emailQueue.add("send", {
+            to: guestEmail,
+            subject: `Terminbestätigung: ${eventType.name} mit ${user.displayName || user.email}`,
+            text: `Dein Termin steht:\n\n${eventType.name}\n${start.toLocaleString("de-DE")} - ${end.toLocaleString("de-DE")}\n\nVerwalten: ${manageUrl}`,
+            icalEvent: { method: "REQUEST", content: icsContent },
+          }, { removeOnComplete: 100, removeOnFail: 50 }).catch((err) => console.error("[booking] Failed to queue guest invitation email:", err));
+
+          providerEventId = icsUid;
+          bookingSourceId = bookingEntry.source.id;
+        } else if (bookingEntry) {
+          // Existing provider API flow (Google/Outlook)
           const provider = getProvider(bookingEntry.source.provider);
           const creds = JSON.parse(
             decrypt(bookingEntry.source.credentials, process.env.ENCRYPTION_SECRET!)
@@ -194,14 +244,6 @@ export async function publicBookingRoutes(app: FastifyInstance) {
             refreshToken: creds.refreshToken || null,
             expiresAt: creds.expiresAt ? new Date(creds.expiresAt) : null,
           };
-
-          const descriptionLines = [
-            `Guest: ${guestName} <${guestEmail}>`,
-            ...(notes ? [`Notes: ${notes}`] : []),
-            "",
-            `Manage this booking (cancel or reschedule):`,
-            manageUrl,
-          ];
 
           const calEvent = await provider.createEvent(token, bookingEntry.providerCalendarId, {
             title: `[Booking] ${guestName} — ${eventType.name}`,
@@ -230,6 +272,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
           endTime: end,
           providerEventId,
           managementToken,
+          icsUid,
         },
       });
 
@@ -380,7 +423,38 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       if (booking.providerEventId && booking.startTime > new Date()) {
         try {
           const bookingEntry = await findBookingCalendarEntry(booking.userId, booking.eventTypeId);
-          if (bookingEntry) {
+          if (bookingEntry?.source.emailForInvitations) {
+            // Email-based cancellation (Proton Calendar / ICS sources)
+            const icsContent = buildIcsInvitation({
+              method: "CANCEL",
+              uid: booking.icsUid || booking.providerEventId,
+              sequence: (booking.icsSequence || 0) + 1,
+              organizer: { name: "Mein Kalender", email: process.env.SMTP_FROM || "noreply@mein-kalender.link" },
+              attendees: [
+                { name: "", email: bookingEntry.source.emailForInvitations },
+                { name: booking.guestName, email: booking.guestEmail },
+              ],
+              summary: `[Booking] ${booking.guestName} — Abgesagt`,
+              dtStart: booking.startTime,
+              dtEnd: booking.endTime,
+              status: "CANCELLED",
+            });
+
+            emailQueue.add("send", {
+              to: bookingEntry.source.emailForInvitations,
+              subject: `Buchung abgesagt: ${booking.guestName}`,
+              text: `Die Buchung wurde abgesagt.`,
+              icalEvent: { method: "CANCEL", content: icsContent },
+            }, { removeOnComplete: 100, removeOnFail: 50 }).catch((err) => console.error("[booking] Cancel email failed:", err));
+
+            emailQueue.add("send", {
+              to: booking.guestEmail,
+              subject: `Termin abgesagt`,
+              text: `Dein Termin wurde abgesagt.`,
+              icalEvent: { method: "CANCEL", content: icsContent },
+            }, { removeOnComplete: 100, removeOnFail: 50 }).catch((err) => console.error("[booking] Cancel guest email failed:", err));
+          } else if (bookingEntry) {
+            // Existing provider API flow (Google/Outlook)
             const provider = getProvider(bookingEntry.source.provider);
             const creds = JSON.parse(
               decrypt(bookingEntry.source.credentials, process.env.ENCRYPTION_SECRET!)
@@ -544,7 +618,41 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       try {
         const bookingEntry = await findBookingCalendarEntry(booking.userId, booking.eventTypeId);
-        if (bookingEntry) {
+        if (bookingEntry?.source.emailForInvitations) {
+          // Email-based reschedule (Proton Calendar / ICS sources)
+          const newSequence = (booking.icsSequence || 0) + 1;
+          const icsContent = buildIcsInvitation({
+            method: "REQUEST",
+            uid: booking.icsUid || booking.providerEventId!,
+            sequence: newSequence,
+            organizer: { name: "Mein Kalender", email: process.env.SMTP_FROM || "noreply@mein-kalender.link" },
+            attendees: [
+              { name: "", email: bookingEntry.source.emailForInvitations },
+              { name: booking.guestName, email: booking.guestEmail },
+            ],
+            summary: `[Booking] ${booking.guestName} — ${booking.eventType.name}`,
+            description: descriptionLines.join("\n"),
+            location: booking.eventType.location,
+            dtStart: newStart,
+            dtEnd: newEnd,
+          });
+
+          // Send updated invitation to both host and guest
+          for (const to of [bookingEntry.source.emailForInvitations, booking.guestEmail]) {
+            emailQueue.add("send", {
+              to,
+              subject: `Termin verschoben: ${booking.eventType.name}`,
+              text: `Der Termin wurde verschoben.`,
+              icalEvent: { method: "REQUEST", content: icsContent },
+            }, { removeOnComplete: 100, removeOnFail: 50 }).catch(() => {});
+          }
+
+          await prisma.booking.update({
+            where: { id: booking.id },
+            data: { startTime: newStart, endTime: newEnd, icsSequence: newSequence },
+          });
+        } else if (bookingEntry) {
+          // Existing provider API flow (Google/Outlook)
           const provider = getProvider(bookingEntry.source.provider);
           const creds = JSON.parse(
             decrypt(bookingEntry.source.credentials, process.env.ENCRYPTION_SECRET!)

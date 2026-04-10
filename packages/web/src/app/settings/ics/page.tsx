@@ -29,6 +29,13 @@ export default function ICSSettingsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Email invitation state (shown after successful import/subscription)
+  const [sourceId, setSourceId] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailSuccess, setEmailSuccess] = useState("");
+  const [emailError, setEmailError] = useState("");
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -68,7 +75,7 @@ export default function ICSSettingsPage() {
       } else {
         const data = await res.json();
         setSuccess(`${data.eventsImported} Termine importiert`);
-        setTimeout(() => router.push("/settings"), 1500);
+        setSourceId(data.sourceId);
       }
     } catch {
       setError("Verbindung zum Server fehlgeschlagen");
@@ -101,12 +108,39 @@ export default function ICSSettingsPage() {
       } else {
         const data = await res.json();
         setSuccess(`Abonniert mit ${data.eventsImported} Terminen`);
-        setTimeout(() => router.push("/settings"), 1500);
+        setSourceId(data.sourceId);
       }
     } catch {
       setError("Verbindung zum Server fehlgeschlagen");
     }
     setLoading(false);
+  }
+
+  async function handleSaveEmail() {
+    const token = (session as { accessToken?: string })?.accessToken;
+    if (!token || !sourceId) return;
+
+    setEmailSaving(true);
+    setEmailError("");
+    setEmailSuccess("");
+
+    try {
+      const res = await apiAuthFetch(`/api/sources/${sourceId}`, token, {
+        method: "PUT",
+        body: JSON.stringify({ emailForInvitations: email || null }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setEmailError(data.error || "Speichern fehlgeschlagen");
+      } else {
+        setEmailSuccess("Gespeichert");
+        setTimeout(() => router.push("/settings"), 1500);
+      }
+    } catch {
+      setEmailError("Verbindung zum Server fehlgeschlagen");
+    }
+    setEmailSaving(false);
   }
 
   return (
@@ -230,6 +264,46 @@ export default function ICSSettingsPage() {
             {success && <p className="mt-4 text-sm text-success">{success}</p>}
           </CardBody>
         </Card>
+
+        {sourceId && (
+          <Card>
+            <CardBody className="flex flex-col gap-4 px-6 py-6">
+              <Input
+                label="E-Mail für Termineinladungen (optional)"
+                description="Wenn du hier eine E-Mail eingibst, werden Buchungen als Kalendereinladung an diese Adresse gesendet und erscheinen direkt in deinem Kalender."
+                type="email"
+                value={email}
+                onValueChange={(v) => {
+                  setEmail(v);
+                  setEmailError("");
+                  setEmailSuccess("");
+                }}
+                placeholder="name@example.com"
+              />
+              <div className="flex items-center gap-3">
+                <Button
+                  color="primary"
+                  size="sm"
+                  isLoading={emailSaving}
+                  onPress={handleSaveEmail}
+                >
+                  {email ? "Speichern" : "Überspringen"}
+                </Button>
+                {!email && (
+                  <Button
+                    variant="light"
+                    size="sm"
+                    onPress={() => router.push("/settings")}
+                  >
+                    Überspringen
+                  </Button>
+                )}
+              </div>
+              {emailError && <p className="text-sm text-danger">{emailError}</p>}
+              {emailSuccess && <p className="text-sm text-success">{emailSuccess}</p>}
+            </CardBody>
+          </Card>
+        )}
       </div>
     </AppShell>
   );

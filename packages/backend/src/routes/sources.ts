@@ -78,6 +78,7 @@ export async function sourcesRoutes(app: FastifyInstance) {
       label?: string;
       syncInterval?: number;
       fetchDaysInAdvance?: number;
+      emailForInvitations?: string | null;
     };
   }>("/api/sources/:id", async (request, reply) => {
     const { user } = request as unknown as AuthenticatedRequest;
@@ -100,6 +101,7 @@ export async function sourcesRoutes(app: FastifyInstance) {
         ...(request.body.label !== undefined && { label: request.body.label }),
         ...(request.body.syncInterval !== undefined && { syncInterval: request.body.syncInterval }),
         ...(request.body.fetchDaysInAdvance !== undefined && { fetchDaysInAdvance: request.body.fetchDaysInAdvance }),
+        ...(request.body.emailForInvitations !== undefined && { emailForInvitations: request.body.emailForInvitations }),
       },
     });
 

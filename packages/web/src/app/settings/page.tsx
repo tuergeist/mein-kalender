@@ -22,6 +22,7 @@ interface CalendarSource {
   label: string | null;
   syncStatus: string;
   syncInterval: number;
+  emailForInvitations: string | null;
   calendarEntries: CalendarEntry[];
 }
 

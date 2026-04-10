@@ -13,4 +13,6 @@ export const conflictQueue = new Queue("conflict-detection", { connection });
 
 export const targetSyncQueue = new Queue("target-sync", { connection });
 
+export const emailQueue = new Queue("booking-email", { connection });
+
 export { connection };
