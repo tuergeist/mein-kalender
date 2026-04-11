@@ -40,6 +40,8 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [testEmailSending, setTestEmailSending] = useState(false);
+  const [testEmailResult, setTestEmailResult] = useState("");
 
   const role = (session as any)?.role;
 
@@ -82,9 +84,6 @@ export default function AdminUsersPage() {
   if (status === "loading" || role !== "admin") {
     return null;
   }
-
-  const [testEmailSending, setTestEmailSending] = useState(false);
-  const [testEmailResult, setTestEmailResult] = useState("");
 
   async function sendTestEmail() {
     const token = (session as { accessToken?: string })?.accessToken;
