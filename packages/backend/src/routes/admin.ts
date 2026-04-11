@@ -1,6 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
-import { requireAdmin } from "../lib/auth";
+import { requireAdmin, AuthUser } from "../lib/auth";
+import { sendEmail } from "../lib/email";
+import { buildIcsInvitation } from "../lib/ics-invitation";
 import { Queue } from "bullmq";
 
 let syncQueue: Queue | null = null;
@@ -286,5 +288,36 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     return source;
+  });
+
+  // Send test email to the admin user
+  app.post("/api/admin/test-email", async (request) => {
+    const { user } = request as unknown as { user: AuthUser };
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+    if (!dbUser) return { error: "User not found" };
+
+    const now = new Date();
+    const end = new Date(now.getTime() + 30 * 60 * 1000);
+
+    const icsContent = buildIcsInvitation({
+      method: "REQUEST",
+      uid: `test-${Date.now()}@mein-kalender.link`,
+      sequence: 0,
+      organizer: { name: "Mein Kalender", email: process.env.SMTP_FROM || "noreply@mein-kalender.link" },
+      attendees: [{ name: dbUser.displayName || dbUser.email, email: dbUser.email }],
+      summary: "Test-Einladung von Mein Kalender",
+      description: "Dies ist eine Test-E-Mail um die ICS-Einladungsfunktion zu prüfen.",
+      dtStart: now,
+      dtEnd: end,
+    });
+
+    await sendEmail({
+      to: dbUser.email,
+      subject: "Test-Einladung — Mein Kalender",
+      text: "Dies ist eine Test-E-Mail mit ICS-Kalendereinladung von Mein Kalender.",
+      icalEvent: { method: "REQUEST", content: icsContent },
+    });
+
+    return { success: true, sentTo: dbUser.email };
   });
 }

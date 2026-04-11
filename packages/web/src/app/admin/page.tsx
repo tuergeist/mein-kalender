@@ -83,12 +83,38 @@ export default function AdminUsersPage() {
     return null;
   }
 
+  const [testEmailSending, setTestEmailSending] = useState(false);
+  const [testEmailResult, setTestEmailResult] = useState("");
+
+  async function sendTestEmail() {
+    const token = (session as { accessToken?: string })?.accessToken;
+    if (!token) return;
+    setTestEmailSending(true);
+    setTestEmailResult("");
+    const res = await apiAuthFetch("/api/admin/test-email", token, { method: "POST" });
+    if (res.ok) {
+      const data = await res.json();
+      setTestEmailResult(`Gesendet an ${data.sentTo}`);
+    } else {
+      setTestEmailResult("Fehler beim Senden");
+    }
+    setTestEmailSending(false);
+  }
+
   const totalPages = Math.ceil(total / 20);
 
   return (
     <AppShell sidebarContent={<AdminSidebar />}>
       <div className="mx-auto max-w-5xl space-y-4">
-        <h1 className="text-2xl font-bold">Benutzer</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Benutzer</h1>
+          <div className="flex items-center gap-2">
+            {testEmailResult && <span className="text-xs text-default-500">{testEmailResult}</span>}
+            <Button size="sm" variant="flat" isLoading={testEmailSending} onPress={sendTestEmail}>
+              Test-E-Mail senden
+            </Button>
+          </div>
+        </div>
 
         <Input
           placeholder="Nach E-Mail oder Name suchen..."
