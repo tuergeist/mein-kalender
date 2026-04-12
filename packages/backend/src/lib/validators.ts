@@ -19,6 +19,10 @@ export const bookingSchema = z.object({
   notes: z.string().max(1000, "Notes too long").optional(),
 });
 
+export const resendVerificationSchema = z.object({
+  email: z.string().email("Please provide a valid email address"),
+});
+
 export function zodPreValidation<T>(schema: z.ZodSchema<T>) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     const result = schema.safeParse(request.body);

@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import crypto from "crypto";
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcrypt";
-import { registerSchema, loginSchema, zodPreValidation } from "../lib/validators";
+import { registerSchema, loginSchema, resendVerificationSchema, zodPreValidation } from "../lib/validators";
 import { emailQueue } from "../queues";
 
 const BCRYPT_ROUNDS = 12;
@@ -195,13 +195,9 @@ export async function authRoutes(app: FastifyInstance) {
   // Resend verification email
   app.post<{ Body: { email: string } }>(
     "/api/auth/resend-verification",
-    { config: { rateLimit: { max: 1, timeWindow: "1 minute" } } },
+    { config: { rateLimit: { max: 1, timeWindow: "1 minute" } }, preValidation: zodPreValidation(resendVerificationSchema) },
     async (request, reply) => {
       const { email } = request.body;
-
-      if (!email) {
-        return reply.code(400).send({ error: "Email is required" });
-      }
 
       const user = await prisma.user.findUnique({ where: { email } });
 

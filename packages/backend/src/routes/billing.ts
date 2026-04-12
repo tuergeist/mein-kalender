@@ -79,9 +79,16 @@ export async function billingRoutes(app: FastifyInstance) {
       let payment;
       try {
         payment = await getPayment(paymentId);
-      } catch (err) {
+      } catch (err: unknown) {
         app.log.error(`Webhook: failed to verify payment ${paymentId} with Mollie: ${err}`);
-        return reply.code(200).send({ ok: true });
+
+        // Return 200 for known-unrecoverable errors (e.g. Mollie 404 — invalid payment ID)
+        // so Mollie does not retry. Return 500 for transient errors so Mollie retries.
+        const statusCode = (err as { statusCode?: number })?.statusCode;
+        if (statusCode && statusCode >= 400 && statusCode < 500) {
+          return reply.code(200).send({ ok: true });
+        }
+        return reply.code(500).send({ error: "Transient error verifying payment" });
       }
 
       // Record the payment event for idempotency
