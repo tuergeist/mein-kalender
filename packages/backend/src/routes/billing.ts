@@ -58,14 +58,36 @@ export async function billingRoutes(app: FastifyInstance) {
   // POST /api/webhooks/mollie — webhook handler (NO AUTH)
   app.post<{ Body: { id: string } }>(
     "/api/webhooks/mollie",
+    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
     async (request, reply) => {
       const { id: paymentId } = request.body;
 
-      if (!paymentId) {
+      if (!paymentId || typeof paymentId !== "string") {
         return reply.code(400).send({ error: "Missing payment id" });
       }
 
-      const payment = await getPayment(paymentId);
+      // Idempotency: skip if already processed
+      const existing = await prisma.paymentEvent.findUnique({
+        where: { paymentId },
+      });
+      if (existing) {
+        app.log.info(`Webhook: payment ${paymentId} already processed, skipping`);
+        return reply.code(200).send({ ok: true });
+      }
+
+      // Verify payment with Mollie API (rejects fake payment IDs)
+      let payment;
+      try {
+        payment = await getPayment(paymentId);
+      } catch (err) {
+        app.log.error(`Webhook: failed to verify payment ${paymentId} with Mollie: ${err}`);
+        return reply.code(200).send({ ok: true });
+      }
+
+      // Record the payment event for idempotency
+      await prisma.paymentEvent.create({
+        data: { paymentId, status: payment.status as string },
+      });
 
       // Find user by mollieCustomerId
       const customerId =

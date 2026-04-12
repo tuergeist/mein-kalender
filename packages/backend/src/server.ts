@@ -2,9 +2,8 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import compress from "@fastify/compress";
 import multipart from "@fastify/multipart";
-import bcrypt from "bcrypt";
+import rateLimit from "@fastify/rate-limit";
 import { validateEnv } from "./lib/env";
-import { prisma } from "./lib/prisma";
 import { healthRoutes } from "./routes/health";
 import { sourcesRoutes } from "./routes/sources";
 import { eventsRoutes } from "./routes/events";
@@ -29,10 +28,21 @@ import { billingRoutes } from "./routes/billing";
 
 validateEnv();
 
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "https://app.mein-kalender.link,http://localhost:3000").split(",");
+
 const server = Fastify({ logger: true });
 
-server.register(cors, { origin: true });
+server.register(cors, {
+  origin: (origin, cb) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Not allowed by CORS"), false);
+    }
+  },
+});
 server.register(compress);
+server.register(rateLimit, { max: 100, timeWindow: "1 minute" });
 server.register(multipart, { limits: { fileSize: 5 * 1024 * 1024 } });
 server.register(healthRoutes);
 server.register(sourcesRoutes);
@@ -56,27 +66,11 @@ server.register(dashboardRoutes);
 server.register(feedbackRoutes);
 server.register(billingRoutes);
 
-async function seedAdminUser() {
-  const email = "admin@admin.local";
-  const passwordHash = await bcrypt.hash("adminpass123", 12);
-  await prisma.user.upsert({
-    where: { email },
-    update: {},
-    create: { email, passwordHash, role: "admin", emailVerified: true },
-  });
-  // Clean up old admin user without valid email
-  const oldAdmin = await prisma.user.findUnique({ where: { email: "admin" } });
-  if (oldAdmin) {
-    await prisma.user.delete({ where: { email: "admin" } });
-  }
-}
-
 const start = async () => {
   const port = parseInt(process.env.SERVER_PORT || "4200", 10);
   const host = process.env.SERVER_HOST || "0.0.0.0";
 
   try {
-    await seedAdminUser();
     await server.listen({ port, host });
   } catch (err) {
     server.log.error(err);

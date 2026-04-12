@@ -1,6 +1,9 @@
 import { FastifyInstance } from "fastify";
+import crypto from "crypto";
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcrypt";
+import { registerSchema, loginSchema, zodPreValidation } from "../lib/validators";
+import { emailQueue } from "../queues";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -8,16 +11,8 @@ export async function authRoutes(app: FastifyInstance) {
   // Register
   app.post<{
     Body: { email: string; password: string; displayName?: string };
-  }>("/api/auth/register", async (request, reply) => {
+  }>("/api/auth/register", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } }, preValidation: zodPreValidation(registerSchema) }, async (request, reply) => {
     const { email, password, displayName } = request.body;
-
-    if (!email || !password) {
-      return reply.code(400).send({ error: "Email and password are required" });
-    }
-
-    if (password.length < 8) {
-      return reply.code(400).send({ error: "Password must be at least 8 characters" });
-    }
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -31,17 +26,31 @@ export async function authRoutes(app: FastifyInstance) {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
+    const emailVerificationToken = skipVerification ? null : crypto.randomUUID();
+    const emailVerificationExpiresAt = skipVerification
+      ? null
+      : new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
         displayName: displayName || null,
         emailVerified: skipVerification,
+        emailVerificationToken,
+        emailVerificationExpiresAt,
         trialEndsAt,
       },
     });
 
-    // TODO: Send verification email (task 3.7)
+    if (!skipVerification && emailVerificationToken) {
+      const verifyUrl = `${process.env.APP_URL || "https://app.mein-kalender.link"}/api/auth/verify-email?token=${emailVerificationToken}`;
+      emailQueue.add("send", {
+        to: email,
+        subject: "E-Mail-Adresse bestätigen — Mein Kalender",
+        text: `Bitte bestätige deine E-Mail-Adresse:\n\n${verifyUrl}\n\nDer Link ist 24 Stunden gültig.`,
+      }, { removeOnComplete: 100, removeOnFail: 50 }).catch((err) => console.error("[auth] Failed to queue verification email:", err));
+    }
 
     return {
       id: user.id,
@@ -121,12 +130,8 @@ export async function authRoutes(app: FastifyInstance) {
   // Login (used by NextAuth credentials provider)
   app.post<{
     Body: { email: string; password: string };
-  }>("/api/auth/login", async (request, reply) => {
+  }>("/api/auth/login", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } }, preValidation: zodPreValidation(loginSchema) }, async (request, reply) => {
     const { email, password } = request.body;
-
-    if (!email || !password) {
-      return reply.code(400).send({ error: "Invalid email or password" });
-    }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !user.passwordHash) {
@@ -150,4 +155,77 @@ export async function authRoutes(app: FastifyInstance) {
       role: user.role,
     };
   });
+
+  // Verify email
+  app.get<{ Querystring: { token: string } }>(
+    "/api/auth/verify-email",
+    async (request, reply) => {
+      const { token } = request.query;
+
+      if (!token) {
+        return reply.code(400).send({ error: "Missing verification token" });
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { emailVerificationToken: token },
+      });
+
+      if (!user) {
+        return reply.code(400).send({ error: "Invalid verification token" });
+      }
+
+      if (user.emailVerificationExpiresAt && new Date() > user.emailVerificationExpiresAt) {
+        return reply.code(400).send({ error: "Verification token has expired. Please request a new one." });
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpiresAt: null,
+        },
+      });
+
+      const loginUrl = `${process.env.APP_URL || "https://app.mein-kalender.link"}/auth/signin`;
+      return reply.redirect(loginUrl);
+    }
+  );
+
+  // Resend verification email
+  app.post<{ Body: { email: string } }>(
+    "/api/auth/resend-verification",
+    { config: { rateLimit: { max: 1, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      const { email } = request.body;
+
+      if (!email) {
+        return reply.code(400).send({ error: "Email is required" });
+      }
+
+      const user = await prisma.user.findUnique({ where: { email } });
+
+      // Don't reveal whether the account exists
+      if (!user || user.emailVerified) {
+        return { message: "If an unverified account exists, a verification email has been sent." };
+      }
+
+      const emailVerificationToken = crypto.randomUUID();
+      const emailVerificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerificationToken, emailVerificationExpiresAt },
+      });
+
+      const verifyUrl = `${process.env.APP_URL || "https://app.mein-kalender.link"}/api/auth/verify-email?token=${emailVerificationToken}`;
+      emailQueue.add("send", {
+        to: email,
+        subject: "E-Mail-Adresse bestätigen — Mein Kalender",
+        text: `Bitte bestätige deine E-Mail-Adresse:\n\n${verifyUrl}\n\nDer Link ist 24 Stunden gültig.`,
+      }, { removeOnComplete: 100, removeOnFail: 50 }).catch((err) => console.error("[auth] Failed to queue verification email:", err));
+
+      return { message: "If an unverified account exists, a verification email has been sent." };
+    }
+  );
 }

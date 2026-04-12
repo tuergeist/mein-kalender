@@ -6,10 +6,15 @@ import { getProvider } from "../providers";
 import { TokenSet } from "../types";
 import { syncQueue, emailQueue } from "../queues";
 import { buildIcsInvitation } from "../lib/ics-invitation";
+import { bookingSchema, zodPreValidation } from "../lib/validators";
 
 interface SlotParams {
   username: string;
   slug: string;
+}
+
+function isTokenExpired(booking: { managementTokenExpiresAt: Date | null }): boolean {
+  return booking.managementTokenExpiresAt !== null && new Date() > booking.managementTokenExpiresAt;
 }
 
 export async function publicBookingRoutes(app: FastifyInstance) {
@@ -88,6 +93,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
   // Get available slots for a date
   app.get<{ Params: SlotParams; Querystring: { date: string } }>(
     "/api/public/book/:username/:slug/slots",
+    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
     async (request, reply) => {
       const { username, slug } = request.params;
       const { date } = request.query;
@@ -114,17 +120,10 @@ export async function publicBookingRoutes(app: FastifyInstance) {
   // Create a booking
   app.post<{ Params: SlotParams; Body: { startTime: string; guestName: string; guestEmail: string; notes?: string } }>(
     "/api/public/book/:username/:slug",
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } }, preValidation: zodPreValidation(bookingSchema) },
     async (request, reply) => {
       const { username, slug } = request.params;
       const { startTime, guestName, guestEmail, notes } = request.body;
-
-      if (!guestName || !guestEmail || !startTime) {
-        return reply.code(400).send({ error: "guestName, guestEmail, and startTime are required" });
-      }
-
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
-        return reply.code(400).send({ error: "Please provide a valid email address" });
-      }
 
       const user = await prisma.user.findUnique({ where: { username } });
       if (!user) return reply.code(404).send({ error: "Not found" });
@@ -261,6 +260,9 @@ export async function publicBookingRoutes(app: FastifyInstance) {
         console.error("[booking] Failed to create calendar event:", err);
       }
 
+      // Management token expires 7 days after the event ends
+      const managementTokenExpiresAt = new Date(end.getTime() + 7 * 24 * 60 * 60 * 1000);
+
       const booking = await prisma.booking.create({
         data: {
           eventTypeId: eventType.id,
@@ -272,6 +274,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
           endTime: end,
           providerEventId,
           managementToken,
+          managementTokenExpiresAt,
           icsUid,
         },
       });
@@ -370,6 +373,10 @@ export async function publicBookingRoutes(app: FastifyInstance) {
         return reply.code(404).send({ error: "Booking not found" });
       }
 
+      if (isTokenExpired(booking)) {
+        return reply.code(410).send({ error: "Management link has expired. Please contact the host to manage this booking." });
+      }
+
       return {
         booking: {
           id: booking.id,
@@ -413,6 +420,10 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       if (!booking) {
         return reply.code(404).send({ error: "Booking not found" });
+      }
+
+      if (isTokenExpired(booking)) {
+        return reply.code(410).send({ error: "Management link has expired. Please contact the host to manage this booking." });
       }
 
       if (booking.status === "cancelled") {
@@ -512,6 +523,10 @@ export async function publicBookingRoutes(app: FastifyInstance) {
         return reply.code(404).send({ error: "Booking not found" });
       }
 
+      if (isTokenExpired(booking)) {
+        return reply.code(410).send({ error: "Management link has expired. Please contact the host to manage this booking." });
+      }
+
       if (booking.status === "cancelled") {
         return reply.code(400).send({ error: "Booking is cancelled" });
       }
@@ -544,6 +559,10 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       if (!booking) {
         return reply.code(404).send({ error: "Booking not found" });
+      }
+
+      if (isTokenExpired(booking)) {
+        return reply.code(410).send({ error: "Management link has expired. Please contact the host to manage this booking." });
       }
 
       if (booking.status === "cancelled") {
@@ -586,6 +605,10 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       if (!booking) {
         return reply.code(404).send({ error: "Booking not found" });
+      }
+
+      if (isTokenExpired(booking)) {
+        return reply.code(410).send({ error: "Management link has expired. Please contact the host to manage this booking." });
       }
 
       if (booking.status === "cancelled") {

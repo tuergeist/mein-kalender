@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
+import { cancelSubscription } from "../lib/mollie";
 
 interface AuthenticatedRequest {
   user: AuthUser;
@@ -96,9 +97,64 @@ export async function profileRoutes(app: FastifyInstance) {
     }
   );
 
-  // Delete account
+  // GDPR data export (Article 20)
+  app.get("/api/profile/export", async (request, reply) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+
+    const fullUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        accounts: { select: { provider: true, providerAccountId: true, type: true } },
+        bookings: { select: { id: true, guestName: true, guestEmail: true, startTime: true, endTime: true, status: true, notes: true, createdAt: true } },
+        eventTypes: { select: { id: true, name: true, slug: true, durationMinutes: true, description: true, createdAt: true } },
+        availabilityRules: { select: { dayOfWeek: true, startTime: true, endTime: true, enabled: true } },
+        calendarSources: { select: { id: true, provider: true, label: true, createdAt: true } },
+      },
+    });
+
+    if (!fullUser) {
+      return reply.code(404).send({ error: "User not found" });
+    }
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      user: {
+        id: fullUser.id,
+        email: fullUser.email,
+        username: fullUser.username,
+        displayName: fullUser.displayName,
+        emailVerified: fullUser.emailVerified,
+        createdAt: fullUser.createdAt,
+      },
+      accounts: fullUser.accounts,
+      calendarSources: fullUser.calendarSources,
+      eventTypes: fullUser.eventTypes,
+      availabilityRules: fullUser.availabilityRules,
+      bookings: fullUser.bookings,
+    };
+
+    reply.header("Content-Disposition", "attachment; filename=mein-kalender-export.json");
+    reply.header("Content-Type", "application/json");
+    return exportData;
+  });
+
+  // Delete account (enhanced with Mollie cleanup)
   app.delete("/api/profile", async (request, reply) => {
     const { user } = request as unknown as AuthenticatedRequest;
+
+    // Cancel Mollie subscription before deletion
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { mollieCustomerId: true, subscriptionId: true },
+    });
+
+    if (dbUser?.mollieCustomerId && dbUser?.subscriptionId) {
+      try {
+        await cancelSubscription(dbUser.mollieCustomerId, dbUser.subscriptionId);
+      } catch (err) {
+        console.error(`[profile] Failed to cancel Mollie subscription for user ${user.id}:`, err);
+      }
+    }
 
     await prisma.user.delete({ where: { id: user.id } });
 

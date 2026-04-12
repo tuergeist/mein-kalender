@@ -16,6 +16,8 @@ model User {
   avatarUrl              String?
   role                   String   @default("user")
   emailVerified          Boolean  @default(false)
+  emailVerificationToken     String?  @unique
+  emailVerificationExpiresAt DateTime?
   brandColor             String?
   accentColor            String?
   backgroundUrl          String?
@@ -213,7 +215,8 @@ model Booking {
   endTime         DateTime
   status          String   @default("confirmed") // confirmed, cancelled
   providerEventId String?
-  managementToken String?  @unique
+  managementToken          String?  @unique
+  managementTokenExpiresAt DateTime?
   icsUid          String?
   icsSequence     Int      @default(0)
   createdAt       DateTime @default(now())
@@ -302,4 +305,13 @@ model UserImage {
 
   @@unique([userId, type])
   @@map("user_images")
+}
+
+model PaymentEvent {
+  id        String   @id @default(cuid())
+  paymentId String   @unique
+  status    String
+  processedAt DateTime @default(now())
+
+  @@map("payment_events")
 }
