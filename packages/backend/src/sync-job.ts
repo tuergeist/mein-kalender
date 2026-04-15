@@ -215,7 +215,11 @@ async function syncCalendarEntry(
     );
   }
 
-  // Process updated events
+  // Process updated events (also handles NEW events from delta responses).
+  // Providers return ALL changed/new events in the "updated" array when using
+  // a sync token — new events are NOT placed in "created". We must upsert so
+  // genuinely new events are inserted rather than silently dropped by updateMany.
+  //
   // Note: Delta responses from providers (especially Outlook Graph API) may
   // return sparse objects with only changed fields. We must avoid overwriting
   // existing data with empty/fallback values when a field was simply not
@@ -223,11 +227,10 @@ async function syncCalendarEntry(
   for (const event of delta.updated) {
     const meta = event.providerMetadata as Record<string, unknown> | null;
     const subjectMissing = meta?._subjectMissing === true;
-
     const bodyMissing = meta?._bodyMissing === true;
     const locationMissing = meta?._locationMissing === true;
 
-    const data: Record<string, unknown> = {
+    const updateData: Record<string, unknown> = {
       startTime: event.startTime,
       endTime: event.endTime,
       allDay: event.allDay,
@@ -236,26 +239,39 @@ async function syncCalendarEntry(
     // Only update fields that the provider actually returned in the delta.
     // Outlook's Graph API delta endpoint may omit unchanged fields.
     if (!subjectMissing) {
-      data.title = event.title;
+      updateData.title = event.title;
     }
     if (!bodyMissing) {
-      data.description = event.description;
+      updateData.description = event.description;
     }
     if (!locationMissing) {
-      data.location = event.location;
+      updateData.location = event.location;
     }
 
     const cleaned = cleanMetadata(meta);
     if (cleaned) {
-      data.providerMetadata = cleaned;
+      updateData.providerMetadata = cleaned;
     }
 
-    await prisma.event.updateMany({
+    await prisma.event.upsert({
       where: {
+        calendarEntryId_sourceEventId: {
+          calendarEntryId: entry.id,
+          sourceEventId: event.sourceEventId,
+        },
+      },
+      create: {
         calendarEntryId: entry.id,
         sourceEventId: event.sourceEventId,
+        title: event.title,
+        description: event.description,
+        location: event.location,
+        startTime: event.startTime,
+        endTime: event.endTime,
+        allDay: event.allDay,
+        providerMetadata: cleaned,
       },
-      data,
+      update: updateData,
     });
   }
 
