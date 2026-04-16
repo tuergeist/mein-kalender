@@ -22,6 +22,9 @@ model User {
   accentColor            String?
   backgroundUrl          String?
   backgroundOpacity      Float?
+  defaultBufferBeforeMinutes Int      @default(0)
+  defaultBufferAfterMinutes  Int      @default(0)
+  applyBuffersToAllEvents    Boolean  @default(false)
   bookingCalendarEntryId String?
   mollieCustomerId       String?
   subscriptionId         String?
@@ -168,6 +171,8 @@ model EventType {
   redirectUrl              String?
   redirectTitle            String?
   redirectDelaySecs        Int      @default(5)
+  bufferBeforeMinutes      Int?
+  bufferAfterMinutes       Int?
   bookingCalendarEntryId   String?
   shortHash                String?  @unique
   brandColor               String?
