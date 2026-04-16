@@ -460,6 +460,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       }
 
       // Delete provider calendar event if it exists and booking is in the future
+      let providerEventDeleted = false;
       if (booking.providerEventId && booking.startTime > new Date()) {
         try {
           const bookingEntry = await findBookingCalendarEntry(booking.userId, booking.eventTypeId);
@@ -506,6 +507,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
             };
             await provider.deleteEvent(tokenSet, bookingEntry.providerCalendarId, booking.providerEventId);
           }
+          providerEventDeleted = true;
         } catch (err) {
           console.error(`[booking] Failed to delete provider event for booking ${booking.id}:`, err);
         }
@@ -513,7 +515,12 @@ export async function publicBookingRoutes(app: FastifyInstance) {
 
       await prisma.booking.update({
         where: { id: booking.id },
-        data: { status: "cancelled" },
+        data: {
+          status: "cancelled",
+          // Clear providerEventId only if we successfully deleted it.
+          // If deletion failed, keep it so reconcileBookings can retry.
+          ...(providerEventDeleted && { providerEventId: null }),
+        },
       });
 
       // Trigger sync so cancellation reflects in calendar view

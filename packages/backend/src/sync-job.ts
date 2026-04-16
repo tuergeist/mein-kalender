@@ -734,27 +734,71 @@ async function reconcileBookings(prisma: PrismaClient, userId: string): Promise<
     select: { id: true, providerEventId: true },
   });
 
-  if (bookings.length === 0) return;
-
-  // Check which provider event IDs still exist in our events table
-  const providerEventIds = bookings.map((b) => b.providerEventId!);
-  const existingEvents = await prisma.event.findMany({
-    where: { sourceEventId: { in: providerEventIds } },
-    select: { sourceEventId: true },
-  });
-  const existingIds = new Set(existingEvents.map((e) => e.sourceEventId));
-
-  // Cancel bookings whose events no longer exist
-  const staleBookingIds = bookings
-    .filter((b) => !existingIds.has(b.providerEventId!))
-    .map((b) => b.id);
-
-  if (staleBookingIds.length > 0) {
-    await prisma.booking.updateMany({
-      where: { id: { in: staleBookingIds } },
-      data: { status: "cancelled" },
+  if (bookings.length > 0) {
+    // Check which provider event IDs still exist in our events table
+    const providerEventIds = bookings.map((b) => b.providerEventId!);
+    const existingEvents = await prisma.event.findMany({
+      where: { sourceEventId: { in: providerEventIds } },
+      select: { sourceEventId: true },
     });
-    console.log(`[sync] Cancelled ${staleBookingIds.length} bookings for user ${userId} (provider events deleted)`);
+    const existingIds = new Set(existingEvents.map((e) => e.sourceEventId));
+
+    // Cancel bookings whose events no longer exist
+    const staleBookingIds = bookings
+      .filter((b) => !existingIds.has(b.providerEventId!))
+      .map((b) => b.id);
+
+    if (staleBookingIds.length > 0) {
+      await prisma.booking.updateMany({
+        where: { id: { in: staleBookingIds } },
+        data: { status: "cancelled" },
+      });
+      console.log(`[sync] Cancelled ${staleBookingIds.length} bookings for user ${userId} (provider events deleted)`);
+    }
+  }
+
+  // Retry cleanup: delete provider events for cancelled bookings where deletion failed.
+  // These have status=cancelled but still a providerEventId (not cleared on successful delete).
+  const failedDeletes = await prisma.booking.findMany({
+    where: {
+      userId,
+      status: "cancelled",
+      providerEventId: { not: null },
+      startTime: { gt: new Date() },
+    },
+    include: { eventType: { select: { id: true, bookingCalendarEntryId: true } } },
+  });
+
+  for (const booking of failedDeletes) {
+    try {
+      const bookingEntryId = booking.eventType.bookingCalendarEntryId;
+      if (!bookingEntryId) continue;
+
+      const entry = await prisma.calendarEntry.findFirst({
+        where: { id: bookingEntryId, source: { userId } },
+        include: { source: true },
+      });
+      if (!entry || entry.source.emailForInvitations) continue;
+
+      const provider = getProvider(entry.source.provider);
+      const creds = JSON.parse(
+        decrypt(entry.source.credentials, process.env.ENCRYPTION_SECRET!)
+      );
+      const token: TokenSet = {
+        accessToken: creds.accessToken || "",
+        refreshToken: creds.refreshToken || null,
+        expiresAt: creds.expiresAt ? new Date(creds.expiresAt) : null,
+      };
+
+      await provider.deleteEvent(token, entry.providerCalendarId, booking.providerEventId!);
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { providerEventId: null },
+      });
+      console.log(`[sync] Retry-deleted provider event for cancelled booking ${booking.id} (${booking.guestName})`);
+    } catch (err) {
+      console.error(`[sync] Retry-delete failed for booking ${booking.id}:`, err);
+    }
   }
 }
 
