@@ -410,6 +410,10 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       }));
     }
 
+    if (event.sensitivity) {
+      body.sensitivity = event.sensitivity;
+    }
+
     return body;
   }
 

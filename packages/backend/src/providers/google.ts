@@ -330,6 +330,10 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
       body.attendees = event.attendees.map((a) => ({ email: a.email, displayName: a.name }));
     }
 
+    if (event.sensitivity === "private") {
+      body.visibility = "private";
+    }
+
     return body;
   }
 

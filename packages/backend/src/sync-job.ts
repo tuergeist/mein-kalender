@@ -371,6 +371,7 @@ async function cloneToSingleTarget(
     skipDeclined: boolean;
     skipFree: boolean;
     skipIgnored: boolean;
+    markAsPrivate: boolean;
     source: { provider: string; credentials: string };
     sourceCalendars: Array<{ id: string }>;
   }
@@ -536,6 +537,7 @@ async function cloneToSingleTarget(
       startTime: event.startTime,
       endTime: event.endTime,
       allDay: event.allDay,
+      ...(targetEntry.markAsPrivate && { sensitivity: "private" as const }),
     };
   }
 

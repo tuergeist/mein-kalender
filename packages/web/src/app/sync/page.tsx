@@ -38,6 +38,7 @@ interface SyncTarget {
   skipDeclined: boolean;
   skipFree: boolean;
   skipIgnored: boolean;
+  markAsPrivate: boolean;
   source: { id: string; provider: string; label: string | null };
   sourceCalendars: Array<{ id: string; name: string }>;
 }
@@ -65,6 +66,7 @@ export default function SyncPage() {
   const [formSkipDeclined, setFormSkipDeclined] = useState(true);
   const [formSkipFree, setFormSkipFree] = useState(false);
   const [formSkipIgnored, setFormSkipIgnored] = useState(true);
+  const [formMarkAsPrivate, setFormMarkAsPrivate] = useState(false);
   const [formSourceCalendarIds, setFormSourceCalendarIds] = useState<string[]>([]);
   const [formSaving, setFormSaving] = useState(false);
 
@@ -129,6 +131,7 @@ export default function SyncPage() {
     setFormSkipDeclined(true);
     setFormSkipFree(false);
     setFormSkipIgnored(true);
+    setFormMarkAsPrivate(false);
     setFormSourceCalendarIds([]);
     setShowTargetForm(true);
   }
@@ -143,6 +146,7 @@ export default function SyncPage() {
     setFormSkipDeclined(t.skipDeclined);
     setFormSkipFree(t.skipFree);
     setFormSkipIgnored(t.skipIgnored);
+    setFormMarkAsPrivate(t.markAsPrivate);
     setFormSourceCalendarIds(t.sourceCalendars.map((c) => c.id));
     setShowTargetForm(true);
   }
@@ -161,6 +165,7 @@ export default function SyncPage() {
           skipDeclined: formSkipDeclined,
           skipFree: formSkipFree,
           skipIgnored: formSkipIgnored,
+          markAsPrivate: formMarkAsPrivate,
           sourceCalendarEntryIds: formSourceCalendarIds,
         }),
       });
@@ -176,6 +181,7 @@ export default function SyncPage() {
           skipDeclined: formSkipDeclined,
           skipFree: formSkipFree,
           skipIgnored: formSkipIgnored,
+          markAsPrivate: formMarkAsPrivate,
           sourceCalendarEntryIds: formSourceCalendarIds,
         }),
       });
@@ -325,6 +331,15 @@ export default function SyncPage() {
             Termine, die du in der Kalenderansicht ignorierst, werden nicht zum Sync-Ziel kopiert. Bereits synchronisierte Kopien werden beim nächsten Sync entfernt.
           </p>
         )}
+        <Divider />
+        <Switch size="sm" isSelected={formMarkAsPrivate} onValueChange={setFormMarkAsPrivate}>
+          <span className="text-sm">Termine als privat markieren</span>
+        </Switch>
+        {formMarkAsPrivate && (
+          <p className="text-xs text-default-400">
+            Synchronisierte Termine werden im Zielkalender als privat markiert. Andere Personen sehen nur, dass du beschäftigt bist, aber nicht den Titel oder Details.
+          </p>
+        )}
         <div>
           <p className="mb-2 text-sm font-medium">Quellkalender</p>
           <p className="mb-2 text-xs text-default-400">
@@ -338,7 +353,7 @@ export default function SyncPage() {
                 <div key={source.id} className="mb-3">
                   <div className="mb-1 flex items-center gap-1.5">
                     <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
-                      {{ google: "G", outlook: "O", proton: "P", ics: "I" }[source.provider] || "?"}
+                      {{ google: "G", outlook: "O", apple: "A", proton: "P", ics: "I" }[source.provider] || "?"}
                     </span>
                     <span className="text-xs font-medium text-gray-500">{source.label || source.provider}</span>
                   </div>
@@ -557,7 +572,7 @@ export default function SyncPage() {
                       <div key={source.id} className="mb-3">
                         <div className="mb-1 flex items-center gap-1.5">
                           <span className="flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500">
-                            {{ google: "G", outlook: "O", proton: "P", ics: "I" }[source.provider] || "?"}
+                            {{ google: "G", outlook: "O", apple: "A", proton: "P", ics: "I" }[source.provider] || "?"}
                           </span>
                           <span className="text-xs font-medium text-gray-500">{source.label || source.provider}</span>
                         </div>

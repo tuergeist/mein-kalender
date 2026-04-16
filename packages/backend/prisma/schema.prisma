@@ -31,6 +31,7 @@ model User {
   subscriptionStatus     String?  // "active", "pending", "cancelled", "suspended"
   subscriptionPlan       String?  // "monthly", "yearly"
   trialEndsAt            DateTime?
+  mcpTokenHash           String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
@@ -103,6 +104,7 @@ model CalendarEntry {
   skipDeclined           Boolean @default(true)
   skipFree               Boolean @default(false)
   skipIgnored            Boolean @default(true)
+  markAsPrivate          Boolean @default(false)
   readOnly           Boolean @default(false)
   enabled            Boolean @default(true)
 

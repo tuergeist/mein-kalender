@@ -1,6 +1,7 @@
 export enum Provider {
   GOOGLE = "google",
   OUTLOOK = "outlook",
+  APPLE = "apple",
   ICS = "ics",
 }
 
@@ -31,6 +32,7 @@ export interface NormalizedEvent {
   allDay: boolean;
   providerMetadata?: Record<string, unknown>;
   attendees?: Array<{ email: string; name?: string }>;
+  sensitivity?: "normal" | "private";
 }
 
 export interface EventDelta {
