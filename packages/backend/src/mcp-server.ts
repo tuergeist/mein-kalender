@@ -1,4 +1,5 @@
-// @ts-nocheck — MCP SDK registerTool generics cause TS2589 with Zod v3 (runtime validation works correctly)
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck — MCP SDK registerTool generics cause TS2589 with Zod v3
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -27,8 +28,7 @@ export function createMcpServer(userId: string): McpServer {
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true },
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (_args: unknown) => {
+    async () => {
       const sources = await prisma.calendarSource.findMany({
         where: { userId },
         include: { calendarEntries: { where: { enabled: true } } },
