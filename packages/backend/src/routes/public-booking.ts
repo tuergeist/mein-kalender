@@ -855,11 +855,39 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
   const effectiveStart = dayStart > now ? dayStart : now;
   if (effectiveStart >= dayEnd) return [];
 
+  // Resolve buffer times: event type overrides user defaults (null = use default, 0 = explicit zero)
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { defaultBufferBeforeMinutes: true, defaultBufferAfterMinutes: true, applyBuffersToAllEvents: true },
+  });
+
+  let bufferBefore = user?.defaultBufferBeforeMinutes ?? 0;
+  let bufferAfter = user?.defaultBufferAfterMinutes ?? 0;
+  const applyBuffersToAllEvents = user?.applyBuffersToAllEvents ?? false;
+
+  if (eventTypeId) {
+    const et = await prisma.eventType.findUnique({
+      where: { id: eventTypeId },
+      select: { bufferBeforeMinutes: true, bufferAfterMinutes: true },
+    });
+    if (et) {
+      if (et.bufferBeforeMinutes !== null) bufferBefore = et.bufferBeforeMinutes;
+      if (et.bufferAfterMinutes !== null) bufferAfter = et.bufferAfterMinutes;
+    }
+  }
+
+  const bufferBeforeMs = bufferBefore * 60 * 1000;
+  const bufferAfterMs = bufferAfter * 60 * 1000;
+
   // 2. Load busy events for this date (excluding ignored events)
+  // Expand query window by buffer amounts to catch events that could affect edge slots
+  const queryStart = new Date(dayStart.getTime() - bufferAfterMs);
+  const queryEnd = new Date(dayEnd.getTime() + bufferBeforeMs);
+
   const events = await prisma.event.findMany({
     where: {
-      startTime: { lt: dayEnd },
-      endTime: { gt: dayStart },
+      startTime: { lt: queryEnd },
+      endTime: { gt: queryStart },
       ignored: false,
       calendarEntry: {
         source: { userId },
@@ -884,16 +912,28 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
     where: {
       userId,
       status: "confirmed",
-      startTime: { lt: dayEnd },
-      endTime: { gt: dayStart },
+      startTime: { lt: queryEnd },
+      endTime: { gt: queryStart },
     },
     select: { startTime: true, endTime: true },
   });
 
-  // Combine all busy periods
+  // Combine all busy periods, optionally expanding them by buffer amounts
   const busyPeriods = [
-    ...busyEvents.map((e) => ({ start: e.startTime.getTime(), end: e.endTime.getTime() })),
-    ...bookings.map((b) => ({ start: b.startTime.getTime(), end: b.endTime.getTime() })),
+    ...busyEvents.map((e) => {
+      const start = e.startTime.getTime();
+      const end = e.endTime.getTime();
+      return applyBuffersToAllEvents
+        ? { start: start - bufferBeforeMs, end: end + bufferAfterMs }
+        : { start, end };
+    }),
+    ...bookings.map((b) => {
+      const start = b.startTime.getTime();
+      const end = b.endTime.getTime();
+      return applyBuffersToAllEvents
+        ? { start: start - bufferBeforeMs, end: end + bufferAfterMs }
+        : { start, end };
+    }),
   ];
 
   // 4. Generate slots
@@ -911,12 +951,25 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
     cursor = startMs;
   }
 
-  while (cursor + durationMs <= dayEnd.getTime()) {
+  const dayStartMs = dayStart.getTime();
+  const dayEndMs = dayEnd.getTime();
+
+  while (cursor + durationMs <= dayEndMs) {
     const slotEnd = cursor + durationMs;
 
-    // Check if slot overlaps any busy period
+    // The full reserved range includes buffers before and after the slot
+    const reservedStart = cursor - bufferBeforeMs;
+    const reservedEnd = slotEnd + bufferAfterMs;
+
+    // Buffer must not extend beyond working hours
+    if (reservedStart < dayStartMs || reservedEnd > dayEndMs) {
+      cursor += durationMs;
+      continue;
+    }
+
+    // Check if the reserved range (slot + buffers) overlaps any busy period
     const overlaps = busyPeriods.some(
-      (bp) => cursor < bp.end && slotEnd > bp.start
+      (bp) => reservedStart < bp.end && reservedEnd > bp.start
     );
 
     if (!overlaps) {
