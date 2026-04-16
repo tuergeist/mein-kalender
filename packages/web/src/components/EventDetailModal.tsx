@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   Modal,
@@ -73,6 +73,25 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
   const [error, setError] = useState("");
   const [showSeriesDialog, setShowSeriesDialog] = useState(false);
   const [ignoring, setIgnoring] = useState(false);
+  // null = loading/no targets, true = some targets skip ignored, false = targets exist but none skip
+  const [syncSkipsIgnored, setSyncSkipsIgnored] = useState<boolean | null>(null);
+
+  const accessToken = (session as { accessToken?: string } | null)?.accessToken;
+
+  useEffect(() => {
+    if (!event || !accessToken) return;
+    apiAuthFetch("/api/sync-targets", accessToken)
+      .then((res) => res.json())
+      .then((data) => {
+        const targets = data.targets || [];
+        if (targets.length === 0) {
+          setSyncSkipsIgnored(null);
+        } else {
+          setSyncSkipsIgnored(targets.some((t: { skipIgnored: boolean }) => t.skipIgnored));
+        }
+      })
+      .catch(() => setSyncSkipsIgnored(null));
+  }, [event?.id, accessToken]);
 
   if (!event) return null;
 
@@ -87,13 +106,12 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
   }
 
   async function handleSave() {
-    const token = (session as { accessToken?: string })?.accessToken;
-    if (!token) return;
+    if (!accessToken) return;
 
     setSaving(true);
     setError("");
 
-    const res = await apiAuthFetch(`/api/events/${event!.id}`, token, {
+    const res = await apiAuthFetch(`/api/events/${event!.id}`, accessToken, {
       method: "PUT",
       body: JSON.stringify({
         title,
@@ -116,11 +134,10 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
   }
 
   async function handleIgnoreSingle() {
-    const token = (session as { accessToken?: string })?.accessToken;
-    if (!token) return;
+    if (!accessToken) return;
     setIgnoring(true);
     const newIgnored = !event!.extendedProps.ignored;
-    const res = await apiAuthFetch(`/api/events/${event!.id}/ignore`, token, {
+    const res = await apiAuthFetch(`/api/events/${event!.id}/ignore`, accessToken, {
       method: "PUT",
       body: JSON.stringify({ ignored: newIgnored }),
     });
@@ -133,11 +150,10 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
   }
 
   async function handleIgnoreSeries() {
-    const token = (session as { accessToken?: string })?.accessToken;
-    if (!token) return;
+    if (!accessToken) return;
     setIgnoring(true);
     const newIgnored = !event!.extendedProps.ignored;
-    const res = await apiAuthFetch(`/api/events/ignore-series`, token, {
+    const res = await apiAuthFetch(`/api/events/ignore-series`, accessToken, {
       method: "PUT",
       body: JSON.stringify({ eventId: event!.id, ignored: newIgnored }),
     });
@@ -243,7 +259,11 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
               </p>
               {!isIgnored && (
                 <p className="text-xs text-default-400">
-                  Ignorierte Termine werden nicht zu Sync-Zielen kopiert und vorhandene Kopien entfernt.
+                  {syncSkipsIgnored === true
+                    ? "Wird aus Sync-Zielen entfernt und nicht mehr als Kollision gewertet."
+                    : syncSkipsIgnored === false
+                      ? "Wird weiterhin synchronisiert, aber nicht mehr als Kollision gewertet."
+                      : "Wird nicht mehr als Kollision gewertet."}
                 </p>
               )}
               <div className="flex gap-2 justify-end">
