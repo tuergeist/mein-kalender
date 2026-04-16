@@ -186,6 +186,7 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
 
       const data = await res.json() as any;
       for (const item of data.value || []) {
+        if (item.isCancelled) continue;
         created.push(this.mapEvent(item, calendarId));
       }
       currentUrl = data["@odata.nextLink"] ?? null;
@@ -223,7 +224,7 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
 
       const data = await res.json() as any;
       for (const item of data.value || []) {
-        if (item["@removed"]) {
+        if (item["@removed"] || item.isCancelled) {
           deleted.push(item.id);
           continue;
         }
