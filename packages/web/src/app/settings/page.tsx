@@ -256,7 +256,7 @@ function SettingsPageContent() {
                   </Button>
                 </div>
                 <p className="mt-2 text-xs text-default-400">
-                  MCP-Endpunkt: <code className="rounded bg-default-100 px-1">https://api.mein-kalender.link/api/mcp</code>
+                  MCP-Endpunkt: <code className="rounded bg-default-100 px-1">https://app.mein-kalender.link/api/mcp</code>
                 </p>
               </div>
             )}
