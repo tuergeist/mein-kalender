@@ -153,6 +153,33 @@ export function createMcpServer(userId: string): McpServer {
         allDay: allDay || false,
       });
 
+      await prisma.event.upsert({
+        where: {
+          calendarEntryId_sourceEventId: {
+            calendarEntryId: entry.id,
+            sourceEventId: created.sourceEventId,
+          },
+        },
+        create: {
+          calendarEntryId: entry.id,
+          sourceEventId: created.sourceEventId,
+          title: created.title,
+          description: created.description,
+          location: created.location,
+          startTime: created.startTime,
+          endTime: created.endTime,
+          allDay: created.allDay,
+        },
+        update: {
+          title: created.title,
+          description: created.description,
+          location: created.location,
+          startTime: created.startTime,
+          endTime: created.endTime,
+          allDay: created.allDay,
+        },
+      });
+
       return {
         content: [{
           type: "text" as const,
@@ -213,6 +240,21 @@ export function createMcpServer(userId: string): McpServer {
 
       const updated = await provider.updateEvent(token, entry.providerCalendarId, eventId, updates);
 
+      await prisma.event.updateMany({
+        where: {
+          calendarEntryId: entry.id,
+          sourceEventId: eventId,
+        },
+        data: {
+          title: updated.title,
+          description: updated.description,
+          location: updated.location,
+          startTime: updated.startTime,
+          endTime: updated.endTime,
+          allDay: updated.allDay,
+        },
+      });
+
       return {
         content: [{
           type: "text" as const,
@@ -256,6 +298,13 @@ export function createMcpServer(userId: string): McpServer {
       const token = getTokenSet(entry.source.credentials);
 
       await provider.deleteEvent(token, entry.providerCalendarId, eventId);
+
+      await prisma.event.deleteMany({
+        where: {
+          calendarEntryId: entry.id,
+          sourceEventId: eventId,
+        },
+      });
 
       return {
         content: [{
