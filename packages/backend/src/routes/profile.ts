@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import { randomBytes, createHash } from "crypto";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
 import { cancelSubscription } from "../lib/mollie";
@@ -216,4 +217,43 @@ export async function profileRoutes(app: FastifyInstance) {
       return updated;
     }
   );
+
+  // Generate MCP API token
+  app.post("/api/profile/mcp-token", async (request) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+
+    const token = `mcp_${randomBytes(32).toString("base64url")}`;
+    const hash = createHash("sha256").update(token).digest("hex");
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { mcpTokenHash: hash },
+    });
+
+    return { token };
+  });
+
+  // Check if MCP token exists
+  app.get("/api/profile/mcp-token", async (request) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { mcpTokenHash: true },
+    });
+
+    return { hasToken: !!dbUser?.mcpTokenHash };
+  });
+
+  // Revoke MCP API token
+  app.delete("/api/profile/mcp-token", async (request, reply) => {
+    const { user } = request as unknown as AuthenticatedRequest;
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { mcpTokenHash: null },
+    });
+
+    return reply.code(204).send();
+  });
 }

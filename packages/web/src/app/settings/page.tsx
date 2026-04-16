@@ -47,6 +47,9 @@ function SettingsPageContent() {
   const [showDisconnectModal, setShowDisconnectModal] = useState<string | null>(null);
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState("");
+  const [mcpHasToken, setMcpHasToken] = useState(false);
+  const [mcpToken, setMcpToken] = useState<string | null>(null);
+  const [mcpLoading, setMcpLoading] = useState(false);
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
   useEffect(() => {
@@ -55,8 +58,15 @@ function SettingsPageContent() {
 
   async function loadData() {
     if (!accessToken) return;
-    const res = await apiAuthFetch("/api/sources", accessToken);
-    if (res.ok) setSources(await res.json());
+    const [sourcesRes, mcpRes] = await Promise.all([
+      apiAuthFetch("/api/sources", accessToken),
+      apiAuthFetch("/api/profile/mcp-token", accessToken),
+    ]);
+    if (sourcesRes.ok) setSources(await sourcesRes.json());
+    if (mcpRes.ok) {
+      const data = await mcpRes.json();
+      setMcpHasToken(data.hasToken);
+    }
   }
 
   async function handleRenameSource(sourceId: string, label: string) {
@@ -171,7 +181,7 @@ function SettingsPageContent() {
                             className="group flex cursor-pointer items-center gap-1.5 font-medium hover:underline"
                             onClick={() => { setEditingSourceId(source.id); setEditingLabel(source.label || ""); }}
                           >
-                            {source.label || { google: "Google Kalender", outlook: "Microsoft 365", proton: "Proton Kalender", ics: "ICS" }[source.provider] || source.provider}
+                            {source.label || { google: "Google Kalender", outlook: "Microsoft 365", apple: "iCloud Kalender", proton: "Proton Kalender", ics: "ICS" }[source.provider] || source.provider}
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-default-300 opacity-0 group-hover:opacity-100"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                           </span>
                         )}
@@ -212,6 +222,9 @@ function SettingsPageContent() {
                 <Button variant="bordered" className="justify-start" onPress={() => handleAddProvider("outlook")}>
                   Microsoft Outlook
                 </Button>
+                <Button variant="bordered" className="justify-start" onPress={() => { setShowAddModal(false); window.location.href = "/settings/apple"; }}>
+                  iCloud Kalender
+                </Button>
                 <Button variant="bordered" className="justify-start" onPress={() => { setShowAddModal(false); window.location.href = "/settings/proton"; }}>
                   Proton Kalender (via Bridge)
                 </Button>
@@ -223,6 +236,71 @@ function SettingsPageContent() {
             </ModalBody>
           </ModalContent>
         </Modal>
+
+        {/* MCP API Token */}
+        <Card>
+          <CardHeader><h2 className="text-lg font-semibold">MCP-Zugang</h2></CardHeader>
+          <CardBody className="space-y-3">
+            <p className="text-sm text-default-500">
+              Verbinde KI-Assistenten (Claude Desktop, Claude Code, etc.) mit deinen Kalendern über das Model Context Protocol.
+            </p>
+            {mcpToken && (
+              <div className="rounded-lg border border-[var(--color-amber-200)] bg-[var(--color-amber-50)] p-3">
+                <p className="mb-2 text-xs font-medium text-[var(--color-amber-800)]">
+                  Dein API-Token — wird nur einmal angezeigt:
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="block flex-1 overflow-x-auto rounded bg-white px-2 py-1 text-xs font-mono">{mcpToken}</code>
+                  <Button size="sm" variant="flat" onPress={() => navigator.clipboard.writeText(mcpToken)}>
+                    Kopieren
+                  </Button>
+                </div>
+                <p className="mt-2 text-xs text-default-400">
+                  MCP-Endpunkt: <code className="rounded bg-default-100 px-1">https://api.mein-kalender.link/api/mcp</code>
+                </p>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              {mcpHasToken && !mcpToken && (
+                <Chip size="sm" color="success" variant="flat">Token aktiv</Chip>
+              )}
+              <Button
+                size="sm"
+                color={mcpHasToken ? "warning" : "primary"}
+                variant={mcpHasToken ? "flat" : "solid"}
+                isLoading={mcpLoading}
+                onPress={async () => {
+                  if (!accessToken) return;
+                  setMcpLoading(true);
+                  const res = await apiAuthFetch("/api/profile/mcp-token", accessToken, { method: "POST" });
+                  if (res.ok) {
+                    const data = await res.json();
+                    setMcpToken(data.token);
+                    setMcpHasToken(true);
+                  }
+                  setMcpLoading(false);
+                }}
+              >
+                {mcpHasToken ? "Token neu generieren" : "Token generieren"}
+              </Button>
+              {mcpHasToken && (
+                <Button
+                  size="sm"
+                  color="danger"
+                  variant="light"
+                  onPress={async () => {
+                    if (!accessToken) return;
+                    await apiAuthFetch("/api/profile/mcp-token", accessToken, { method: "DELETE" });
+                    setMcpHasToken(false);
+                    setMcpToken(null);
+                  }}
+                >
+                  Widerrufen
+                </Button>
+              )}
+            </div>
+          </CardBody>
+        </Card>
 
         {/* Disconnect Confirmation Modal */}
         <Modal isOpen={!!showDisconnectModal} onClose={() => setShowDisconnectModal(null)}>
