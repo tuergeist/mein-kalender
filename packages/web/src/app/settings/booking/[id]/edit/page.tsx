@@ -42,6 +42,8 @@ interface EventType {
   avatarUrl: string | null;
   backgroundUrl: string | null;
   backgroundOpacity: number | null;
+  bufferBeforeMinutes: number | null;
+  bufferAfterMinutes: number | null;
 }
 
 export default function EditEventTypePage() {
@@ -74,6 +76,8 @@ export default function EditEventTypePage() {
   const [formAvatarUrl, setFormAvatarUrl] = useState("");
   const [formBackgroundUrl, setFormBackgroundUrl] = useState("");
   const [formBackgroundOpacity, setFormBackgroundOpacity] = useState(0.85);
+  const [formBufferBefore, setFormBufferBefore] = useState("");
+  const [formBufferAfter, setFormBufferAfter] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -127,6 +131,8 @@ export default function EditEventTypePage() {
       setFormAvatarUrl(et.avatarUrl || "");
       setFormBackgroundUrl(et.backgroundUrl || "");
       setFormBackgroundOpacity(et.backgroundOpacity ?? 0.85);
+      setFormBufferBefore(et.bufferBeforeMinutes != null ? String(et.bufferBeforeMinutes) : "");
+      setFormBufferAfter(et.bufferAfterMinutes != null ? String(et.bufferAfterMinutes) : "");
     }
   }
 
@@ -196,6 +202,8 @@ export default function EditEventTypePage() {
       avatarUrl: formAvatarUrl || null,
       backgroundUrl: formBackgroundUrl || null,
       backgroundOpacity: formBackgroundUrl ? formBackgroundOpacity : null,
+      bufferBeforeMinutes: formBufferBefore !== "" ? parseInt(formBufferBefore) || 0 : null,
+      bufferAfterMinutes: formBufferAfter !== "" ? parseInt(formBufferAfter) || 0 : null,
     };
     const res = await apiAuthFetch(`/api/event-types/${id}`, accessToken, { method: "PUT", body: JSON.stringify(body) });
     setSaving(false);
@@ -303,6 +311,26 @@ export default function EditEventTypePage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Buffer Time */}
+            <div className="border-t border-default-100 pt-4">
+              <p className="mb-1 text-sm font-medium">Pufferzeit</p>
+              <p className="mb-3 text-xs text-default-400">Blockiere Zeit vor und nach Buchungen. Leer lassen, um die Standardwerte zu verwenden.</p>
+              <div className="flex gap-4">
+                <Input label="Vorher (Min.)" type="number" size="sm" min="0" value={formBufferBefore} onValueChange={setFormBufferBefore} placeholder="Standard" className="w-40" />
+                <Input label="Nachher (Min.)" type="number" size="sm" min="0" value={formBufferAfter} onValueChange={setFormBufferAfter} placeholder="Standard" className="w-40" />
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {[5, 10, 15, 30].map((m) => (
+                  <Button key={m} size="sm" variant="flat" className="h-7 min-w-0 px-2.5 text-xs" onPress={() => { setFormBufferBefore(String(m)); setFormBufferAfter(String(m)); }}>
+                    {m} Min.
+                  </Button>
+                ))}
+                <Button size="sm" variant="flat" className="h-7 min-w-0 px-2.5 text-xs text-default-400" onPress={() => { setFormBufferBefore(""); setFormBufferAfter(""); }}>
+                  Standard
+                </Button>
+              </div>
             </div>
           </CardBody>
         </Card>

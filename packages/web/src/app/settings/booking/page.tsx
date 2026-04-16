@@ -55,6 +55,10 @@ export default function BookingSettingsPage() {
   const [uploading, setUploading] = useState<string | null>(null);
   const [showUsernameWarning, setShowUsernameWarning] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [bufferBefore, setBufferBefore] = useState("0");
+  const [bufferAfter, setBufferAfter] = useState("0");
+  const [applyBuffersToAll, setApplyBuffersToAll] = useState(false);
+  const [bufferSaving, setBufferSaving] = useState(false);
 
   useEffect(() => {
     if (accessToken) { loadProfile(); loadEventTypes(); loadAvailability(); loadCalendars(); }
@@ -67,6 +71,9 @@ export default function BookingSettingsPage() {
       const data = await res.json();
       setUsername(data.username || ""); setSavedUsername(data.username || ""); setBookingCalendarId(data.bookingCalendarEntryId || "");
       setBrandColor(data.brandColor || ""); setAccentColor(data.accentColor || ""); setAvatarUrl(data.avatarUrl || ""); setBackgroundUrl(data.backgroundUrl || ""); setBackgroundOpacity(data.backgroundOpacity ?? 0.85);
+      setBufferBefore(String(data.defaultBufferBeforeMinutes ?? 0));
+      setBufferAfter(String(data.defaultBufferAfterMinutes ?? 0));
+      setApplyBuffersToAll(data.applyBuffersToAllEvents ?? false);
     }
   }
 
@@ -176,6 +183,20 @@ export default function BookingSettingsPage() {
     input.click();
   }
 
+  async function saveBufferSettings() {
+    if (!accessToken) return;
+    setBufferSaving(true);
+    await apiAuthFetch("/api/profile/buffer-settings", accessToken, {
+      method: "PUT",
+      body: JSON.stringify({
+        defaultBufferBeforeMinutes: parseInt(bufferBefore) || 0,
+        defaultBufferAfterMinutes: parseInt(bufferAfter) || 0,
+        applyBuffersToAllEvents: applyBuffersToAll,
+      }),
+    });
+    setBufferSaving(false);
+  }
+
   const bookingBaseUrl = typeof window !== "undefined" ? `${window.location.origin}/book/${savedUsername}` : "";
 
   return (
@@ -278,6 +299,38 @@ export default function BookingSettingsPage() {
             </div>
           </CardBody>
         </Card>
+        {/* Default Buffer Time */}
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Standard-Pufferzeit</h2>
+            <Button size="sm" color="primary" isLoading={bufferSaving} onPress={saveBufferSettings}>Speichern</Button>
+          </CardHeader>
+          <CardBody className="space-y-4">
+            <p className="text-sm text-default-400">Standardpuffer vor und nach Buchungen. Einzelne Terminarten können diese Werte überschreiben.</p>
+            <div className="flex gap-4">
+              <Input label="Vorher (Min.)" type="number" size="sm" min="0" value={bufferBefore} onValueChange={setBufferBefore} className="w-40" />
+              <Input label="Nachher (Min.)" type="number" size="sm" min="0" value={bufferAfter} onValueChange={setBufferAfter} className="w-40" />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[5, 10, 15, 30].map((m) => (
+                <Button key={m} size="sm" variant="flat" className="h-7 min-w-0 px-2.5 text-xs" onPress={() => { setBufferBefore(String(m)); setBufferAfter(String(m)); }}>
+                  {m} Min.
+                </Button>
+              ))}
+              <Button size="sm" variant="flat" className="h-7 min-w-0 px-2.5 text-xs text-default-400" onPress={() => { setBufferBefore("0"); setBufferAfter("0"); }}>
+                Kein Puffer
+              </Button>
+            </div>
+            <div className="border-t border-default-100 pt-4">
+              <div className="flex items-center gap-2">
+                <Switch size="sm" isSelected={applyBuffersToAll} onValueChange={setApplyBuffersToAll} />
+                <span className="text-sm font-medium">Puffer auf alle Kalendertermine anwenden</span>
+              </div>
+              <p className="mt-1 ml-10 text-xs text-default-400">Wenn aktiv, werden Pufferzeiten nicht nur für Buchungen, sondern für alle Termine in deinen Kalendern berücksichtigt.</p>
+            </div>
+          </CardBody>
+        </Card>
+
         {/* Username change warning modal */}
         <Modal isOpen={showUsernameWarning} onClose={() => setShowUsernameWarning(false)}>
           <ModalContent>
