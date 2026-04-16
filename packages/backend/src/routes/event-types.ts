@@ -73,14 +73,21 @@ export async function eventTypesRoutes(app: FastifyInstance) {
   );
 
   // Create event type
-  app.post<{ Body: { name: string; slug?: string; durationMinutes: number; description?: string; location?: string; color?: string; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; bookingCalendarEntryId?: string } }>(
+  app.post<{ Body: { name: string; slug?: string; durationMinutes: number; description?: string; location?: string; color?: string; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; bookingCalendarEntryId?: string; bufferBeforeMinutes?: number | null; bufferAfterMinutes?: number | null } }>(
     "/api/event-types",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
-      const { name, slug: requestedSlug, durationMinutes, description, location, color, redirectUrl, redirectTitle, redirectDelaySecs, bookingCalendarEntryId } = request.body;
+      const { name, slug: requestedSlug, durationMinutes, description, location, color, redirectUrl, redirectTitle, redirectDelaySecs, bookingCalendarEntryId, bufferBeforeMinutes, bufferAfterMinutes } = request.body;
 
       if (!name || !durationMinutes) {
         return reply.code(400).send({ error: "name and durationMinutes are required" });
+      }
+
+      if (bufferBeforeMinutes !== undefined && bufferBeforeMinutes !== null && (!Number.isInteger(bufferBeforeMinutes) || bufferBeforeMinutes < 0)) {
+        return reply.code(400).send({ error: "bufferBeforeMinutes must be a non-negative integer" });
+      }
+      if (bufferAfterMinutes !== undefined && bufferAfterMinutes !== null && (!Number.isInteger(bufferAfterMinutes) || bufferAfterMinutes < 0)) {
+        return reply.code(400).send({ error: "bufferAfterMinutes must be a non-negative integer" });
       }
 
       // Determine slug: user-provided, auto-generated from name, or hash fallback
@@ -128,6 +135,8 @@ export async function eventTypesRoutes(app: FastifyInstance) {
           redirectTitle: redirectTitle || null,
           ...(redirectDelaySecs !== undefined && { redirectDelaySecs }),
           bookingCalendarEntryId: bookingCalendarEntryId || null,
+          ...(bufferBeforeMinutes !== undefined && { bufferBeforeMinutes: bufferBeforeMinutes }),
+          ...(bufferAfterMinutes !== undefined && { bufferAfterMinutes: bufferAfterMinutes }),
         },
       });
 
@@ -136,18 +145,26 @@ export async function eventTypesRoutes(app: FastifyInstance) {
   );
 
   // Update event type
-  app.put<{ Params: { id: string }; Body: { name?: string; slug?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[]; bookingCalendarEntryId?: string | null; availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>; enableShortLink?: boolean; brandColor?: string | null; accentColor?: string | null; avatarUrl?: string | null; backgroundUrl?: string | null; backgroundOpacity?: number | null } }>(
+  app.put<{ Params: { id: string }; Body: { name?: string; slug?: string; durationMinutes?: number; description?: string; location?: string; color?: string; enabled?: boolean; redirectUrl?: string; redirectTitle?: string; redirectDelaySecs?: number; calendarEntryIds?: string[]; bookingCalendarEntryId?: string | null; availabilityRules?: Array<{ dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }>; enableShortLink?: boolean; brandColor?: string | null; accentColor?: string | null; avatarUrl?: string | null; backgroundUrl?: string | null; backgroundOpacity?: number | null; bufferBeforeMinutes?: number | null; bufferAfterMinutes?: number | null } }>(
     "/api/event-types/:id",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
       const { id } = request.params;
-      const { name, slug: requestedSlug, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds, bookingCalendarEntryId, availabilityRules, enableShortLink, brandColor, accentColor, avatarUrl, backgroundUrl, backgroundOpacity } = request.body;
+      const { name, slug: requestedSlug, durationMinutes, description, location, color, enabled, redirectUrl, redirectTitle, redirectDelaySecs, calendarEntryIds, bookingCalendarEntryId, availabilityRules, enableShortLink, brandColor, accentColor, avatarUrl, backgroundUrl, backgroundOpacity, bufferBeforeMinutes, bufferAfterMinutes } = request.body;
 
       const existing = await prisma.eventType.findFirst({
         where: { id, userId: user.id },
       });
       if (!existing) {
         return reply.code(404).send({ error: "Event type not found" });
+      }
+
+      // Validate buffer fields
+      if (bufferBeforeMinutes !== undefined && bufferBeforeMinutes !== null && (!Number.isInteger(bufferBeforeMinutes) || bufferBeforeMinutes < 0)) {
+        return reply.code(400).send({ error: "bufferBeforeMinutes must be a non-negative integer" });
+      }
+      if (bufferAfterMinutes !== undefined && bufferAfterMinutes !== null && (!Number.isInteger(bufferAfterMinutes) || bufferAfterMinutes < 0)) {
+        return reply.code(400).send({ error: "bufferAfterMinutes must be a non-negative integer" });
       }
 
       // Validate slug if provided
@@ -199,6 +216,8 @@ export async function eventTypesRoutes(app: FastifyInstance) {
           ...(avatarUrl !== undefined && { avatarUrl: avatarUrl || null }),
           ...(backgroundUrl !== undefined && { backgroundUrl: backgroundUrl || null }),
           ...(backgroundOpacity !== undefined && { backgroundOpacity }),
+          ...(bufferBeforeMinutes !== undefined && { bufferBeforeMinutes }),
+          ...(bufferAfterMinutes !== undefined && { bufferAfterMinutes }),
         },
       });
 

@@ -20,6 +20,7 @@ export async function profileRoutes(app: FastifyInstance) {
         id: true, email: true, username: true, displayName: true, avatarUrl: true,
         brandColor: true, accentColor: true, backgroundUrl: true, backgroundOpacity: true,
         bookingCalendarEntryId: true,
+        defaultBufferBeforeMinutes: true, defaultBufferAfterMinutes: true, applyBuffersToAllEvents: true,
       },
     });
 
@@ -160,6 +161,35 @@ export async function profileRoutes(app: FastifyInstance) {
 
     return reply.code(204).send();
   });
+
+  // Update buffer settings
+  app.put<{ Body: { defaultBufferBeforeMinutes?: number; defaultBufferAfterMinutes?: number; applyBuffersToAllEvents?: boolean } }>(
+    "/api/profile/buffer-settings",
+    async (request, reply) => {
+      const { user } = request as unknown as AuthenticatedRequest;
+      const { defaultBufferBeforeMinutes, defaultBufferAfterMinutes, applyBuffersToAllEvents } = request.body;
+
+      if (defaultBufferBeforeMinutes !== undefined && (!Number.isInteger(defaultBufferBeforeMinutes) || defaultBufferBeforeMinutes < 0)) {
+        return reply.code(400).send({ error: "defaultBufferBeforeMinutes must be a non-negative integer" });
+      }
+      if (defaultBufferAfterMinutes !== undefined && (!Number.isInteger(defaultBufferAfterMinutes) || defaultBufferAfterMinutes < 0)) {
+        return reply.code(400).send({ error: "defaultBufferAfterMinutes must be a non-negative integer" });
+      }
+
+      const data: Record<string, number | boolean> = {};
+      if (defaultBufferBeforeMinutes !== undefined) data.defaultBufferBeforeMinutes = defaultBufferBeforeMinutes;
+      if (defaultBufferAfterMinutes !== undefined) data.defaultBufferAfterMinutes = defaultBufferAfterMinutes;
+      if (applyBuffersToAllEvents !== undefined) data.applyBuffersToAllEvents = applyBuffersToAllEvents;
+
+      const updated = await prisma.user.update({
+        where: { id: user.id },
+        data,
+        select: { defaultBufferBeforeMinutes: true, defaultBufferAfterMinutes: true, applyBuffersToAllEvents: true },
+      });
+
+      return updated;
+    }
+  );
 
   // Set booking calendar
   app.put<{ Body: { bookingCalendarEntryId: string | null } }>(
