@@ -263,21 +263,50 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       // Management token expires 7 days after the event ends
       const managementTokenExpiresAt = new Date(end.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      const booking = await prisma.booking.create({
-        data: {
-          eventTypeId: eventType.id,
-          userId: user.id,
-          guestName,
-          guestEmail,
-          notes: notes || null,
-          startTime: start,
-          endTime: end,
-          providerEventId,
-          managementToken,
-          managementTokenExpiresAt,
-          icsUid,
-        },
-      });
+      // Atomic booking creation with advisory lock to prevent double-booking.
+      // Two concurrent requests can pass the computeSlots check simultaneously,
+      // so we lock on user+slot, re-check for overlap, then insert.
+      let booking;
+      try {
+        booking = await prisma.$transaction(async (tx) => {
+          // Advisory lock scoped to this user + time slot (released on commit/rollback)
+          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${user.id} || ${start.toISOString()}))`;
+
+          // Final overlap check inside the lock
+          const overlap = await tx.booking.findFirst({
+            where: {
+              userId: user.id,
+              status: "confirmed",
+              startTime: { lt: end },
+              endTime: { gt: start },
+            },
+          });
+          if (overlap) {
+            throw new Error("SLOT_TAKEN");
+          }
+
+          return tx.booking.create({
+            data: {
+              eventTypeId: eventType.id,
+              userId: user.id,
+              guestName,
+              guestEmail,
+              notes: notes || null,
+              startTime: start,
+              endTime: end,
+              providerEventId,
+              managementToken,
+              managementTokenExpiresAt,
+              icsUid,
+            },
+          });
+        });
+      } catch (err) {
+        if (err instanceof Error && err.message === "SLOT_TAKEN") {
+          return reply.code(409).send({ error: "This slot is no longer available" });
+        }
+        throw err;
+      }
 
       // Trigger immediate sync so the booking event appears in the calendar view
       if (bookingSourceId) {
