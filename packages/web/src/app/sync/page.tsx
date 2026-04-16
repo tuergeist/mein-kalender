@@ -37,6 +37,7 @@ interface SyncTarget {
   skipSingleDayAllDay: boolean;
   skipDeclined: boolean;
   skipFree: boolean;
+  skipIgnored: boolean;
   source: { id: string; provider: string; label: string | null };
   sourceCalendars: Array<{ id: string; name: string }>;
 }
@@ -63,6 +64,7 @@ export default function SyncPage() {
   const [formSkipSingleDayAllDay, setFormSkipSingleDayAllDay] = useState(false);
   const [formSkipDeclined, setFormSkipDeclined] = useState(true);
   const [formSkipFree, setFormSkipFree] = useState(false);
+  const [formSkipIgnored, setFormSkipIgnored] = useState(true);
   const [formSourceCalendarIds, setFormSourceCalendarIds] = useState<string[]>([]);
   const [formSaving, setFormSaving] = useState(false);
 
@@ -126,6 +128,7 @@ export default function SyncPage() {
     setFormSkipSingleDayAllDay(false);
     setFormSkipDeclined(true);
     setFormSkipFree(false);
+    setFormSkipIgnored(true);
     setFormSourceCalendarIds([]);
     setShowTargetForm(true);
   }
@@ -139,6 +142,7 @@ export default function SyncPage() {
     setFormSkipSingleDayAllDay(t.skipSingleDayAllDay);
     setFormSkipDeclined(t.skipDeclined);
     setFormSkipFree(t.skipFree);
+    setFormSkipIgnored(t.skipIgnored);
     setFormSourceCalendarIds(t.sourceCalendars.map((c) => c.id));
     setShowTargetForm(true);
   }
@@ -156,6 +160,7 @@ export default function SyncPage() {
           skipSingleDayAllDay: formSkipSingleDayAllDay,
           skipDeclined: formSkipDeclined,
           skipFree: formSkipFree,
+          skipIgnored: formSkipIgnored,
           sourceCalendarEntryIds: formSourceCalendarIds,
         }),
       });
@@ -170,6 +175,7 @@ export default function SyncPage() {
           skipSingleDayAllDay: formSkipSingleDayAllDay,
           skipDeclined: formSkipDeclined,
           skipFree: formSkipFree,
+          skipIgnored: formSkipIgnored,
           sourceCalendarEntryIds: formSourceCalendarIds,
         }),
       });
@@ -310,7 +316,15 @@ export default function SyncPage() {
           <Switch size="sm" isSelected={formSkipFree} onValueChange={setFormSkipFree}>
             <span className="text-sm">Freie/vorläufige überspringen</span>
           </Switch>
+          <Switch size="sm" isSelected={formSkipIgnored} onValueChange={setFormSkipIgnored} className="col-span-2">
+            <span className="text-sm">Ignorierte Termine überspringen</span>
+          </Switch>
         </div>
+        {formSkipIgnored && (
+          <p className="text-xs text-default-400">
+            Termine, die du in der Kalenderansicht ignorierst, werden nicht zum Sync-Ziel kopiert. Bereits synchronisierte Kopien werden beim nächsten Sync entfernt.
+          </p>
+        )}
         <div>
           <p className="mb-2 text-sm font-medium">Quellkalender</p>
           <p className="mb-2 text-xs text-default-400">

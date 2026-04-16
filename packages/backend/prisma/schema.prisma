@@ -99,6 +99,7 @@ model CalendarEntry {
   skipSingleDayAllDay   Boolean @default(false)
   skipDeclined           Boolean @default(true)
   skipFree               Boolean @default(false)
+  skipIgnored            Boolean @default(true)
   readOnly           Boolean @default(false)
   enabled            Boolean @default(true)
 

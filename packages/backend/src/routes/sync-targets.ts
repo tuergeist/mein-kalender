@@ -40,11 +40,12 @@ export async function syncTargetsRoutes(app: FastifyInstance) {
       skipSingleDayAllDay?: boolean;
       skipDeclined?: boolean;
       skipFree?: boolean;
+      skipIgnored?: boolean;
       sourceCalendarEntryIds?: string[];
     };
   }>("/api/sync-targets", async (request, reply) => {
     const { user } = request as unknown as AuthenticatedRequest;
-    const { calendarEntryId, syncMode, syncDaysInAdvance, skipWorkLocation, skipSingleDayAllDay, skipDeclined, skipFree, sourceCalendarEntryIds } = request.body;
+    const { calendarEntryId, syncMode, syncDaysInAdvance, skipWorkLocation, skipSingleDayAllDay, skipDeclined, skipFree, skipIgnored, sourceCalendarEntryIds } = request.body;
 
     const entry = await prisma.calendarEntry.findFirst({
       where: { id: calendarEntryId, source: { userId: user.id } },
@@ -68,6 +69,7 @@ export async function syncTargetsRoutes(app: FastifyInstance) {
         ...(skipSingleDayAllDay !== undefined && { skipSingleDayAllDay }),
         ...(skipDeclined !== undefined && { skipDeclined }),
         ...(skipFree !== undefined && { skipFree }),
+        ...(skipIgnored !== undefined && { skipIgnored }),
         ...(sourceCalendarEntryIds !== undefined && {
           sourceCalendars: { set: sourceCalendarEntryIds.map((id) => ({ id })) },
         }),
@@ -91,12 +93,13 @@ export async function syncTargetsRoutes(app: FastifyInstance) {
       skipSingleDayAllDay?: boolean;
       skipDeclined?: boolean;
       skipFree?: boolean;
+      skipIgnored?: boolean;
       sourceCalendarEntryIds?: string[];
     };
   }>("/api/sync-targets/:id", async (request, reply) => {
     const { user } = request as unknown as AuthenticatedRequest;
     const { id } = request.params;
-    const { syncMode, syncDaysInAdvance, skipWorkLocation, skipSingleDayAllDay, skipDeclined, skipFree, sourceCalendarEntryIds } = request.body;
+    const { syncMode, syncDaysInAdvance, skipWorkLocation, skipSingleDayAllDay, skipDeclined, skipFree, skipIgnored, sourceCalendarEntryIds } = request.body;
 
     const entry = await prisma.calendarEntry.findFirst({
       where: { id, isTarget: true, source: { userId: user.id } },
@@ -117,6 +120,7 @@ export async function syncTargetsRoutes(app: FastifyInstance) {
         ...(skipSingleDayAllDay !== undefined && { skipSingleDayAllDay }),
         ...(skipDeclined !== undefined && { skipDeclined }),
         ...(skipFree !== undefined && { skipFree }),
+        ...(skipIgnored !== undefined && { skipIgnored }),
         ...(sourceCalendarEntryIds !== undefined && {
           sourceCalendars: { set: sourceCalendarEntryIds.map((cid) => ({ id: cid })) },
         }),

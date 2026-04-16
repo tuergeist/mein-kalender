@@ -241,6 +241,11 @@ export function EventDetailModal({ event, onClose, onUpdate }: Props) {
                   ? "Soll nur dieser Termin oder die ganze Serie wieder beachtet werden?"
                   : "Nur diesen Termin ignorieren oder die ganze Serie?"}
               </p>
+              {!isIgnored && (
+                <p className="text-xs text-default-400">
+                  Ignorierte Termine werden nicht zu Sync-Zielen kopiert und vorhandene Kopien entfernt.
+                </p>
+              )}
               <div className="flex gap-2 justify-end">
                 <Button size="sm" variant="light" onPress={() => setShowSeriesDialog(false)}>
                   Abbrechen

@@ -370,6 +370,7 @@ async function cloneToSingleTarget(
     skipSingleDayAllDay: boolean;
     skipDeclined: boolean;
     skipFree: boolean;
+    skipIgnored: boolean;
     source: { provider: string; credentials: string };
     sourceCalendars: Array<{ id: string }>;
   }
@@ -423,32 +424,34 @@ async function cloneToSingleTarget(
     console.log(`[sync] Cleaned up ${orphans.length} orphaned target mappings`);
   }
 
-  // Remove target events for ignored source events
-  const ignoredMappings = await prisma.targetEventMapping.findMany({
-    where: {
-      targetCalendarEntryId: targetEntry.id,
-      sourceEvent: { ignored: true },
-    },
-    select: { id: true, targetEventId: true },
-  });
-
-  for (const mapping of ignoredMappings) {
-    try {
-      await targetProvider.deleteEvent(
-        targetToken,
-        targetEntry.providerCalendarId,
-        mapping.targetEventId
-      );
-    } catch (err) {
-      console.error(`[sync] Failed to delete ignored target event ${mapping.targetEventId}:`, err);
-    }
-  }
-
-  if (ignoredMappings.length > 0) {
-    await prisma.targetEventMapping.deleteMany({
-      where: { id: { in: ignoredMappings.map((m: { id: string }) => m.id) } },
+  // Remove target events for ignored source events (when skipIgnored is enabled)
+  if (targetEntry.skipIgnored) {
+    const ignoredMappings = await prisma.targetEventMapping.findMany({
+      where: {
+        targetCalendarEntryId: targetEntry.id,
+        sourceEvent: { ignored: true },
+      },
+      select: { id: true, targetEventId: true },
     });
-    console.log(`[sync] Removed ${ignoredMappings.length} target events for ignored source events`);
+
+    for (const mapping of ignoredMappings) {
+      try {
+        await targetProvider.deleteEvent(
+          targetToken,
+          targetEntry.providerCalendarId,
+          mapping.targetEventId
+        );
+      } catch (err) {
+        console.error(`[sync] Failed to delete ignored target event ${mapping.targetEventId}:`, err);
+      }
+    }
+
+    if (ignoredMappings.length > 0) {
+      await prisma.targetEventMapping.deleteMany({
+        where: { id: { in: ignoredMappings.map((m: { id: string }) => m.id) } },
+      });
+      console.log(`[sync] Removed ${ignoredMappings.length} target events for ignored source events`);
+    }
   }
 
   // Find all local events that don't have a target mapping yet,
@@ -467,8 +470,8 @@ async function cloneToSingleTarget(
       },
       // Loop prevention: skip events that were synced in from another target
       title: { not: { startsWith: "[Sync]" } },
-      // Skip events the user has explicitly ignored
-      ignored: false,
+      // Skip events the user has explicitly ignored (when skipIgnored is enabled)
+      ...(targetEntry.skipIgnored && { ignored: false }),
       startTime: { lte: syncCutoff },
       sourceMappings: {
         none: { targetCalendarEntryId: targetEntry.id },
