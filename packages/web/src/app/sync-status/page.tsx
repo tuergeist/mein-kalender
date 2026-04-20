@@ -15,7 +15,8 @@ interface SyncSource {
   lastSyncAt: string | null;
 }
 
-interface WeeklySummary {
+interface SyncSummary {
+  period: string;
   syncSuccessRate: number;
   syncCycles: number;
   latency: { p50: number; p95: number };
@@ -58,23 +59,24 @@ export default function SyncStatusPage() {
   const { data: session } = useSession();
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
   const [sources, setSources] = useState<SyncSource[]>([]);
-  const [weekly, setWeekly] = useState<WeeklySummary | null>(null);
+  const [summary, setSummary] = useState<SyncSummary | null>(null);
   const [cloneTargets, setCloneTargets] = useState<CloneTarget[]>([]);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState("24h");
 
   useEffect(() => {
     if (!accessToken) return;
     Promise.all([
       apiAuthFetch("/api/dashboard/sync-status", accessToken).then((r) => r.ok ? r.json() : { sources: [] }),
-      apiAuthFetch("/api/dashboard/weekly-summary", accessToken).then((r) => r.ok ? r.json() : null),
+      apiAuthFetch(`/api/dashboard/weekly-summary?period=${period}`, accessToken).then((r) => r.ok ? r.json() : null),
       apiAuthFetch("/api/dashboard/clone-stats", accessToken).then((r) => r.ok ? r.json() : { targets: [] }),
     ]).then(([s, w, c]) => {
       setSources(s.sources || []);
-      setWeekly(w);
+      setSummary(w);
       setCloneTargets(c.targets || []);
       setLoading(false);
     });
-  }, [accessToken]);
+  }, [accessToken, period]);
 
   const statusColor = (s: string) =>
     s === "ok" ? "bg-[#059669]" :
@@ -134,31 +136,56 @@ export default function SyncStatusPage() {
               ))}
             </div>
 
-            {/* Weekly metrics */}
-            {weekly && weekly.syncCycles > 0 && (
-              <div className="rounded-xl border border-[var(--border-default)] bg-white px-5 py-4 shadow-sm">
-                <h2 className="font-display text-sm font-semibold text-[var(--text-secondary)]">Diese Woche</h2>
-                <div className="mt-3 grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="font-display text-xl font-bold">{weekly.syncCycles}</p>
-                    <p className="text-xs text-[var(--text-tertiary)]">Sync-Zyklen</p>
-                  </div>
-                  <div>
-                    <p className={`font-display text-xl font-bold ${weekly.syncSuccessRate >= 97 ? "text-[#059669]" : weekly.syncSuccessRate >= 90 ? "text-[var(--color-amber-600)]" : "text-red-600"}`}>
-                      {weekly.syncSuccessRate}%
-                    </p>
-                    <p className="text-xs text-[var(--text-tertiary)]">Erfolgsrate</p>
-                  </div>
-                  <div>
-                    <p className="font-display text-xl font-bold">{weekly.latency.p50}<span className="text-sm font-normal text-[var(--text-tertiary)]">ms</span></p>
-                    <p className="text-xs text-[var(--text-tertiary)]">Latenz (p50)</p>
-                  </div>
+            {/* Sync metrics with period selector */}
+            <div className="rounded-xl border border-[var(--border-default)] bg-white px-5 py-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-sm font-semibold text-[var(--text-secondary)]">Sync-Metriken</h2>
+                <div className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
+                  {[
+                    { value: "24h", label: "24h" },
+                    { value: "7d", label: "7 Tage" },
+                    { value: "30d", label: "30 Tage" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setPeriod(opt.value)}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                        period === opt.value
+                          ? "bg-white text-[var(--text-primary)] shadow-sm"
+                          : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
-                <p className="mt-2 font-mono text-xs text-[var(--text-tertiary)]">
-                  p95: {weekly.latency.p95}ms
-                </p>
               </div>
-            )}
+              {summary && summary.syncCycles > 0 ? (
+                <>
+                  <div className="mt-3 grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="font-display text-xl font-bold">{summary.syncCycles}</p>
+                      <p className="text-xs text-[var(--text-tertiary)]">Sync-Zyklen</p>
+                    </div>
+                    <div>
+                      <p className={`font-display text-xl font-bold ${summary.syncSuccessRate >= 97 ? "text-[#059669]" : summary.syncSuccessRate >= 90 ? "text-[var(--color-amber-600)]" : "text-red-600"}`}>
+                        {summary.syncSuccessRate}%
+                      </p>
+                      <p className="text-xs text-[var(--text-tertiary)]">Erfolgsrate</p>
+                    </div>
+                    <div>
+                      <p className="font-display text-xl font-bold">{summary.latency.p50}<span className="text-sm font-normal text-[var(--text-tertiary)]">ms</span></p>
+                      <p className="text-xs text-[var(--text-tertiary)]">Latenz (p50)</p>
+                    </div>
+                  </div>
+                  <p className="mt-2 font-mono text-xs text-[var(--text-tertiary)]">
+                    p95: {summary.latency.p95}ms
+                  </p>
+                </>
+              ) : (
+                <p className="mt-3 text-xs text-[var(--text-tertiary)]">Keine Sync-Daten für diesen Zeitraum.</p>
+              )}
+            </div>
           </>
         )}
 

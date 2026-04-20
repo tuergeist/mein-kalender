@@ -76,31 +76,52 @@ export async function dashboardRoutes(app: FastifyInstance) {
     };
   });
 
-  // Weekly summary: meetings, overlaps, calendars, sync success
-  app.get("/api/dashboard/weekly-summary", async (request) => {
+  // Summary: meetings, overlaps, calendars, sync success (configurable period)
+  app.get<{
+    Querystring: { period?: string };
+  }>("/api/dashboard/weekly-summary", async (request) => {
     const { user } = request as unknown as AuthenticatedRequest;
+    const period = request.query.period || "7d";
 
     const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday
-    startOfWeek.setHours(0, 0, 0, 0);
-    const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+    let periodStart: Date;
+    let periodLabel: string;
+
+    switch (period) {
+      case "24h":
+        periodStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        periodLabel = "24h";
+        break;
+      case "30d":
+        periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        periodLabel = "30d";
+        break;
+      default: {
+        // 7d — start of current week (Monday)
+        periodStart = new Date(now);
+        periodStart.setDate(now.getDate() - now.getDay() + 1);
+        periodStart.setHours(0, 0, 0, 0);
+        periodLabel = "7d";
+      }
+    }
+
+    const periodEnd = new Date(now);
 
     const [eventCount, conflictsDetected, calendarCount, healthRecords] = await Promise.all([
       prisma.event.count({
         where: {
           calendarEntry: { source: { userId: user.id }, enabled: true },
-          startTime: { lt: endOfWeek },
-          endTime: { gte: startOfWeek },
+          startTime: { lt: periodEnd },
+          endTime: { gte: periodStart },
           title: { not: { startsWith: "[Sync]" } },
         },
       }),
       prisma.conflict.count({
-        where: { userId: user.id, detectedAt: { gte: startOfWeek, lt: endOfWeek } },
+        where: { userId: user.id, detectedAt: { gte: periodStart, lt: periodEnd } },
       }),
       prisma.calendarSource.count({ where: { userId: user.id } }),
       prisma.syncHealth.findMany({
-        where: { userId: user.id, createdAt: { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) } },
+        where: { userId: user.id, createdAt: { gte: periodStart } },
         select: { checksumMatch: true, latencyMs: true },
       }),
     ]);
@@ -114,7 +135,8 @@ export async function dashboardRoutes(app: FastifyInstance) {
     const p95 = latencies.length > 0 ? latencies[Math.floor(latencies.length * 0.95)] : 0;
 
     return {
-      weekStart: startOfWeek.toISOString(),
+      period: periodLabel,
+      periodStart: periodStart.toISOString(),
       meetings: eventCount,
       overlapsDetected: conflictsDetected,
       calendarsConnected: calendarCount,
