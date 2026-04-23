@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Button, Card, CardBody } from "@heroui/react";
 import { apiFetch } from "@/lib/api";
+import { useLocale } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 interface BookingInfo {
   id: string;
@@ -40,6 +42,7 @@ type View = "details" | "reschedule" | "cancelled";
 export default function ManageBookingPage() {
   const params = useParams();
   const token = params.token as string;
+  const { t, dayLabels, formatTime, formatDateTime, formatDateLong, formatMonth, locale, setLocale, allLocales, localeFlags, localeLabels } = useLocale();
 
   const [booking, setBooking] = useState<BookingInfo | null>(null);
   const [eventType, setEventType] = useState<EventTypeInfo | null>(null);
@@ -76,10 +79,10 @@ export default function ManageBookingPage() {
         setLoading(false);
       })
       .catch(() => {
-        setError("Buchung nicht gefunden.");
+        setError(t("manage.notFound"));
         setLoading(false);
       });
-  }, [token]);
+  }, [token, t]);
 
   const fetchAvailableDays = useCallback(async (month: Date) => {
     const monthStr = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
@@ -134,21 +137,6 @@ export default function ManageBookingPage() {
 
   const brandColor = branding?.brandColor || "#9F1239";
 
-  function formatDateTime(iso: string) {
-    return new Date(iso).toLocaleString("de-DE", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function formatTime(iso: string) {
-    return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  }
-
   // Mini calendar for reschedule
   function renderCalendar() {
     const year = currentMonth.getFullYear();
@@ -161,17 +149,15 @@ export default function ManageBookingPage() {
     for (let i = 0; i < offset; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
-    const monthLabel = new Date(year, month).toLocaleString("de-DE", { month: "long", year: "numeric" });
-
     return (
       <div>
         <div className="mb-3 flex items-center justify-between">
           <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="rounded-lg px-2 py-1 text-sm hover:bg-stone-100">&larr;</button>
-          <span className="text-sm font-semibold">{monthLabel}</span>
+          <span className="text-sm font-semibold">{formatMonth(new Date(year, month))}</span>
           <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="rounded-lg px-2 py-1 text-sm hover:bg-stone-100">&rarr;</button>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center text-xs">
-          {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
+          {dayLabels.map((d) => (
             <div key={d} className="py-1 font-medium text-stone-400">{d}</div>
           ))}
           {cells.map((day, i) => {
@@ -211,7 +197,7 @@ export default function ManageBookingPage() {
       <div className="flex min-h-screen items-center justify-center bg-[#FAFAF9]">
         <Card className="max-w-md">
           <CardBody className="p-8 text-center">
-            <p className="text-sm text-stone-500">{error || "Buchung nicht gefunden."}</p>
+            <p className="text-sm text-stone-500">{error || t("manage.notFound")}</p>
           </CardBody>
         </Card>
       </div>
@@ -226,20 +212,20 @@ export default function ManageBookingPage() {
           <div className="mb-6">
             <p className="text-xs font-medium uppercase tracking-wider text-stone-400">{host.displayName}</p>
             <h1 className="mt-1 font-display text-xl font-bold tracking-tight text-stone-900">{eventType.name}</h1>
-            <p className="mt-0.5 font-mono text-xs text-stone-500">{eventType.durationMinutes} min{eventType.location ? ` · ${/^https?:\/\/.*(meet\.google|teams\.microsoft|zoom\.(us|com))/i.test(eventType.location) ? "Online-Meeting" : eventType.location}` : ""}</p>
+            <p className="mt-0.5 font-mono text-xs text-stone-500">{eventType.durationMinutes} {t("booking.min")}{eventType.location ? ` · ${/^https?:\/\/.*(meet\.google|teams\.microsoft|zoom\.(us|com))/i.test(eventType.location) ? t("booking.onlineMeeting") : eventType.location}` : ""}</p>
           </div>
 
           {view === "cancelled" && (
             <div className="space-y-4">
               <div className="rounded-xl bg-red-50 p-5 text-center">
-                <p className="text-sm font-medium text-red-800">Buchung abgesagt</p>
+                <p className="text-sm font-medium text-red-800">{t("manage.cancelled")}</p>
               </div>
               <a
                 href={`/book/${host.username}/${eventType.slug}`}
                 className="block rounded-xl border border-stone-200 px-4 py-3 text-center text-sm font-medium transition-shadow hover:shadow-md"
                 style={{ color: brandColor }}
               >
-                Neuen Termin suchen
+                {t("manage.findNew")}
               </a>
             </div>
           )}
@@ -249,17 +235,17 @@ export default function ManageBookingPage() {
               <div className="rounded-xl border border-stone-200 bg-white p-4">
                 <div className="space-y-2">
                   <div>
-                    <p className="text-xs font-medium text-stone-400">Wann</p>
+                    <p className="text-xs font-medium text-stone-400">{t("manage.when")}</p>
                     <p className="text-sm font-medium text-stone-800">{formatDateTime(booking.startTime)}</p>
                     <p className="font-mono text-xs text-stone-500">{formatTime(booking.startTime)} – {formatTime(booking.endTime)}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-stone-400">Gast</p>
+                    <p className="text-xs font-medium text-stone-400">{t("manage.guest")}</p>
                     <p className="text-sm text-stone-800">{booking.guestName} ({booking.guestEmail})</p>
                   </div>
                   {booking.notes && (
                     <div>
-                      <p className="text-xs font-medium text-stone-400">Notizen</p>
+                      <p className="text-xs font-medium text-stone-400">{t("manage.notesLabel")}</p>
                       <p className="text-sm text-stone-600">{booking.notes}</p>
                     </div>
                   )}
@@ -273,7 +259,7 @@ export default function ManageBookingPage() {
                   onPress={() => setView("reschedule")}
                   style={{ color: brandColor }}
                 >
-                  Verschieben
+                  {t("manage.reschedule")}
                 </Button>
                 <Button
                   className="flex-1"
@@ -282,7 +268,7 @@ export default function ManageBookingPage() {
                   isLoading={cancelling}
                   onPress={handleCancel}
                 >
-                  Absagen
+                  {t("manage.cancel")}
                 </Button>
               </div>
             </>
@@ -294,24 +280,24 @@ export default function ManageBookingPage() {
                 onClick={() => { setView("details"); setSelectedDate(null); setSlots([]); }}
                 className="mb-4 text-xs font-medium text-stone-500 hover:text-stone-700"
               >
-                &larr; Zurück
+                &larr; {t("booking.back")}
               </button>
 
-              <p className="mb-3 text-sm font-medium text-stone-700">Neuen Termin wählen</p>
+              <p className="mb-3 text-sm font-medium text-stone-700">{t("manage.chooseNew")}</p>
 
               {renderCalendar()}
 
               {selectedDate && (
                 <div className="mt-4">
                   <p className="mb-2 text-xs font-medium text-stone-500">
-                    Verfügbare Zeiten am {new Date(selectedDate + "T00:00").toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}
+                    {t("manage.availableTimes", { date: formatDateLong(selectedDate + "T00:00") })}
                   </p>
                   {slotsLoading ? (
                     <div className="flex justify-center py-4">
                       <div className="h-5 w-5 animate-spin rounded-full border-2 border-stone-300 border-t-stone-600" />
                     </div>
                   ) : slots.length === 0 ? (
-                    <p className="text-xs text-stone-400">Keine verfügbaren Zeiten.</p>
+                    <p className="text-xs text-stone-400">{t("manage.noTimes")}</p>
                   ) : (
                     <div className="grid grid-cols-3 gap-2">
                       {slots.map((slot) => (
@@ -334,11 +320,14 @@ export default function ManageBookingPage() {
           )}
         </CardBody>
       </Card>
-      <p className="mt-4 text-center text-[11px] text-stone-300">
-        <a href="https://mein-kalender.link" target="_blank" rel="noopener noreferrer" className="hover:text-stone-400 transition-colors">
-          Nie wieder doppelt gebucht — mein-kalender.link
-        </a>
-      </p>
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <p className="text-[11px] text-stone-300">
+          <a href="https://mein-kalender.link" target="_blank" rel="noopener noreferrer" className="hover:text-stone-400 transition-colors">
+            {t("footer.tagline")}
+          </a>
+        </p>
+        <LanguageSwitcher locale={locale} setLocale={setLocale} allLocales={allLocales} localeFlags={localeFlags} localeLabels={localeLabels} />
+      </div>
     </div>
   );
 }

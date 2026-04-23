@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Button, Input, Textarea, Card, CardBody, Divider } from "@heroui/react";
 import { apiFetch } from "@/lib/api";
+import { useLocale } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 interface EventTypeInfo {
   name: string;
@@ -35,6 +37,7 @@ type Step = "loading" | "error" | "date" | "time" | "form" | "confirmed";
 export default function ShortBookingPage() {
   const params = useParams();
   const hash = params.hash as string;
+  const { t, dayLabels, formatTime, formatDate, formatMonth, formatShortDate, locale, setLocale, allLocales, localeFlags, localeLabels } = useLocale();
 
   const [eventType, setEventType] = useState<EventTypeInfo | null>(null);
   const [host, setHost] = useState<HostInfo | null>(null);
@@ -108,29 +111,25 @@ export default function ShortBookingPage() {
   }, [confirmation, eventType?.redirectUrl, eventType?.redirectDelaySecs]);
 
   async function handleSubmit() {
-    if (!guestName.trim() || !guestEmail.trim() || !host || !eventType) { setFormError("Name und E-Mail sind erforderlich."); return; }
+    if (!guestName.trim() || !guestEmail.trim() || !host || !eventType) { setFormError(t("booking.nameEmailRequired")); return; }
     setSubmitting(true); setFormError("");
     const res = await apiFetch(`/api/public/book/${host.username}/${eventType.slug}`, {
       method: "POST",
       body: JSON.stringify({ startTime: selectedSlot, guestName, guestEmail, notes }),
     });
     if (res.ok) { const data = await res.json(); setConfirmation(data.booking); setStep("confirmed"); }
-    else { const data = await res.json().catch(() => ({})); setFormError(data.error || "Buchung fehlgeschlagen."); }
+    else { const data = await res.json().catch(() => ({})); setFormError(data.error || t("booking.failed")); }
     setSubmitting(false);
   }
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDay = (() => { const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay(); return d === 0 ? 6 : d - 1; })();
-  const dayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-
-  function formatTime(iso: string) { return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); }
-  function formatDate(iso: string) { return new Date(iso).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" }); }
 
   const currentStep = confirmation ? "confirmed" : selectedSlot ? "form" : selectedDate ? "time" : step;
 
-  if (step === "loading") return <div className="flex min-h-screen items-center justify-center bg-gray-50"><p className="text-gray-400">Laden...</p></div>;
-  if (step === "error") return <div className="flex min-h-screen items-center justify-center bg-gray-50"><Card className="max-w-md"><CardBody className="text-center"><p className="text-lg font-medium text-gray-600">Buchungsseite nicht gefunden</p></CardBody></Card></div>;
+  if (step === "loading") return <div className="flex min-h-screen items-center justify-center bg-gray-50"><p className="text-gray-400">{t("booking.loading")}</p></div>;
+  if (step === "error") return <div className="flex min-h-screen items-center justify-center bg-gray-50"><Card className="max-w-md"><CardBody className="text-center"><p className="text-lg font-medium text-gray-600">{t("short.notFound")}</p></CardBody></Card></div>;
   if (!eventType || !host) return null;
 
   const brandColor = branding?.brandColor || undefined;
@@ -138,7 +137,7 @@ export default function ShortBookingPage() {
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center bg-gray-50 p-4"
+      className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4"
       style={branding?.backgroundUrl ? { backgroundImage: `linear-gradient(rgba(255,255,255,${branding.backgroundOpacity ?? 0.85}), rgba(255,255,255,${branding.backgroundOpacity ?? 0.85})), url(${branding.backgroundUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
     >
       <Card className="w-full max-w-3xl">
@@ -151,8 +150,8 @@ export default function ShortBookingPage() {
               <p className="text-sm text-gray-500">{host.displayName}</p>
             </div>
             <h1 className="mt-1 text-xl font-bold" style={{ color: eventType.color }}>{eventType.name}</h1>
-            <p className="mt-2 text-sm text-gray-500">{eventType.durationMinutes} min</p>
-            {eventType.location && <p className="mt-1 text-sm text-gray-500">{eventType.location}</p>}
+            <p className="mt-2 text-sm text-gray-500">{eventType.durationMinutes} {t("booking.min")}</p>
+            {eventType.location && <p className="mt-1 text-sm text-gray-500">{/^https?:\/\/.*(meet\.google|teams\.microsoft|zoom\.(us|com))/i.test(eventType.location) ? t("booking.onlineMeeting") : eventType.location}</p>}
             {eventType.description && <p className="mt-4 text-sm text-gray-600">{eventType.description}</p>}
             {selectedDate && currentStep !== "confirmed" && (
               <><Divider className="my-4" /><p className="text-sm font-medium">{formatDate(selectedDate + "T00:00:00")}</p>
@@ -163,36 +162,36 @@ export default function ShortBookingPage() {
             {currentStep === "confirmed" && confirmation && (
               <div className="text-center">
                 <div className="mb-4 text-4xl">&#10003;</div>
-                <h2 className="text-xl font-bold">Buchung bestätigt</h2>
+                <h2 className="text-xl font-bold">{t("short.confirmed")}</h2>
                 <p className="mt-2 text-gray-600">{formatDate(confirmation.startTime)}, {formatTime(confirmation.startTime)} – {formatTime(confirmation.endTime)}</p>
-                <p className="mt-1 text-sm text-gray-500">Du erhältst eine Kalendereinladung per E-Mail.</p>
+                <p className="mt-1 text-sm text-gray-500">{t("short.emailInvite")}</p>
                 {eventType.redirectUrl && (
                   <div className="mt-6">
                     <a href={eventType.redirectUrl} className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90" style={{ backgroundColor: brandColor || "var(--heroui-primary)" }}>
-                      {eventType.redirectTitle || "Weiter"}
+                      {eventType.redirectTitle || t("booking.continue")}
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </a>
-                    {redirectCountdown !== null && redirectCountdown > 0 && <p className="mt-2 text-xs text-gray-400">Weiterleitung in {redirectCountdown}s...</p>}
+                    {redirectCountdown !== null && redirectCountdown > 0 && <p className="mt-2 text-xs text-gray-400">{t("booking.redirecting", { seconds: redirectCountdown })}</p>}
                   </div>
                 )}
               </div>
             )}
             {currentStep === "form" && (
               <div>
-                <div className="mb-4 flex items-center gap-2"><Button size="sm" variant="light" onPress={() => setSelectedSlot(null)}>&larr; Zurück</Button><h2 className="text-lg font-semibold">Deine Angaben</h2></div>
+                <div className="mb-4 flex items-center gap-2"><Button size="sm" variant="light" onPress={() => setSelectedSlot(null)}>&larr; {t("booking.back")}</Button><h2 className="text-lg font-semibold">{t("booking.yourDetails")}</h2></div>
                 <div className="space-y-4">
-                  <Input label="Name" isRequired value={guestName} onValueChange={setGuestName} />
-                  <Input label="E-Mail" type="email" isRequired value={guestEmail} onValueChange={setGuestEmail} />
-                  <Textarea label="Notizen (optional)" value={notes} onValueChange={setNotes} minRows={2} />
+                  <Input label={t("booking.name")} isRequired value={guestName} onValueChange={setGuestName} />
+                  <Input label={t("booking.email")} type="email" isRequired value={guestEmail} onValueChange={setGuestEmail} />
+                  <Textarea label={t("booking.notes")} value={notes} onValueChange={setNotes} minRows={2} />
                   {formError && <p className="text-sm text-red-500">{formError}</p>}
-                  <Button color={brandColor ? undefined : "primary"} className="w-full text-white" style={brandColor ? { backgroundColor: brandColor } : undefined} isLoading={submitting} onPress={handleSubmit}>Termin buchen</Button>
+                  <Button color={brandColor ? undefined : "primary"} className="w-full text-white" style={brandColor ? { backgroundColor: brandColor } : undefined} isLoading={submitting} onPress={handleSubmit}>{t("booking.submit")}</Button>
                 </div>
               </div>
             )}
             {(currentStep === "date" || currentStep === "time") && (
               <div>
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Datum &amp; Uhrzeit</h2>
+                  <h2 className="text-lg font-semibold">{t("booking.dateTime")}</h2>
                   <div className="flex gap-1">
                     <Button size="sm" variant="light" isIconOnly onPress={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>&lsaquo;</Button>
                     <Button size="sm" variant="light" isIconOnly onPress={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>&rsaquo;</Button>
@@ -200,7 +199,7 @@ export default function ShortBookingPage() {
                 </div>
                 <div className="flex gap-6">
                   <div className="flex-1">
-                    <p className="mb-2 text-center text-sm font-medium">{currentMonth.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</p>
+                    <p className="mb-2 text-center text-sm font-medium">{formatMonth(currentMonth)}</p>
                     <div className="grid grid-cols-7 gap-1 text-center text-xs">
                       {dayLabels.map((d) => <div key={d} className="py-1 font-medium text-gray-400">{d}</div>)}
                       {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
@@ -218,9 +217,9 @@ export default function ShortBookingPage() {
                   </div>
                   {currentStep === "time" && (
                     <div className="w-36 shrink-0">
-                      <p className="mb-2 text-center text-sm font-medium text-gray-500">{new Date(selectedDate + "T00:00:00").toLocaleDateString("de-DE", { day: "numeric", month: "short" })}</p>
+                      <p className="mb-2 text-center text-sm font-medium text-gray-500">{formatShortDate(selectedDate + "T00:00:00")}</p>
                       <div className="max-h-72 space-y-1.5 overflow-y-auto">
-                        {slotsLoading ? <p className="text-center text-xs text-gray-400">Laden...</p> : slots.length === 0 ? <p className="text-center text-xs text-gray-400">Keine verfügbaren Zeitslots</p> : slots.map((slot) => <Button key={slot} size="sm" variant="bordered" className="w-full" style={accentColor ? { borderColor: accentColor, color: accentColor } : undefined} onPress={() => setSelectedSlot(slot)}>{formatTime(slot)}</Button>)}
+                        {slotsLoading ? <p className="text-center text-xs text-gray-400">{t("booking.loading")}</p> : slots.length === 0 ? <p className="text-center text-xs text-gray-400">{t("booking.noSlots")}</p> : slots.map((slot) => <Button key={slot} size="sm" variant="bordered" className="w-full" style={accentColor ? { borderColor: accentColor, color: accentColor } : undefined} onPress={() => setSelectedSlot(slot)}>{formatTime(slot)}</Button>)}
                       </div>
                     </div>
                   )}
@@ -230,6 +229,9 @@ export default function ShortBookingPage() {
           </div>
         </CardBody>
       </Card>
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <LanguageSwitcher locale={locale} setLocale={setLocale} allLocales={allLocales} localeFlags={localeFlags} localeLabels={localeLabels} />
+      </div>
     </div>
   );
 }

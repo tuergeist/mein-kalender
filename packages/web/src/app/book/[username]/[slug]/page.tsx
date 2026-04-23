@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Button, Input, Textarea, Card, CardBody, Divider } from "@heroui/react";
 import { apiFetch } from "@/lib/api";
+import { useLocale } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 interface EventTypeInfo {
   id: string;
@@ -37,6 +39,7 @@ export default function BookingPage() {
   const params = useParams();
   const username = params.username as string;
   const slug = params.slug as string;
+  const { t, dayLabels, formatTime, formatDate, formatMonth, formatShortDate, locale, setLocale, allLocales, localeFlags, localeLabels } = useLocale();
 
   const [eventType, setEventType] = useState<EventTypeInfo | null>(null);
   const [host, setHost] = useState<HostInfo | null>(null);
@@ -80,7 +83,7 @@ export default function BookingPage() {
     apiFetch(`/api/public/book/${username}/${slug}`)
       .then(async (res) => {
         if (!res.ok) {
-          setError("Diese Buchungsseite ist nicht verfügbar.");
+          setError(t("booking.unavailable"));
           return;
         }
         const data = await res.json();
@@ -89,7 +92,7 @@ export default function BookingPage() {
         setBranding(data.branding || null);
       })
       .finally(() => setLoading(false));
-  }, [username, slug]);
+  }, [username, slug, t]);
 
   // Load slots when date selected
   const loadSlots = useCallback(
@@ -128,11 +131,11 @@ export default function BookingPage() {
   // Submit booking
   async function handleSubmit() {
     if (!guestName.trim() || !guestEmail.trim()) {
-      setFormError("Name und E-Mail sind erforderlich.");
+      setFormError(t("booking.nameEmailRequired"));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())) {
-      setFormError("Bitte gib eine gültige E-Mail-Adresse ein.");
+      setFormError(t("booking.invalidEmail"));
       return;
     }
     setSubmitting(true);
@@ -148,7 +151,7 @@ export default function BookingPage() {
       setConfirmation(data.booking);
     } else {
       const data = await res.json().catch(() => ({}));
-      setFormError(data.error || "Buchung fehlgeschlagen. Der Zeitslot ist möglicherweise nicht mehr verfügbar.");
+      setFormError(data.error || t("booking.failed"));
     }
     setSubmitting(false);
   }
@@ -190,15 +193,6 @@ export default function BookingPage() {
 
   const daysInMonth = getDaysInMonth(currentMonth);
   const firstDay = getFirstDayOfWeek(currentMonth);
-  const dayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-
-  function formatTime(iso: string) {
-    return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  }
-
-  function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  }
 
   if (loading) {
     return (
@@ -229,7 +223,7 @@ export default function BookingPage() {
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <Card className="max-w-md">
           <CardBody className="text-center">
-            <p className="text-lg font-medium text-gray-600">{error || "Nicht gefunden"}</p>
+            <p className="text-lg font-medium text-gray-600">{error || t("booking.notFound")}</p>
           </CardBody>
         </Card>
       </div>
@@ -266,11 +260,11 @@ export default function BookingPage() {
             <h1 className="mt-1 text-xl font-bold" style={{ color: eventType.color }}>
               {eventType.name}
             </h1>
-            <p className="mt-2 text-sm text-gray-500">{eventType.durationMinutes} min</p>
+            <p className="mt-2 text-sm text-gray-500">{eventType.durationMinutes} {t("booking.min")}</p>
             {eventType.location && (
               <p className="mt-1 text-sm text-gray-500">
                 {/^https?:\/\/.*(meet\.google|teams\.microsoft|zoom\.(us|com))/i.test(eventType.location)
-                  ? "Online-Meeting"
+                  ? t("booking.onlineMeeting")
                   : eventType.location}
               </p>
             )}
@@ -296,7 +290,7 @@ export default function BookingPage() {
             {step === "confirmed" && confirmation && (
               <div className="text-center">
                 <h2 className="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]" style={{ animation: "fadeInUp 0.4s ease-out both" }}>
-                  Steht.
+                  {t("booking.confirmed")}
                 </h2>
                 <div className="mt-6" style={{ animation: "fadeInUp 0.5s ease-out 0.3s both", opacity: 0 }}>
                   <p className="text-sm text-stone-500">
@@ -306,7 +300,7 @@ export default function BookingPage() {
                     {formatTime(confirmation.startTime)} – {formatTime(confirmation.endTime)}
                   </p>
                   <p className="mt-3 text-sm text-stone-400">
-                    Kalendereinladung ist unterwegs.
+                    {t("booking.calendarInvite")}
                   </p>
                 </div>
                 {eventType.redirectUrl && (
@@ -316,12 +310,12 @@ export default function BookingPage() {
                       className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
                       style={{ backgroundColor: brandColor || "var(--heroui-primary)" }}
                     >
-                      {eventType.redirectTitle || "Weiter"}
+                      {eventType.redirectTitle || t("booking.continue")}
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </a>
                     {redirectCountdown !== null && redirectCountdown > 0 && (
                       <p className="mt-2 text-xs text-gray-400">
-                        Weiterleitung in {redirectCountdown}s...
+                        {t("booking.redirecting", { seconds: redirectCountdown })}
                       </p>
                     )}
                   </div>
@@ -333,26 +327,26 @@ export default function BookingPage() {
               <div>
                 <div className="mb-4 flex items-center gap-2">
                   <Button size="sm" variant="light" onPress={() => setSelectedSlot(null)}>
-                    &larr; Zurück
+                    &larr; {t("booking.back")}
                   </Button>
-                  <h2 className="text-lg font-semibold">Deine Angaben</h2>
+                  <h2 className="text-lg font-semibold">{t("booking.yourDetails")}</h2>
                 </div>
                 <div className="space-y-4">
                   <Input
-                    label="Name"
+                    label={t("booking.name")}
                     isRequired
                     value={guestName}
                     onValueChange={setGuestName}
                   />
                   <Input
-                    label="E-Mail"
+                    label={t("booking.email")}
                     type="email"
                     isRequired
                     value={guestEmail}
                     onValueChange={setGuestEmail}
                   />
                   <Textarea
-                    label="Notizen (optional)"
+                    label={t("booking.notes")}
                     value={notes}
                     onValueChange={setNotes}
                     minRows={2}
@@ -365,7 +359,7 @@ export default function BookingPage() {
                     isLoading={submitting}
                     onPress={handleSubmit}
                   >
-                    Termin buchen
+                    {t("booking.submit")}
                   </Button>
                 </div>
               </div>
@@ -374,7 +368,7 @@ export default function BookingPage() {
             {(step === "date" || step === "time") && (
               <div>
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Datum &amp; Uhrzeit</h2>
+                  <h2 className="text-lg font-semibold">{t("booking.dateTime")}</h2>
                   <div className="flex gap-1">
                     <Button
                       size="sm"
@@ -403,7 +397,7 @@ export default function BookingPage() {
                   {/* Calendar grid */}
                   <div className="flex-1">
                     <p className="mb-2 text-center text-sm font-medium">
-                      {currentMonth.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
+                      {formatMonth(currentMonth)}
                     </p>
                     <div className="grid grid-cols-7 gap-1 text-center text-xs">
                       {dayLabels.map((d) => (
@@ -451,13 +445,13 @@ export default function BookingPage() {
                   {step === "time" && (
                     <div className="w-36 shrink-0">
                       <p className="mb-2 text-center text-sm font-medium text-gray-500">
-                        {new Date(selectedDate + "T00:00:00").toLocaleDateString("de-DE", { day: "numeric", month: "short" })}
+                        {formatShortDate(selectedDate + "T00:00:00")}
                       </p>
                       <div className="max-h-72 space-y-1.5 overflow-y-auto">
                         {slotsLoading ? (
-                          <p className="text-center text-xs text-gray-400">Laden...</p>
+                          <p className="text-center text-xs text-gray-400">{t("booking.loading")}</p>
                         ) : slots.length === 0 ? (
-                          <p className="text-center text-xs text-gray-400">Keine verfügbaren Zeitslots</p>
+                          <p className="text-center text-xs text-gray-400">{t("booking.noSlots")}</p>
                         ) : (
                           slots.map((slot) => (
                             <Button
@@ -481,11 +475,14 @@ export default function BookingPage() {
           </div>
         </CardBody>
       </Card>
-      <p className="mt-4 text-center text-[11px] text-stone-300">
-        <a href="https://mein-kalender.link" target="_blank" rel="noopener noreferrer" className="hover:text-stone-400 transition-colors">
-          Nie wieder doppelt gebucht — mein-kalender.link
-        </a>
-      </p>
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <p className="text-[11px] text-stone-300">
+          <a href="https://mein-kalender.link" target="_blank" rel="noopener noreferrer" className="hover:text-stone-400 transition-colors">
+            {t("footer.tagline")}
+          </a>
+        </p>
+        <LanguageSwitcher locale={locale} setLocale={setLocale} allLocales={allLocales} localeFlags={localeFlags} localeLabels={localeLabels} />
+      </div>
     </div>
   );
 }
