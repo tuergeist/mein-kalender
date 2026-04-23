@@ -1,9 +1,11 @@
 export { GoogleCalendarProvider } from "./google";
 export { OutlookCalendarProvider } from "./outlook";
+export { AppleCalendarProvider } from "./apple";
 
 import { CalendarProviderInterface, Provider } from "../types";
 import { GoogleCalendarProvider } from "./google";
 import { OutlookCalendarProvider } from "./outlook";
+import { AppleCalendarProvider } from "./apple";
 
 export function getProvider(providerName: string): CalendarProviderInterface {
   switch (providerName) {
@@ -18,6 +20,8 @@ export function getProvider(providerName: string): CalendarProviderInterface {
         process.env.MICROSOFT_CALENDAR_CLIENT_SECRET!,
         process.env.MICROSOFT_TENANT_ID
       );
+    case Provider.APPLE:
+      return new AppleCalendarProvider();
     default:
       throw new Error(`Unknown provider: ${providerName}`);
   }

@@ -95,6 +95,61 @@ export async function oauthRoutes(app: FastifyInstance) {
     }
   );
 
+  // Connect Apple/iCloud — direct credential-based auth (no OAuth flow)
+  app.post<{
+    Body: { appleId: string; appPassword: string };
+  }>(
+    "/api/sources/apple/connect",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      const { user } = request as unknown as AuthenticatedRequest;
+      const { appleId, appPassword } = request.body;
+
+      if (!appleId || !appPassword) {
+        return reply.code(400).send({ error: "Apple ID and app-specific password required" });
+      }
+
+      const p = getProvider("apple");
+      let tokenSet;
+      try {
+        tokenSet = await p.authenticate({ appleId, appPassword });
+      } catch (err) {
+        return reply.code(401).send({ error: "Verbindung fehlgeschlagen. Prüfe Apple-ID und App-spezifisches Passwort." });
+      }
+
+      const calendars = await p.listCalendars(tokenSet);
+
+      const source = await prisma.calendarSource.create({
+        data: {
+          userId: user.id,
+          provider: "apple",
+          label: "iCloud Kalender",
+          credentials: encrypt(JSON.stringify(tokenSet), process.env.ENCRYPTION_SECRET!),
+        },
+      });
+
+      for (const cal of calendars) {
+        await prisma.calendarEntry.create({
+          data: {
+            sourceId: source.id,
+            providerCalendarId: cal.providerCalendarId,
+            name: cal.name,
+            color: cal.color || "#007aff",
+            readOnly: cal.readOnly,
+          },
+        });
+      }
+
+      await getSyncQueue().add(
+        "sync-source",
+        { sourceId: source.id, userId: user.id },
+        { jobId: `sync-${source.id}-initial` }
+      );
+
+      return { sourceId: source.id, calendarsImported: calendars.length };
+    }
+  );
+
   // Complete OAuth — called by web app with auth token + provider tokens
   app.post<{
     Body: {

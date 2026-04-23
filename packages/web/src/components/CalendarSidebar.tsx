@@ -165,6 +165,7 @@ export function CalendarSidebar() {
   const providerIcon: Record<string, string> = {
     google: "G",
     outlook: "O",
+    apple: "A",
     proton: "P",
     ics: "I",
   };
