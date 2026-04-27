@@ -6,6 +6,7 @@ import { Button, Input, Textarea, Card, CardBody, Divider } from "@heroui/react"
 import { apiFetch } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { TimezoneInfo } from "@/components/TimezoneInfo";
 
 interface EventTypeInfo {
   id: string;
@@ -23,6 +24,7 @@ interface EventTypeInfo {
 interface HostInfo {
   displayName: string;
   username: string;
+  timezone: string;
 }
 
 interface BrandingInfo {
@@ -39,7 +41,7 @@ export default function BookingPage() {
   const params = useParams();
   const username = params.username as string;
   const slug = params.slug as string;
-  const { t, dayLabels, formatTime, formatDate, formatMonth, formatShortDate, locale, setLocale, allLocales, localeFlags, localeLabels } = useLocale();
+  const { t, dayLabels, formatTime, formatDate, formatMonth, formatShortDate, bcp47, locale, setLocale, allLocales, localeFlags, localeLabels } = useLocale();
 
   const [eventType, setEventType] = useState<EventTypeInfo | null>(null);
   const [host, setHost] = useState<HostInfo | null>(null);
@@ -271,6 +273,10 @@ export default function BookingPage() {
             {eventType.description && (
               <p className="mt-4 text-sm text-gray-600">{eventType.description}</p>
             )}
+
+            <div className="mt-4">
+              <TimezoneInfo hostTimezone={host.timezone} hostName={host.displayName} t={t} bcp47={bcp47} />
+            </div>
 
             {selectedDate && step !== "confirmed" && (
               <>

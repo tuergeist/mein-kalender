@@ -6,6 +6,7 @@ import { Button, Input, Textarea, Card, CardBody, Divider } from "@heroui/react"
 import { apiFetch } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { TimezoneInfo } from "@/components/TimezoneInfo";
 
 interface EventTypeInfo {
   name: string;
@@ -22,6 +23,7 @@ interface EventTypeInfo {
 interface HostInfo {
   displayName: string;
   username: string;
+  timezone: string;
 }
 
 interface BrandingInfo {
@@ -37,7 +39,7 @@ type Step = "loading" | "error" | "date" | "time" | "form" | "confirmed";
 export default function ShortBookingPage() {
   const params = useParams();
   const hash = params.hash as string;
-  const { t, dayLabels, formatTime, formatDate, formatMonth, formatShortDate, locale, setLocale, allLocales, localeFlags, localeLabels } = useLocale();
+  const { t, dayLabels, formatTime, formatDate, formatMonth, formatShortDate, bcp47, locale, setLocale, allLocales, localeFlags, localeLabels } = useLocale();
 
   const [eventType, setEventType] = useState<EventTypeInfo | null>(null);
   const [host, setHost] = useState<HostInfo | null>(null);
@@ -153,6 +155,7 @@ export default function ShortBookingPage() {
             <p className="mt-2 text-sm text-gray-500">{eventType.durationMinutes} {t("booking.min")}</p>
             {eventType.location && <p className="mt-1 text-sm text-gray-500">{/^https?:\/\/.*(meet\.google|teams\.microsoft|zoom\.(us|com))/i.test(eventType.location) ? t("booking.onlineMeeting") : eventType.location}</p>}
             {eventType.description && <p className="mt-4 text-sm text-gray-600">{eventType.description}</p>}
+            <div className="mt-4"><TimezoneInfo hostTimezone={host.timezone} hostName={host.displayName} t={t} bcp47={bcp47} /></div>
             {selectedDate && currentStep !== "confirmed" && (
               <><Divider className="my-4" /><p className="text-sm font-medium">{formatDate(selectedDate + "T00:00:00")}</p>
               {selectedSlot && <p className="text-sm text-gray-500">{formatTime(selectedSlot)} – {formatTime(new Date(new Date(selectedSlot).getTime() + eventType.durationMinutes * 60000).toISOString())}</p>}</>

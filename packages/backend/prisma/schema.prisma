@@ -32,6 +32,7 @@ model User {
   subscriptionPlan       String?  // "monthly", "yearly"
   trialEndsAt            DateTime?
   mcpTokenHash           String?
+  timezone               String   @default("Europe/Berlin")
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 

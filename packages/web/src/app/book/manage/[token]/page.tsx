@@ -6,6 +6,7 @@ import { Button, Card, CardBody } from "@heroui/react";
 import { apiFetch } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { TimezoneInfo } from "@/components/TimezoneInfo";
 
 interface BookingInfo {
   id: string;
@@ -27,6 +28,7 @@ interface EventTypeInfo {
 interface HostInfo {
   displayName: string;
   username: string;
+  timezone: string;
 }
 
 interface BrandingInfo {
@@ -42,7 +44,7 @@ type View = "details" | "reschedule" | "cancelled";
 export default function ManageBookingPage() {
   const params = useParams();
   const token = params.token as string;
-  const { t, dayLabels, formatTime, formatDateTime, formatDateLong, formatMonth, locale, setLocale, allLocales, localeFlags, localeLabels } = useLocale();
+  const { t, dayLabels, formatTime, formatDateTime, formatDateLong, formatMonth, bcp47, locale, setLocale, allLocales, localeFlags, localeLabels } = useLocale();
 
   const [booking, setBooking] = useState<BookingInfo | null>(null);
   const [eventType, setEventType] = useState<EventTypeInfo | null>(null);
@@ -213,6 +215,10 @@ export default function ManageBookingPage() {
             <p className="text-xs font-medium uppercase tracking-wider text-stone-400">{host.displayName}</p>
             <h1 className="mt-1 font-display text-xl font-bold tracking-tight text-stone-900">{eventType.name}</h1>
             <p className="mt-0.5 font-mono text-xs text-stone-500">{eventType.durationMinutes} {t("booking.min")}{eventType.location ? ` · ${/^https?:\/\/.*(meet\.google|teams\.microsoft|zoom\.(us|com))/i.test(eventType.location) ? t("booking.onlineMeeting") : eventType.location}` : ""}</p>
+          </div>
+
+          <div className="mb-4">
+            <TimezoneInfo hostTimezone={host.timezone} hostName={host.displayName} t={t} bcp47={bcp47} />
           </div>
 
           {view === "cancelled" && (
