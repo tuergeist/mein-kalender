@@ -21,14 +21,16 @@ export async function icsServeRoutes(app: FastifyInstance) {
 
       const calendarIds = feed.calendars.map((c) => c.id);
 
-      const now = new Date();
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + feed.daysInAdvance);
 
       // Load events from selected calendars (or all user calendars if none selected)
+      // Include today's events (from start of day, not just "now")
       const events = await prisma.event.findMany({
         where: {
-          startTime: { gte: now, lte: endDate },
+          startTime: { gte: startOfDay, lte: endDate },
           ignored: false,
           calendarEntry: {
             source: { userId: feed.userId },
