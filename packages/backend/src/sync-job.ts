@@ -156,6 +156,7 @@ async function syncCalendarEntry(
   userId: string,
   fetchDaysInAdvance?: number
 ): Promise<void> {
+  const isFullSync = !syncToken;
   const delta: EventDelta = await provider.getEvents(
     token,
     entry.providerCalendarId,
@@ -320,6 +321,57 @@ async function syncCalendarEntry(
       });
       await prisma.event.deleteMany({
         where: { id: { in: localEventIds } },
+      });
+    }
+  }
+
+  // Full sync orphan cleanup: remove DB events that the provider no longer returns.
+  // Delta sync handles deletions via @removed/isCancelled, but full sync only returns
+  // the current set of events — anything in the DB but not in that set is a ghost.
+  if (isFullSync && delta.created.length > 0) {
+    const providerEventIds = new Set(delta.created.map((e) => e.sourceEventId));
+    const dbEvents = await prisma.event.findMany({
+      where: { calendarEntryId: entry.id },
+      select: { id: true, sourceEventId: true, title: true },
+    });
+
+    const orphans = dbEvents.filter((e) => !providerEventIds.has(e.sourceEventId));
+    if (orphans.length > 0) {
+      const orphanIds = orphans.map((e) => e.id);
+      console.log(`[sync] Full sync orphan cleanup: removing ${orphans.length} ghost events from ${entry.id} (${orphans.map((e) => e.title).join(", ")})`);
+
+      // Delete cloned copies from target calendars
+      const orphanMappings = await prisma.targetEventMapping.findMany({
+        where: { sourceEventId: { in: orphanIds } },
+        include: { targetCalendar: { include: { source: true } } },
+      });
+
+      for (const mapping of orphanMappings) {
+        try {
+          const targetProvider = getProvider(mapping.targetCalendar.source.provider);
+          const targetCreds = JSON.parse(
+            decrypt(mapping.targetCalendar.source.credentials, process.env.ENCRYPTION_SECRET!)
+          );
+          const targetToken: TokenSet = {
+            accessToken: targetCreds.accessToken || "",
+            refreshToken: targetCreds.refreshToken || null,
+            expiresAt: targetCreds.expiresAt ? new Date(targetCreds.expiresAt) : null,
+          };
+          await targetProvider.deleteEvent(
+            targetToken,
+            mapping.targetCalendar.providerCalendarId,
+            mapping.targetEventId
+          );
+        } catch (err) {
+          console.error(`[sync] Failed to delete orphaned target event ${mapping.targetEventId}:`, err);
+        }
+      }
+
+      await prisma.targetEventMapping.deleteMany({
+        where: { sourceEventId: { in: orphanIds } },
+      });
+      await prisma.event.deleteMany({
+        where: { id: { in: orphanIds } },
       });
     }
   }
