@@ -290,6 +290,24 @@ export async function adminRoutes(app: FastifyInstance) {
     return source;
   });
 
+  // Clear adaptive sync backoff so the worker picks the source up again
+  app.post<{ Params: { id: string } }>(
+    "/api/admin/sources/:id/clear-backoff",
+    async (request, reply) => {
+      const source = await prisma.calendarSource.findUnique({
+        where: { id: request.params.id },
+        select: { id: true },
+      });
+      if (!source) return reply.code(404).send({ error: "Source not found" });
+
+      await prisma.calendarSource.update({
+        where: { id: request.params.id },
+        data: { consecutiveErrors: 0, nextSyncAfter: null },
+      });
+      return { id: source.id, cleared: true };
+    }
+  );
+
   // Send test email to the admin user
   app.post("/api/admin/test-email", async (request) => {
     const { user } = request as unknown as { user: AuthUser };

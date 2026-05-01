@@ -9,6 +9,18 @@ import { ProviderError, ProviderErrorCode } from "./errors";
 import { getProvider } from "./providers";
 import { conflictQueue, targetSyncQueue } from "./queues";
 
+// Adaptive backoff parameters: pause a source for `baseDelay * 2^consecutiveErrors`
+// after each failure, capped at `maxBackoff`. Resets to 0 on a successful run.
+const BACKOFF_BASE_DELAY_MS = 60_000; // 1 minute
+const BACKOFF_MAX_MS = 30 * 60_000;   // 30 minutes
+
+function computeBackoffMs(consecutiveErrors: number): number {
+  // First failure (counter just incremented to 1) => baseDelay * 2 = 2 min.
+  // Cap at maxBackoff. Guard the exponent against overflow for huge counts.
+  const exponent = Math.min(consecutiveErrors, 20);
+  return Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_DELAY_MS * 2 ** exponent);
+}
+
 export async function processSyncJob(
   prisma: PrismaClient,
   sourceId: string,
@@ -21,6 +33,17 @@ export async function processSyncJob(
 
   if (!source) {
     console.warn(`[sync] Source ${sourceId} not found, skipping`);
+    return;
+  }
+
+  // Adaptive backoff gate: if a previous run set nextSyncAfter and that time
+  // is still in the future, skip this run entirely without touching status.
+  const now = new Date();
+  if (source.nextSyncAfter && source.nextSyncAfter > now) {
+    const waitMs = source.nextSyncAfter.getTime() - now.getTime();
+    console.debug(
+      `[sync] Source ${sourceId} backed off, ${Math.round(waitMs / 1000)}s until gate clears`
+    );
     return;
   }
 
@@ -38,7 +61,13 @@ export async function processSyncJob(
     }
     await prisma.calendarSource.update({
       where: { id: sourceId },
-      data: { syncStatus: "ok", lastSyncAt: new Date(), syncError: null },
+      data: {
+        syncStatus: "ok",
+        lastSyncAt: new Date(),
+        syncError: null,
+        consecutiveErrors: 0,
+        nextSyncAfter: null,
+      },
     });
 
     // Queue conflict detection for ICS sources too
@@ -106,6 +135,8 @@ export async function processSyncJob(
         syncStatus: "ok",
         lastSyncAt: new Date(),
         syncError: null,
+        consecutiveErrors: 0,
+        nextSyncAfter: null,
       },
     });
 
@@ -146,11 +177,19 @@ export async function processSyncJob(
     const wipeSyncToken =
       err instanceof ProviderError && err.code === ProviderErrorCode.INVALID_SYNC_TOKEN;
 
+    // Adaptive backoff: increment counter and gate the next run. Applies to
+    // every error path (RATE_LIMITED, transport errors, etc.) so a single
+    // misbehaving source can't burn a sync slot every tick.
+    const nextErrors = source.consecutiveErrors + 1;
+    const nextSyncAfter = new Date(Date.now() + computeBackoffMs(nextErrors));
+
     await prisma.calendarSource.update({
       where: { id: sourceId },
       data: {
         syncStatus: "error",
         syncError: message,
+        consecutiveErrors: nextErrors,
+        nextSyncAfter,
         ...(wipeSyncToken ? { syncToken: null } : {}),
       },
     });

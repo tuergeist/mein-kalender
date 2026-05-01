@@ -78,6 +78,8 @@ model CalendarSource {
   syncStatus      String   @default("ok") // ok, syncing, error
   syncError       String?
   lastSyncAt      DateTime?
+  nextSyncAfter       DateTime?  // adaptive backoff gate: skip sync until this time
+  consecutiveErrors   Int       @default(0) // counter of consecutive failed sync runs
   icsUrl               String?  // for ICS URL subscriptions
   emailForInvitations  String?
   createdAt       DateTime @default(now())
