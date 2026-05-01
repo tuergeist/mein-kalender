@@ -464,6 +464,11 @@ export async function cloneToTarget(
   }
 }
 
+// Floor backoff applied when an in-run circuit breaker trips on a target write.
+// Bumping consecutiveErrors lets the longer adaptive backoff in processSyncJob
+// take over on the next run if errors persist.
+const TARGET_WRITE_CIRCUIT_BREAKER_MS = 5 * 60_000;
+
 async function cloneToSingleTarget(
   prisma: PrismaClient,
   userId: string,
@@ -478,7 +483,7 @@ async function cloneToSingleTarget(
     skipFree: boolean;
     skipIgnored: boolean;
     markAsPrivate: boolean;
-    source: { provider: string; credentials: string };
+    source: { id: string; provider: string; credentials: string };
     sourceCalendars: Array<{ id: string }>;
   }
 ): Promise<void> {
@@ -649,7 +654,31 @@ async function cloneToSingleTarget(
 
   console.log(`[sync] Target ${targetEntry.id}: ${unmappedEvents.length} unmapped, ${filteredEvents.length} after filter, ${existingMappings.length} existing mappings`);
 
+  let circuitBreakerTripped = false;
+  async function tripCircuitBreaker(phase: string): Promise<void> {
+    if (circuitBreakerTripped) return;
+    circuitBreakerTripped = true;
+    console.warn(
+      `[sync] Circuit breaker tripped for target ${targetEntry.id} (${targetEntry.source.provider}); aborting remaining ${phase} for this run`
+    );
+    const minNext = new Date(Date.now() + TARGET_WRITE_CIRCUIT_BREAKER_MS);
+    const fresh = await prisma.calendarSource.findUnique({
+      where: { id: targetEntry.source.id },
+      select: { nextSyncAfter: true },
+    });
+    const existing = fresh?.nextSyncAfter ?? null;
+    const nextSyncAfter = existing && existing > minNext ? existing : minNext;
+    await prisma.calendarSource.update({
+      where: { id: targetEntry.source.id },
+      data: {
+        nextSyncAfter,
+        consecutiveErrors: { increment: 1 },
+      },
+    });
+  }
+
   for (const event of filteredEvents) {
+    if (circuitBreakerTripped) break;
     const fp = eventFingerprint(event.title, event.startTime, event.endTime);
     const existingTargetId = fingerprintToTargetId.get(fp);
 
@@ -695,9 +724,15 @@ async function cloneToSingleTarget(
 
       fingerprintToTargetId.set(fp, cloned.sourceEventId);
     } catch (err) {
+      if (err instanceof ProviderError && err.code === ProviderErrorCode.RATE_LIMITED) {
+        await tripCircuitBreaker("create-events loop");
+        break;
+      }
       console.error(`[sync] Failed to clone event ${event.id} to target:`, err);
     }
   }
+
+  if (circuitBreakerTripped) return;
 
   // Handle updates: only push to target if source event changed since last sync
   const mappedEvents = await prisma.targetEventMapping.findMany({
@@ -713,6 +748,7 @@ async function cloneToSingleTarget(
   const CHUNK_SIZE = 5;
   for (let i = 0; i < staleEntries.length; i += CHUNK_SIZE) {
     const chunk = staleEntries.slice(i, i + CHUNK_SIZE);
+    let chunkRateLimited = false;
     await Promise.all(
       chunk.map(async (mapping: { id: string; targetEventId: string; sourceEvent: { title: string; description: string | null; location: string | null; startTime: Date; endTime: Date; allDay: boolean } }) => {
         try {
@@ -727,10 +763,18 @@ async function cloneToSingleTarget(
             data: { lastSyncedAt: new Date() },
           });
         } catch (err) {
+          if (err instanceof ProviderError && err.code === ProviderErrorCode.RATE_LIMITED) {
+            chunkRateLimited = true;
+            return;
+          }
           console.error(`[sync] Failed to update target event ${mapping.targetEventId}:`, err);
         }
       })
     );
+    if (chunkRateLimited) {
+      await tripCircuitBreaker("stale-update chunks");
+      break;
+    }
   }
 }
 
