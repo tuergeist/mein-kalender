@@ -127,16 +127,31 @@ export async function processSyncJob(
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error(`[sync] Error syncing source ${sourceId}:`, message);
+    const errName = err instanceof Error ? err.name : typeof err;
+    const errCode =
+      err instanceof ProviderError
+        ? err.code
+        : err instanceof Error && "code" in err
+          ? String((err as Error & { code: unknown }).code)
+          : null;
+    console.error(
+      `[sync] Error syncing source ${sourceId} [${errName}${errCode ? ":" + errCode : ""}]:`,
+      message
+    );
 
-    // Reset syncToken on failure so next run does a full fetch
-    // (delta sync may skip events created during the outage)
+    // Only reset syncToken on a genuinely invalid/expired token. Transport
+    // errors (DNS, ECONNRESET, "fetch failed") leave the token alone so the
+    // next run resumes incremental sync instead of doing an expensive full
+    // calendarView refetch.
+    const wipeSyncToken =
+      err instanceof ProviderError && err.code === ProviderErrorCode.INVALID_SYNC_TOKEN;
+
     await prisma.calendarSource.update({
       where: { id: sourceId },
       data: {
         syncStatus: "error",
         syncError: message,
-        syncToken: null,
+        ...(wipeSyncToken ? { syncToken: null } : {}),
       },
     });
 

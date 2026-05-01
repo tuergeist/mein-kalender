@@ -28,6 +28,19 @@ import { ProviderError, ProviderErrorCode } from "../errors";
 const GRAPH_API_BASE = "https://graph.microsoft.com/v1.0";
 const MS_TOKEN_URL = "https://login.microsoftonline.com";
 
+const MAX_RETRY_AFTER_SEC = 60;
+
+// Parses a Retry-After header value (seconds-integer or HTTP-date) into seconds.
+// Returns 0 for missing/unparseable values.
+function parseRetryAfter(header: string | null): number {
+  if (!header) return 0;
+  const asInt = Number(header);
+  if (Number.isFinite(asInt) && asInt >= 0) return Math.ceil(asInt);
+  const date = Date.parse(header);
+  if (Number.isFinite(date)) return Math.max(0, Math.ceil((date - Date.now()) / 1000));
+  return 0;
+}
+
 export class OutlookCalendarProvider implements CalendarProviderInterface {
   constructor(
     private clientId: string,
@@ -113,23 +126,28 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
       currentToken = await this.refreshToken(currentToken);
     }
 
-    const res = await fetch(url, {
-      ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${currentToken.accessToken}`,
-      },
-    });
-
-    if (res.status === 401) {
-      currentToken = await this.refreshToken(currentToken);
-      return fetch(url, {
+    const doFetch = (t: TokenSet) =>
+      fetch(url, {
         ...options,
         headers: {
           ...options.headers,
-          Authorization: `Bearer ${currentToken.accessToken}`,
+          Authorization: `Bearer ${t.accessToken}`,
         },
       });
+
+    let res = await doFetch(currentToken);
+
+    if (res.status === 401) {
+      currentToken = await this.refreshToken(currentToken);
+      res = await doFetch(currentToken);
+    }
+
+    if (res.status === 429) {
+      const retryAfterSec = parseRetryAfter(res.headers.get("Retry-After"));
+      if (retryAfterSec > 0 && retryAfterSec <= MAX_RETRY_AFTER_SEC) {
+        await new Promise((r) => setTimeout(r, retryAfterSec * 1000));
+        res = await doFetch(currentToken);
+      }
     }
 
     return res;
