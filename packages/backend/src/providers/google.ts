@@ -7,6 +7,7 @@ import {
   Provider,
 } from "../types";
 import { ProviderError, ProviderErrorCode } from "../errors";
+import { fetchWithTransportRetry } from "../lib/transport-retry";
 
 const GOOGLE_API_BASE = "https://www.googleapis.com/calendar/v3";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -109,13 +110,15 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
     }
 
     const doFetch = (t: TokenSet) =>
-      fetch(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          Authorization: `Bearer ${t.accessToken}`,
-        },
-      });
+      fetchWithTransportRetry(() =>
+        fetch(url, {
+          ...options,
+          headers: {
+            ...options.headers,
+            Authorization: `Bearer ${t.accessToken}`,
+          },
+        })
+      );
 
     let res = await doFetch(currentToken);
 

@@ -24,6 +24,7 @@ function stripHtml(html: string | undefined | null): string | null {
   return text || null;
 }
 import { ProviderError, ProviderErrorCode } from "../errors";
+import { fetchWithTransportRetry } from "../lib/transport-retry";
 
 const GRAPH_API_BASE = "https://graph.microsoft.com/v1.0";
 const MS_TOKEN_URL = "https://login.microsoftonline.com";
@@ -127,13 +128,15 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
     }
 
     const doFetch = (t: TokenSet) =>
-      fetch(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          Authorization: `Bearer ${t.accessToken}`,
-        },
-      });
+      fetchWithTransportRetry(() =>
+        fetch(url, {
+          ...options,
+          headers: {
+            ...options.headers,
+            Authorization: `Bearer ${t.accessToken}`,
+          },
+        })
+      );
 
     let res = await doFetch(currentToken);
 
