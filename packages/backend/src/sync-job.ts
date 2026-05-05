@@ -468,6 +468,18 @@ export async function cloneToTarget(
 // Bumping consecutiveErrors lets the longer adaptive backoff in processSyncJob
 // take over on the next run if errors persist.
 const TARGET_WRITE_CIRCUIT_BREAKER_MS = 5 * 60_000;
+// Permission-denied is a credential/sharing issue, not a transient rate-limit:
+// it won't recover in 5 min, so use a longer floor and surface a sticky error.
+const TARGET_WRITE_PERMISSION_BREAKER_MS = 60 * 60_000;
+
+type BreakerReason = "rate_limited" | "permission_denied";
+
+function classifyBreakerReason(err: unknown): BreakerReason | null {
+  if (!(err instanceof ProviderError)) return null;
+  if (err.code === ProviderErrorCode.RATE_LIMITED) return "rate_limited";
+  if (err.code === ProviderErrorCode.PERMISSION_DENIED) return "permission_denied";
+  return null;
+}
 
 async function cloneToSingleTarget(
   prisma: PrismaClient,
@@ -517,6 +529,8 @@ async function cloneToSingleTarget(
     (m: { sourceEventId: string }) => !existingEventIds.has(m.sourceEventId)
   );
 
+  const targetLabel = `target ${targetEntry.id} (${targetEntry.source.provider}, calendar ${targetEntry.providerCalendarId})`;
+
   for (const orphan of orphans) {
     try {
       await targetProvider.deleteEvent(
@@ -525,7 +539,10 @@ async function cloneToSingleTarget(
         orphan.targetEventId
       );
     } catch (err) {
-      console.error(`[sync] Failed to delete orphaned target event ${orphan.targetEventId}:`, err);
+      console.error(
+        `[sync] Failed to delete orphaned target event ${orphan.targetEventId} on ${targetLabel}:`,
+        err
+      );
     }
   }
 
@@ -554,7 +571,10 @@ async function cloneToSingleTarget(
           mapping.targetEventId
         );
       } catch (err) {
-        console.error(`[sync] Failed to delete ignored target event ${mapping.targetEventId}:`, err);
+        console.error(
+          `[sync] Failed to delete ignored target event ${mapping.targetEventId} on ${targetLabel}:`,
+          err
+        );
       }
     }
 
@@ -655,25 +675,37 @@ async function cloneToSingleTarget(
   console.log(`[sync] Target ${targetEntry.id}: ${unmappedEvents.length} unmapped, ${filteredEvents.length} after filter, ${existingMappings.length} existing mappings`);
 
   let circuitBreakerTripped = false;
-  async function tripCircuitBreaker(phase: string): Promise<void> {
+  async function tripCircuitBreaker(phase: string, reason: BreakerReason): Promise<void> {
     if (circuitBreakerTripped) return;
     circuitBreakerTripped = true;
     console.warn(
-      `[sync] Circuit breaker tripped for target ${targetEntry.id} (${targetEntry.source.provider}); aborting remaining ${phase} for this run`
+      `[sync] Circuit breaker tripped for ${targetLabel} (${reason}); aborting remaining ${phase} for this run`
     );
-    const minNext = new Date(Date.now() + TARGET_WRITE_CIRCUIT_BREAKER_MS);
+    const floorMs =
+      reason === "permission_denied"
+        ? TARGET_WRITE_PERMISSION_BREAKER_MS
+        : TARGET_WRITE_CIRCUIT_BREAKER_MS;
+    const minNext = new Date(Date.now() + floorMs);
     const fresh = await prisma.calendarSource.findUnique({
       where: { id: targetEntry.source.id },
       select: { nextSyncAfter: true },
     });
     const existing = fresh?.nextSyncAfter ?? null;
     const nextSyncAfter = existing && existing > minNext ? existing : minNext;
+    const data: Record<string, unknown> = {
+      nextSyncAfter,
+      consecutiveErrors: { increment: 1 },
+    };
+    if (reason === "permission_denied") {
+      // Surface a sticky, user-actionable error. The next successful write or
+      // a reauth flow should reset syncStatus/syncError back to ok/null.
+      data.syncStatus = "error";
+      data.syncError =
+        "Target calendar lost write access — please reauthorize the connection or check sharing permissions.";
+    }
     await prisma.calendarSource.update({
       where: { id: targetEntry.source.id },
-      data: {
-        nextSyncAfter,
-        consecutiveErrors: { increment: 1 },
-      },
+      data,
     });
   }
 
@@ -724,11 +756,12 @@ async function cloneToSingleTarget(
 
       fingerprintToTargetId.set(fp, cloned.sourceEventId);
     } catch (err) {
-      if (err instanceof ProviderError && err.code === ProviderErrorCode.RATE_LIMITED) {
-        await tripCircuitBreaker("create-events loop");
+      const reason = classifyBreakerReason(err);
+      if (reason) {
+        await tripCircuitBreaker("create-events loop", reason);
         break;
       }
-      console.error(`[sync] Failed to clone event ${event.id} to target:`, err);
+      console.error(`[sync] Failed to clone event ${event.id} to ${targetLabel}:`, err);
     }
   }
 
@@ -748,7 +781,7 @@ async function cloneToSingleTarget(
   const CHUNK_SIZE = 5;
   for (let i = 0; i < staleEntries.length; i += CHUNK_SIZE) {
     const chunk = staleEntries.slice(i, i + CHUNK_SIZE);
-    let chunkRateLimited = false;
+    let chunkBreakerReason: BreakerReason | null = null;
     await Promise.all(
       chunk.map(async (mapping: { id: string; targetEventId: string; sourceEvent: { title: string; description: string | null; location: string | null; startTime: Date; endTime: Date; allDay: boolean } }) => {
         try {
@@ -763,16 +796,20 @@ async function cloneToSingleTarget(
             data: { lastSyncedAt: new Date() },
           });
         } catch (err) {
-          if (err instanceof ProviderError && err.code === ProviderErrorCode.RATE_LIMITED) {
-            chunkRateLimited = true;
+          const reason = classifyBreakerReason(err);
+          if (reason) {
+            chunkBreakerReason ??= reason;
             return;
           }
-          console.error(`[sync] Failed to update target event ${mapping.targetEventId}:`, err);
+          console.error(
+            `[sync] Failed to update target event ${mapping.targetEventId} on ${targetLabel}:`,
+            err
+          );
         }
       })
     );
-    if (chunkRateLimited) {
-      await tripCircuitBreaker("stale-update chunks");
+    if (chunkBreakerReason) {
+      await tripCircuitBreaker("stale-update chunks", chunkBreakerReason);
       break;
     }
   }

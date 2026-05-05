@@ -222,7 +222,7 @@ describe("cloneToSingleTarget circuit breaker", () => {
     expect((sourceUpdates[0].data.nextSyncAfter as Date).getTime()).toBe(farFuture.getTime());
   });
 
-  it("does NOT trip the breaker for non-429 errors and continues processing", async () => {
+  it("does NOT trip the breaker for non-429/403 errors and continues processing", async () => {
     const stale = [makeStale("a"), makeStale("b"), makeStale("c"), makeStale("d"), makeStale("e"), makeStale("f")];
     const { prisma, sourceUpdates } = buildPrismaMock({ staleMappings: stale });
 
@@ -240,6 +240,64 @@ describe("cloneToSingleTarget circuit breaker", () => {
     // All 6 should be attempted: chunk 1 (5 calls, 1 failing) + chunk 2 (1 call).
     expect(mockProvider.updateEvent).toHaveBeenCalledTimes(6);
     expect(sourceUpdates).toHaveLength(0);
+  });
+
+  it("aborts on PERMISSION_DENIED with a 60-min floor and surfaces a sticky syncError", async () => {
+    const stale = [
+      makeStale("a"),
+      makeStale("b"),
+      makeStale("c"),
+      makeStale("d"),
+      makeStale("e"),
+      makeStale("f"),
+      makeStale("g"),
+    ];
+    const { prisma, sourceUpdates } = buildPrismaMock({ staleMappings: stale });
+
+    let call = 0;
+    mockProvider.updateEvent.mockImplementation(async () => {
+      call += 1;
+      if (call === 2) {
+        throw new ProviderError("forbidden", ProviderErrorCode.PERMISSION_DENIED, "google");
+      }
+      return undefined;
+    });
+
+    await cloneToTarget(prisma as never, "user-1");
+
+    // Only first chunk attempted; rest aborted by breaker.
+    expect(mockProvider.updateEvent).toHaveBeenCalledTimes(5);
+    expect(sourceUpdates).toHaveLength(1);
+    const data = sourceUpdates[0].data;
+    expect(data.consecutiveErrors).toEqual({ increment: 1 });
+    // 60-minute floor for permission-denied (not the 5-min rate-limited floor).
+    expect((data.nextSyncAfter as Date).getTime()).toBe(
+      new Date("2026-05-01T13:00:00Z").getTime()
+    );
+    // User-visible sticky error.
+    expect(data.syncStatus).toBe("error");
+    expect(data.syncError).toMatch(/lost write access/i);
+  });
+
+  it("aborts the create-events loop on PERMISSION_DENIED before running any updates", async () => {
+    const unmapped = [
+      { id: "e1", title: "E1", description: null, location: null, startTime: new Date("2026-05-10T10:00:00Z"), endTime: new Date("2026-05-10T11:00:00Z"), allDay: false, providerMetadata: null, ignored: false },
+      { id: "e2", title: "E2", description: null, location: null, startTime: new Date("2026-05-10T12:00:00Z"), endTime: new Date("2026-05-10T13:00:00Z"), allDay: false, providerMetadata: null, ignored: false },
+    ];
+    const stale = [makeStale("a")];
+    const { prisma, sourceUpdates } = buildPrismaMock({ unmappedEvents: unmapped, staleMappings: stale });
+
+    mockProvider.createEvent.mockRejectedValue(
+      new ProviderError("forbidden", ProviderErrorCode.PERMISSION_DENIED, "google")
+    );
+
+    await cloneToTarget(prisma as never, "user-1");
+
+    // Tripped on first failure, never reached event 2 in create or update phase.
+    expect(mockProvider.createEvent).toHaveBeenCalledTimes(1);
+    expect(mockProvider.updateEvent).not.toHaveBeenCalled();
+    expect(sourceUpdates).toHaveLength(1);
+    expect(sourceUpdates[0].data.syncStatus).toBe("error");
   });
 
   it("aborts the create-events loop on RATE_LIMITED and persists backoff", async () => {
