@@ -140,6 +140,13 @@ export async function processSyncJob(
       },
     });
 
+    // Windowed orphan cleanup: every 6h, fetch the next 7 days from the provider
+    // and remove any DB events the provider didn't return. Catches deletions that
+    // delta sync missed (delta tokens can lose events in edge cases).
+    runWindowedOrphanCleanup(prisma, source, provider, token).catch((err) => {
+      console.warn(`[sync] Windowed orphan cleanup failed for source ${sourceId}:`, err);
+    });
+
     // Log sync health (fire-and-forget)
     logSyncHealth(prisma, userId, sourceId, source.provider, syncStart, eventsProcessed, eventsFailed, true);
 
@@ -891,6 +898,96 @@ async function syncIcsSource(
   }
 
   console.log(`[sync] ICS source ${source.id}: synced ${events.length} events`);
+}
+
+// Windowed orphan cleanup: every 6h, fetch all event IDs in the next 7 days
+// from the provider and delete DB events not in that set. Catches deletions
+// that the delta sync missed (e.g. when delta tokens drop events in edge cases).
+const WINDOWED_CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6h
+const WINDOWED_CLEANUP_DAYS = 7;
+
+async function runWindowedOrphanCleanup(
+  prisma: PrismaClient,
+  source: CalendarSource & { calendarEntries: CalendarEntry[] },
+  provider: CalendarProviderInterface,
+  token: TokenSet
+): Promise<void> {
+  if (typeof provider.listEventIdsInRange !== "function") return; // provider doesn't support it
+
+  const lastRun = source.lastWindowedCleanupAt;
+  const now = new Date();
+  if (lastRun && now.getTime() - lastRun.getTime() < WINDOWED_CLEANUP_INTERVAL_MS) {
+    return; // not yet due
+  }
+
+  const startDate = new Date(now);
+  startDate.setHours(0, 0, 0, 0);
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + WINDOWED_CLEANUP_DAYS);
+
+  let totalRemoved = 0;
+  for (const entry of source.calendarEntries) {
+    try {
+      const providerIds = new Set(
+        await provider.listEventIdsInRange!(token, entry.providerCalendarId, startDate, endDate)
+      );
+      const dbEvents = await prisma.event.findMany({
+        where: {
+          calendarEntryId: entry.id,
+          startTime: { gte: startDate, lt: endDate },
+        },
+        select: { id: true, sourceEventId: true, title: true },
+      });
+      const orphans = dbEvents.filter((e) => !providerIds.has(e.sourceEventId));
+      if (orphans.length === 0) continue;
+
+      const orphanIds = orphans.map((e) => e.id);
+      console.log(
+        `[sync] Windowed cleanup: removing ${orphans.length} ghosts from ${entry.id} (${orphans.map((e) => e.title).slice(0, 5).join(", ")}${orphans.length > 5 ? ", ..." : ""})`
+      );
+
+      // Propagate deletions to target calendars
+      const targetMappings = await prisma.targetEventMapping.findMany({
+        where: { sourceEventId: { in: orphanIds } },
+        include: { targetCalendar: { include: { source: true } } },
+      });
+      for (const mapping of targetMappings) {
+        try {
+          const targetProvider = getProvider(mapping.targetCalendar.source.provider);
+          const targetCreds = JSON.parse(
+            decrypt(mapping.targetCalendar.source.credentials, process.env.ENCRYPTION_SECRET!)
+          );
+          const targetToken: TokenSet = {
+            accessToken: targetCreds.accessToken || "",
+            refreshToken: targetCreds.refreshToken || null,
+            expiresAt: targetCreds.expiresAt ? new Date(targetCreds.expiresAt) : null,
+          };
+          await targetProvider.deleteEvent(
+            targetToken,
+            mapping.targetCalendar.providerCalendarId,
+            mapping.targetEventId
+          );
+        } catch (err) {
+          console.error(`[sync] Windowed cleanup: failed to delete target event ${mapping.targetEventId}:`, err);
+        }
+      }
+
+      await prisma.targetEventMapping.deleteMany({ where: { sourceEventId: { in: orphanIds } } });
+      await prisma.event.deleteMany({ where: { id: { in: orphanIds } } });
+      totalRemoved += orphans.length;
+    } catch (err) {
+      console.error(`[sync] Windowed cleanup failed for entry ${entry.id}:`, err);
+    }
+  }
+
+  await prisma.calendarSource.update({
+    where: { id: source.id },
+    data: { lastWindowedCleanupAt: now },
+  });
+
+  if (totalRemoved > 0) {
+    console.log(`[sync] Windowed cleanup for source ${source.id}: removed ${totalRemoved} ghost events`);
+  }
 }
 
 function logSyncHealth(

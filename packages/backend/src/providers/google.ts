@@ -294,6 +294,45 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
     }
   }
 
+  // Returns just the event IDs in [startDate, endDate). No delta state.
+  // Used for windowed orphan cleanup to detect deletions the delta sync missed.
+  async listEventIdsInRange(
+    token: TokenSet,
+    calendarId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<string[]> {
+    const ids: string[] = [];
+    let pageToken: string | undefined;
+    do {
+      const params = new URLSearchParams({
+        maxResults: "2500",
+        singleEvents: "true",
+        timeMin: startDate.toISOString(),
+        timeMax: endDate.toISOString(),
+        fields: "items(id,status),nextPageToken",
+      });
+      params.append("eventTypes", "default");
+      params.append("eventTypes", "focusTime");
+      params.append("eventTypes", "outOfOffice");
+      params.append("eventTypes", "workingLocation");
+      if (pageToken) params.set("pageToken", pageToken);
+
+      const res = await this.fetchWithRefresh(
+        `${GOOGLE_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
+        token
+      );
+      if (!res.ok) throw this.mapError(res.status, await res.text());
+      const data = await res.json() as any;
+      for (const item of data.items || []) {
+        if (item.status === "cancelled") continue;
+        ids.push(item.id);
+      }
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+    return ids;
+  }
+
   private mapEvent(item: Record<string, unknown>, calendarId: string): NormalizedEvent {
     const start = item.start as Record<string, string>;
     const end = item.end as Record<string, string>;

@@ -324,6 +324,31 @@ export class OutlookCalendarProvider implements CalendarProviderInterface {
     }
   }
 
+  // Returns just the event IDs in [startDate, endDate). No delta state, no body.
+  // Used for windowed orphan cleanup to detect deletions the delta sync missed.
+  async listEventIdsInRange(
+    token: TokenSet,
+    calendarId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<string[]> {
+    const ids: string[] = [];
+    let currentUrl: string | null =
+      `${GRAPH_API_BASE}/me/calendars/${calendarId}/calendarView?startDateTime=${startDate.toISOString()}&endDateTime=${endDate.toISOString()}&$top=200&$select=id,isCancelled`;
+
+    while (currentUrl) {
+      const res = await this.fetchWithRefresh(currentUrl, token);
+      if (!res.ok) throw this.mapError(res.status, await res.text());
+      const data = await res.json() as any;
+      for (const item of data.value || []) {
+        if (item.isCancelled) continue;
+        ids.push(item.id);
+      }
+      currentUrl = data["@odata.nextLink"] ?? null;
+    }
+    return ids;
+  }
+
   private mapEvent(item: Record<string, unknown>, calendarId: string): NormalizedEvent {
     const start = item.start as Record<string, string>;
     const end = item.end as Record<string, string>;

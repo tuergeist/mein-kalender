@@ -74,6 +74,14 @@ export interface CalendarProviderInterface {
     calendarId: string,
     eventId: string
   ): Promise<void>;
+  // Optional: list event IDs in a date range, no delta state.
+  // Used for windowed orphan cleanup to detect deletions the delta sync missed.
+  listEventIdsInRange?(
+    token: TokenSet,
+    calendarId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<string[]>;
 }
 
 export interface UserProfile {
