@@ -98,10 +98,22 @@ export async function processSyncJob(
       expiresAt: credentials.expiresAt ? new Date(credentials.expiresAt) : null,
     };
 
+    // Force a full sync daily so the delta window advances with time.
+    // Without this, the fixed delta window (set at initial sync) ages out and
+    // new recurring instances beyond the original timeMax are never fetched.
+    const FULL_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+    const needsFullSync =
+      !source.lastFullSyncAt ||
+      Date.now() - source.lastFullSyncAt.getTime() > FULL_SYNC_INTERVAL_MS;
+    const effectiveSyncToken = needsFullSync ? null : source.syncToken;
+    if (needsFullSync && source.syncToken) {
+      console.log(`[sync] Source ${sourceId} delta window stale, forcing full sync`);
+    }
+
     // Sync each enabled calendar entry
     for (const entry of source.calendarEntries) {
       try {
-        await syncCalendarEntry(prisma, provider, token, entry, source.syncToken, userId, source.fetchDaysInAdvance);
+        await syncCalendarEntry(prisma, provider, token, entry, effectiveSyncToken, userId, source.fetchDaysInAdvance);
         eventsProcessed++;
       } catch (err) {
         if (
@@ -117,6 +129,14 @@ export async function processSyncJob(
           throw err;
         }
       }
+    }
+
+    // Track when we last did a full sync so needsFullSync stays accurate
+    if (needsFullSync) {
+      await prisma.calendarSource.update({
+        where: { id: sourceId },
+        data: { lastFullSyncAt: new Date() },
+      });
     }
 
     // Queue target sync as a separate job (runs with concurrency 1 to avoid races)
