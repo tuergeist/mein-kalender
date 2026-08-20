@@ -47,6 +47,7 @@ export async function icsServeRoutes(app: FastifyInstance) {
           startTime: true,
           endTime: true,
           allDay: true,
+          updatedAt: true,
         },
         orderBy: { startTime: "asc" },
       });
@@ -57,13 +58,18 @@ export async function icsServeRoutes(app: FastifyInstance) {
         "VERSION:2.0",
         "PRODID:-//mein-kalender//EN",
         "CALSCALE:GREGORIAN",
-        "METHOD:PUBLISH",
+        // No METHOD: this is a subscription feed, not an iTIP message. METHOD
+        // would drag in RFC 5546's extra requirements (ORGANIZER on every event).
         `X-WR-CALNAME:${escapeIcs(feed.name)}`,
       ];
 
       for (const event of events) {
         lines.push("BEGIN:VEVENT");
         lines.push(foldLine(`UID:${event.sourceEventId}@mein-kalender`));
+        // DTSTAMP is required (RFC 5545 §3.6.1). Derived from the row's last
+        // change, not the request time, so a client polling the feed doesn't
+        // see every event as modified on every fetch.
+        lines.push(`DTSTAMP:${formatIcsDate(event.updatedAt)}`);
 
         if (event.allDay) {
           const startDate = event.startTime.toISOString().slice(0, 10).replace(/-/g, "");
