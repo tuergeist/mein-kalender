@@ -8,6 +8,7 @@ import {
 } from "@heroui/react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
+import { BrandBackground } from "@/components/BrandBackground";
 import { apiAuthFetch } from "@/lib/api";
 
 interface EventType {
@@ -264,7 +265,9 @@ export default function BookingSettingsPage() {
                 </div>
                 {backgroundUrl && (
                   <>
-                    <div className="mt-2 h-12 w-full rounded bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,${backgroundOpacity}), rgba(255,255,255,${backgroundOpacity})), url(${backgroundUrl})` }} />
+                    <div className="relative mt-2 h-12 w-full overflow-hidden rounded">
+                      <BrandBackground url={backgroundUrl} opacity={backgroundOpacity} position="absolute" blur={10} />
+                    </div>
                     <div className="mt-2 flex items-center gap-2">
                       <span className="text-xs text-default-400 shrink-0">Overlay</span>
                       <input type="range" min="0" max="1" step="0.05" value={backgroundOpacity} onChange={(e) => setBackgroundOpacity(parseFloat(e.target.value))} className="flex-1" />

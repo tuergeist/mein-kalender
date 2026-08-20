@@ -6,6 +6,7 @@ import { Button, Input, Textarea, Card, CardBody, Divider } from "@heroui/react"
 import { apiFetch } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BrandBackground } from "@/components/BrandBackground";
 import { TimezoneInfo } from "@/components/TimezoneInfo";
 
 interface EventTypeInfo {
@@ -236,15 +237,11 @@ export default function BookingPage() {
   const accentColor = branding?.accentColor || undefined;
 
   return (
-    <div
-      className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4"
-      style={{
-        ...(branding?.backgroundUrl
-          ? { backgroundImage: `linear-gradient(rgba(255,255,255,${branding.backgroundOpacity ?? 0.85}), rgba(255,255,255,${branding.backgroundOpacity ?? 0.85})), url(${branding.backgroundUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-          : {}),
-      }}
-    >
-      <Card className="w-full max-w-3xl">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
+      {branding?.backgroundUrl && (
+        <BrandBackground url={branding.backgroundUrl} opacity={branding.backgroundOpacity ?? 0.85} />
+      )}
+      <Card className="relative w-full max-w-3xl">
         <CardBody className="flex flex-col gap-0 p-0 md:flex-row">
           {/* Left panel — event info */}
           <div className="border-b border-gray-200 p-6 md:w-64 md:border-b-0 md:border-r">
@@ -481,7 +478,7 @@ export default function BookingPage() {
           </div>
         </CardBody>
       </Card>
-      <div className="mt-4 flex items-center justify-center gap-3">
+      <div className="relative mt-4 flex items-center justify-center gap-3">
         <p className="text-[11px] text-stone-300">
           <a href="https://mein-kalender.link" target="_blank" rel="noopener noreferrer" className="hover:text-stone-400 transition-colors">
             {t("footer.tagline")}
