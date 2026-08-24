@@ -130,6 +130,14 @@ describe("ICS feed conformance", () => {
     expect(lines).toContain("DTSTAMP:20260819T070000Z");
   });
 
+  it("serves the feed inline, not as an attachment", async () => {
+    // Proton Calendar rejects a subscription URL that answers with
+    // Content-Disposition: attachment — same bytes without the header sync fine.
+    const res = await app.inject({ method: "GET", url: "/api/ics-feed/tok.ics" });
+    expect(res.headers["content-disposition"]).toBeUndefined();
+    expect(res.headers["content-type"]).toBe("text/calendar; charset=utf-8");
+  });
+
   it("omits METHOD, which would require ORGANIZER on every event", async () => {
     const lines = unfold(await fetchFeed());
     expect(lines.some((l) => l.startsWith("METHOD:"))).toBe(false);

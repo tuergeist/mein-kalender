@@ -101,9 +101,12 @@ export async function icsServeRoutes(app: FastifyInstance) {
 
       const icsContent = lines.join("\r\n") + "\r\n";
 
+      // No Content-Disposition: Proton Calendar refuses to subscribe to a feed
+      // served as an attachment ("cannot process"). Verified by serving the
+      // identical bytes with and without the header. Google's own iCal feed
+      // sends no Content-Disposition either.
       reply
         .header("Content-Type", "text/calendar; charset=utf-8")
-        .header("Content-Disposition", `attachment; filename="${feed.name.replace(/[^a-zA-Z0-9-_]/g, "_")}.ics"`)
         .send(icsContent);
     }
   );
