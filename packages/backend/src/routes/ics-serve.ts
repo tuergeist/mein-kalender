@@ -101,11 +101,16 @@ export async function icsServeRoutes(app: FastifyInstance) {
 
       const icsContent = lines.join("\r\n") + "\r\n";
 
-      // No Content-Disposition: Proton Calendar refuses to subscribe to a feed
-      // served as an attachment ("cannot process"). Verified by serving the
-      // identical bytes with and without the header. Google's own iCal feed
-      // sends no Content-Disposition either.
-      reply
+      // The `return` matters. In an async handler, a bare reply.send() lets the
+      // handler resolve to undefined while @fastify/compress is still streaming,
+      // and the response goes out as Content-Encoding: gzip with an empty body.
+      // Any client that sends Accept-Encoding — every browser, and Proton's feed
+      // fetcher — then receives zero bytes. Without the header the feed is fine,
+      // which is why plain curl never showed it.
+      //
+      // No Content-Disposition either: a subscription feed is not a download,
+      // and Google's iCal feed does not send one.
+      return reply
         .header("Content-Type", "text/calendar; charset=utf-8")
         .send(icsContent);
     }

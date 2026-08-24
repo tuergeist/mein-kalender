@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import Fastify, { FastifyInstance } from "fastify";
+import compress from "@fastify/compress";
 import { icsServeRoutes } from "./ics-serve";
 
 vi.mock("../lib/prisma", () => ({
@@ -50,6 +51,10 @@ let app: FastifyInstance;
 
 beforeAll(async () => {
   app = Fastify();
+  // The real server registers this globally. Without it the feed cannot be
+  // tested against the empty-gzip-body failure. threshold 0 so the small
+  // fixture feed is compressed too.
+  await app.register(compress, { threshold: 0 });
   await app.register(icsServeRoutes);
   await app.ready();
 });
@@ -128,6 +133,20 @@ describe("ICS feed conformance", () => {
     const lines = unfold(await fetchFeed());
     expect(lines).toContain("DTSTAMP:20260818T093000Z");
     expect(lines).toContain("DTSTAMP:20260819T070000Z");
+  });
+
+  it("still delivers a body when the client accepts gzip", async () => {
+    // Regression: a bare reply.send() in an async handler makes
+    // @fastify/compress emit Content-Encoding: gzip with an empty body, so every
+    // client that sends Accept-Encoding gets zero bytes. Proton Calendar refused
+    // the feed for exactly this reason.
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/ics-feed/tok.ics",
+      headers: { "accept-encoding": "gzip" },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.rawPayload.length).toBeGreaterThan(0);
   });
 
   it("serves the feed inline, not as an attachment", async () => {

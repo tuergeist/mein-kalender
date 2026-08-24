@@ -105,7 +105,7 @@ export async function userImageRoutes(app: FastifyInstance) {
         return reply.code(404).send({ error: "Image not found" });
       }
 
-      reply
+      return reply
         .header("Content-Type", image.mimeType)
         .header("Cache-Control", "public, max-age=86400")
         .send(image.data);

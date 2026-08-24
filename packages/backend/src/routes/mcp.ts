@@ -39,10 +39,10 @@ export async function mcpRoutes(app: FastifyInstance) {
 
   // GET/DELETE for MCP protocol completeness (stateless: not supported)
   app.get("/api/mcp", async (_request, reply) => {
-    reply.code(405).send({ error: "Method not allowed (stateless mode)" });
+    return reply.code(405).send({ error: "Method not allowed (stateless mode)" });
   });
 
   app.delete("/api/mcp", async (_request, reply) => {
-    reply.code(405).send({ error: "Method not allowed (stateless mode)" });
+    return reply.code(405).send({ error: "Method not allowed (stateless mode)" });
   });
 }
