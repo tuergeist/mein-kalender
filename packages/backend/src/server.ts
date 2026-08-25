@@ -26,6 +26,7 @@ import { dashboardRoutes } from "./routes/dashboard";
 import { feedbackRoutes } from "./routes/feedback";
 import { billingRoutes } from "./routes/billing";
 import { mcpRoutes } from "./routes/mcp";
+import { mailInboundRoutes } from "./routes/mail-inbound";
 
 validateEnv();
 
@@ -67,6 +68,7 @@ server.register(dashboardRoutes);
 server.register(feedbackRoutes);
 server.register(billingRoutes);
 server.register(mcpRoutes);
+server.register(mailInboundRoutes);
 
 const start = async () => {
   const port = parseInt(process.env.SERVER_PORT || "4200", 10);
