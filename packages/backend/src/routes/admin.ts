@@ -3,23 +3,7 @@ import { prisma } from "../lib/prisma";
 import { requireAdmin, AuthUser } from "../lib/auth";
 import { sendEmail } from "../lib/email";
 import { buildIcsInvitation } from "../lib/ics-invitation";
-import { Queue } from "bullmq";
-
-let syncQueue: Queue | null = null;
-
-function getSyncQueue(): Queue {
-  if (!syncQueue) {
-    syncQueue = new Queue("calendar-sync", {
-      connection: {
-        host: new URL(process.env.REDIS_URL || "redis://localhost:6379").hostname,
-        port: parseInt(
-          new URL(process.env.REDIS_URL || "redis://localhost:6379").port || "6379"
-        ),
-      },
-    });
-  }
-  return syncQueue;
-}
+import { syncQueue } from "../queues";
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook("preHandler", requireAdmin);
@@ -85,9 +69,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const page = Math.max(1, parseInt(request.query.page || "1", 10));
     const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || "20", 10)));
 
-    const queue = getSyncQueue();
-
-    const counts = await queue.getJobCounts(
+    const counts = await syncQueue.getJobCounts(
       "active",
       "waiting",
       "completed",
@@ -95,7 +77,7 @@ export async function adminRoutes(app: FastifyInstance) {
     );
 
     // Fetch a larger window for search/filter
-    const allJobs = await queue.getJobs(
+    const allJobs = await syncQueue.getJobs(
       ["active", "waiting", "completed", "failed"],
       0,
       199
@@ -243,10 +225,9 @@ export async function adminRoutes(app: FastifyInstance) {
     });
 
     // Queue sync jobs
-    const queue = getSyncQueue();
     await Promise.all(
       sources.map((s) =>
-        queue.add("sync-source", { sourceId: s.id, userId: s.userId }, { jobId: `sync-${s.id}-full` })
+        syncQueue.add("sync-source", { sourceId: s.id, userId: s.userId }, { jobId: `sync-${s.id}-full` })
       )
     );
 
@@ -271,13 +252,12 @@ export async function adminRoutes(app: FastifyInstance) {
     });
 
     // Update the scheduled job with new interval
-    const queue = getSyncQueue();
     const fullSource = await prisma.calendarSource.findUnique({
       where: { id: request.params.id },
       select: { id: true, userId: true },
     });
     if (fullSource) {
-      await queue.upsertJobScheduler(
+      await syncQueue.upsertJobScheduler(
         `sync-${source.id}`,
         { every: syncInterval * 1000 },
         {
