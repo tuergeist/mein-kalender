@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { processSyncJob } from "./sync-job";
 import { detectConflicts } from "./conflict-detection";
 import { cloneToTarget } from "./sync-job";
-import { connection, syncQueue } from "./queues";
+import { allQueues, connection, syncQueue } from "./queues";
 import { sendEmail } from "./lib/email";
 
 const prisma = new PrismaClient();
@@ -125,6 +125,44 @@ async function scheduleSyncJobs() {
   console.log(`[sync] Scheduled ${sources.length} sync jobs`);
 }
 
-scheduleSyncJobs().catch(console.error);
+// Finished jobs added before retention limits existed are still in Redis and
+// are never touched again by BullMQ. Sweep them out on start and once an hour,
+// otherwise the leftovers alone keep the 128 Mi Redis pod near its limit.
+const COMPLETED_GRACE_MS = 60 * 60 * 1000;
+const FAILED_GRACE_MS = 24 * 60 * 60 * 1000;
+const CLEAN_BATCH = 1000;
+const CLEAN_INTERVAL_MS = 60 * 60 * 1000;
+
+async function cleanFinishedJobs() {
+  for (const queue of allQueues) {
+    for (const [state, grace] of [
+      ["completed", COMPLETED_GRACE_MS],
+      ["failed", FAILED_GRACE_MS],
+    ] as const) {
+      let removed = 0;
+      try {
+        for (;;) {
+          const batch = await queue.clean(grace, CLEAN_BATCH, state);
+          removed += batch.length;
+          if (batch.length < CLEAN_BATCH) break;
+        }
+      } catch (err) {
+        console.error(`[cleanup] ${queue.name}/${state} failed:`, err);
+        continue;
+      }
+      if (removed > 0) {
+        console.log(`[cleanup] Removed ${removed} ${state} jobs from ${queue.name}`);
+      }
+    }
+  }
+}
+
+scheduleSyncJobs()
+  .then(cleanFinishedJobs)
+  .catch(console.error);
+
+setInterval(() => {
+  cleanFinishedJobs().catch((err) => console.error("[cleanup] Sweep failed:", err));
+}, CLEAN_INTERVAL_MS).unref();
 
 console.log("[sync] Worker started");

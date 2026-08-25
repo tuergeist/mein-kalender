@@ -1,24 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
-import { Queue } from "bullmq";
+import { syncQueue } from "../queues";
 
 interface AuthenticatedRequest {
   user: AuthUser;
-}
-
-let syncQueue: Queue | null = null;
-
-function getSyncQueue(): Queue {
-  if (!syncQueue) {
-    syncQueue = new Queue("calendar-sync", {
-      connection: {
-        host: new URL(process.env.REDIS_URL || "redis://localhost:6379").hostname,
-        port: parseInt(new URL(process.env.REDIS_URL || "redis://localhost:6379").port || "6379"),
-      },
-    });
-  }
-  return syncQueue;
 }
 
 export async function syncRoutes(app: FastifyInstance) {
@@ -36,7 +22,7 @@ export async function syncRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Not found" });
     }
 
-    await getSyncQueue().add(
+    await syncQueue.add(
       "sync-source",
       { sourceId: source.id, userId: user.id },
       { jobId: `sync-${source.id}` }
@@ -63,7 +49,7 @@ export async function syncRoutes(app: FastifyInstance) {
       data: { syncToken: null },
     });
 
-    await getSyncQueue().add(
+    await syncQueue.add(
       "sync-source",
       { sourceId: source.id, userId: user.id },
       { jobId: `sync-${source.id}-full` }
@@ -81,10 +67,9 @@ export async function syncRoutes(app: FastifyInstance) {
       select: { id: true },
     });
 
-    const queue = getSyncQueue();
     await Promise.all(
       sources.map((s: { id: string }) =>
-        queue.add(
+        syncQueue.add(
           "sync-source",
           { sourceId: s.id, userId: user.id },
           { jobId: `sync-${s.id}` }
