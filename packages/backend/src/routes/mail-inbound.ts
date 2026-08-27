@@ -20,20 +20,27 @@ import { FastifyInstance } from "fastify";
 const HEADER_VALUE_ALLOWED =
   /(^content-type$|^content-length$|^user-agent$|^date$|signature|sign|hmac|digest|timestamp|nonce|webhook|event|delivery|token|verify)/i;
 
-/** Keys whose values are mail content rather than protocol data — described, never printed. */
-const CONTENT_KEYS = /^(html|htmlbody|html_body|text|textbody|text_body|body|raw|raw_email|rawemail|content|message|attachments|parts|headers)$/i;
+/**
+ * Keys whose values are mail content rather than protocol data — described,
+ * never printed. Deliberately narrow: the first real delivery showed that this
+ * provider puts the mail body under content.text and content.html, while
+ * `message` and `content` are containers and other `message`-named fields
+ * carry protocol information (spam.message explains why scoring was skipped).
+ * Withholding those hid exactly what needed to be read.
+ */
+const CONTENT_KEYS = /^(html|htmlbody|html_body|text|textbody|text_body|body|raw|raw_email|rawemail|snippet|preview)$/i;
 
 const MAX_SCALAR = 300;
 
 /** Describe a value: protocol data verbatim, mail content by shape only. */
 function describe(value: unknown, key = "", depth = 0): unknown {
   if (value === null || value === undefined) return value;
-  if (depth > 4) return "<depth limit>";
+  if (depth > 7) return "<depth limit>";
 
   if (Array.isArray(value)) {
     return {
       __array: value.length,
-      items: value.slice(0, 3).map((v) => describe(v, key, depth + 1)),
+      items: value.slice(0, 5).map((v) => describe(v, key, depth + 1)),
     };
   }
 
