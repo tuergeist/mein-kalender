@@ -269,8 +269,12 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       let booking;
       try {
         booking = await prisma.$transaction(async (tx) => {
-          // Advisory lock scoped to this user + time slot (released on commit/rollback)
-          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${user.id} || ${start.toISOString()}))`;
+          // Advisory lock scoped to this user + time slot (released on commit/rollback).
+          // $executeRaw, not $queryRaw: pg_advisory_xact_lock returns void, and
+          // $queryRaw tries to deserialize the result column, which fails with
+          // P2010 "Failed to deserialize column of type 'void'". $executeRaw
+          // reports a row count and never looks at the columns.
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${user.id} || ${start.toISOString()}))`;
 
           // Final overlap check inside the lock
           const overlap = await tx.booking.findFirst({
