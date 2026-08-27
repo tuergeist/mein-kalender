@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { useLocale } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { TimezoneInfo } from "@/components/TimezoneInfo";
+import { BrandBackground } from "@/components/BrandBackground";
 
 interface BookingInfo {
   id: string;
@@ -208,11 +209,26 @@ export default function ManageBookingPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#FAFAF9] px-4 py-12">
-      <Card className="w-full max-w-lg shadow-md">
+      {branding?.backgroundUrl && (
+        <BrandBackground url={branding.backgroundUrl} opacity={branding.backgroundOpacity ?? 0.85} />
+      )}
+      <Card className="relative w-full max-w-lg shadow-md">
         <CardBody className="p-6 sm:p-8">
-          {/* Header */}
+          {/* Header — same branding as the booking page. A guest reaches this
+              page from the confirmation mail, so it has to look like the page
+              they booked on. */}
           <div className="mb-6">
-            <p className="text-xs font-medium uppercase tracking-wider text-stone-400">{host.displayName}</p>
+            <div className="flex items-center gap-2">
+              {branding?.avatarUrl && (
+                <img
+                  src={branding.avatarUrl}
+                  alt=""
+                  className="h-8 w-8 rounded-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+              )}
+              <p className="text-xs font-medium uppercase tracking-wider text-stone-400">{host.displayName}</p>
+            </div>
             <h1 className="mt-1 font-display text-xl font-bold tracking-tight text-stone-900">{eventType.name}</h1>
             <p className="mt-0.5 font-mono text-xs text-stone-500">{eventType.durationMinutes} {t("booking.min")}{eventType.location ? ` · ${/^https?:\/\/.*(meet\.google|teams\.microsoft|zoom\.(us|com))/i.test(eventType.location) ? t("booking.onlineMeeting") : eventType.location}` : ""}</p>
           </div>
