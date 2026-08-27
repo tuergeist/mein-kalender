@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { BrandBackground } from "@/components/BrandBackground";
+import { BackgroundHint, SafeZoneOverlay, ImageStrengthSlider } from "@/components/BackgroundHelp";
 import { apiAuthFetch } from "@/lib/api";
 
 interface EventType {
@@ -263,15 +264,18 @@ export default function BookingSettingsPage() {
                   <Input label="Hintergrundbild" size="sm" value={backgroundUrl} onValueChange={setBackgroundUrl} placeholder="https://... oder hochladen" className="flex-1" />
                   <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")} className="shrink-0">Hochladen</Button>
                 </div>
+                <BackgroundHint />
                 {backgroundUrl && (
                   <>
-                    <div className="relative mt-2 h-12 w-full overflow-hidden rounded">
+                    <div className="relative mt-2 h-24 w-full overflow-hidden rounded">
                       <BrandBackground url={backgroundUrl} opacity={backgroundOpacity} position="absolute" blur={10} />
+                      <SafeZoneOverlay />
                     </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-xs text-default-400 shrink-0">Overlay</span>
-                      <input type="range" min="0" max="1" step="0.05" value={backgroundOpacity} onChange={(e) => setBackgroundOpacity(parseFloat(e.target.value))} className="flex-1" />
-                      <span className="text-xs text-default-400 w-8">{Math.round(backgroundOpacity * 100)}%</span>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <Button size="sm" variant="flat" color="danger" onPress={() => setBackgroundUrl("")}>Entfernen</Button>
+                    </div>
+                    <div className="mt-2">
+                      <ImageStrengthSlider overlayOpacity={backgroundOpacity} onChange={setBackgroundOpacity} />
                     </div>
                   </>
                 )}

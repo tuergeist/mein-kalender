@@ -11,6 +11,8 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { apiAuthFetch } from "@/lib/api";
 import { extractColorsFromImage } from "@/lib/extract-colors";
+import { BrandBackground } from "@/components/BrandBackground";
+import { BackgroundHint, SafeZoneOverlay, ImageStrengthSlider } from "@/components/BackgroundHelp";
 
 const DAY_NAMES = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const DEFAULT_RULES = [
@@ -420,7 +422,14 @@ export default function EditEventTypePage() {
                       <label className="mb-1.5 block text-sm font-medium">Hintergrundbild</label>
                       {formBackgroundUrl ? (
                         <div className="space-y-1.5">
-                          <img src={formBackgroundUrl} alt="Hintergrundbild" className="h-24 w-full rounded-lg object-cover border border-default-200" />
+                          {/* The booking page renders the background with `contain`, so the
+                              preview must too — `cover` cropped differently and showed a
+                              framing no visitor ever sees. */}
+                          <div className="relative h-24 w-full overflow-hidden rounded-lg border border-default-200">
+                            <BrandBackground url={formBackgroundUrl} opacity={formBackgroundOpacity} position="absolute" blur={10} />
+                            <SafeZoneOverlay />
+                          </div>
+                          <BackgroundHint />
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs text-default-500">Bild hochgeladen</span>
                             <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")}>Ersetzen</Button>
@@ -428,21 +437,20 @@ export default function EditEventTypePage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <>
+                          <div className="flex items-center gap-2">
                           <div className="flex h-16 w-24 items-center justify-center rounded-lg border border-dashed border-default-300 bg-default-50 shrink-0">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-default-400"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 4-4 5 5"/></svg>
                           </div>
                           <Button size="sm" variant="bordered" isLoading={uploading === "background"} onPress={() => uploadImage("background")}>Hochladen</Button>
-                        </div>
+                          </div>
+                          <BackgroundHint />
+                        </>
                       )}
                     </div>
                   </div>
                   {formBackgroundUrl && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-default-400 shrink-0">Overlay</span>
-                      <input type="range" min="0" max="1" step="0.05" value={formBackgroundOpacity} onChange={(e) => setFormBackgroundOpacity(parseFloat(e.target.value))} className="flex-1" />
-                      <span className="text-xs text-default-400 w-8">{Math.round(formBackgroundOpacity * 100)}%</span>
-                    </div>
+                    <ImageStrengthSlider overlayOpacity={formBackgroundOpacity} onChange={setFormBackgroundOpacity} />
                   )}
                 </div>
               </CardBody>
