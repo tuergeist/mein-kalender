@@ -81,29 +81,11 @@ const appUrl = 'https://app.mein-kalender.link';
       <div class="container trust-inner">
         <div class="trust-text">
           <h2>Du siehst sofort, ob alles funktioniert.</h2>
-          <p>Kein anderes Tool zeigt dir die Gesundheit deiner Synchronisierung. Events synchronisiert, Integrität geprüft, Provider-Status auf einen Blick.</p>
+          <p>Termine der Woche, offene Überschneidungen, verbundene Kalender und der Zustand jeder Verbindung — auf einer Seite, ohne Suchen.</p>
         </div>
-        <div class="trust-card">
-          <div class="trust-label">SYNC-COCKPIT</div>
-          <div class="trust-grid">
-            <div class="trust-stat">
-              <span class="stat-number">247</span>
-              <span class="stat-label">Events synchronisiert</span>
-            </div>
-            <div class="trust-stat">
-              <span class="stat-number stat-green">vor 2 Min</span>
-              <span class="stat-label">Letzter Abgleich</span>
-            </div>
-            <div class="trust-stat">
-              <span class="stat-number">3</span>
-              <span class="stat-label">Provider verbunden</span>
-            </div>
-          </div>
-          <div class="trust-providers">
-            <span class="provider-dot green"></span><span>Google</span>
-            <span class="provider-dot green"></span><span>Outlook</span>
-            <span class="provider-dot green"></span><span>Proton</span>
-          </div>
+        <div class="shot">
+          <img src="/screenshots/dashboard.jpg" width="1600" height="906" loading="lazy" decoding="async"
+               alt="Dashboard von Mein Kalender: 12 Termine diese Woche, keine Überschneidungen, drei Kalender verbunden, Status Alles OK." />
         </div>
       </div>
     </section>
@@ -130,16 +112,9 @@ const appUrl = 'https://app.mein-kalender.link';
             <p>Jede Buchungsseite mit eigenem Branding. Dein Beratungsmandat sieht anders aus als dein Board-Sitz.</p>
           </div>
           <div class="feature-visual">
-            <div class="cards-fan">
-              <div class="fan-card" style="transform: rotate(-6deg); top: 8px; left: 0;">
-                <div class="fan-bar" style="background: #4285F4;"></div>
-              </div>
-              <div class="fan-card" style="transform: rotate(-2deg); top: 4px; left: 24px;">
-                <div class="fan-bar" style="background: #059669;"></div>
-              </div>
-              <div class="fan-card" style="transform: rotate(2deg); top: 0; left: 48px;">
-                <div class="fan-bar" style="background: #9F1239;"></div>
-              </div>
+            <div class="shot">
+              <img src="/screenshots/buchungsseite.jpg" width="1600" height="906" loading="lazy" decoding="async"
+                   alt="Buchungsseite mit eigenem Branding: Terminart, Kalender und freie Zeiten in der Akzentfarbe." />
             </div>
           </div>
         </div>
@@ -151,12 +126,9 @@ const appUrl = 'https://app.mein-kalender.link';
             <p>Google und Outlook gleichen sich in beide Richtungen ab. Proton Calendar bindest du als Leseansicht ein — ohne Bridge, ohne Umweg.</p>
           </div>
           <div class="feature-visual">
-            <div class="provider-logos">
-              <div class="provider-logo" style="background: #4285F4;">G</div>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L14 7M19 12L14 17" stroke="#FDA4AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <div class="provider-logo" style="background: #0078D4;">O</div>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L14 7M19 12L14 17" stroke="#FDA4AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <div class="provider-logo" style="background: #6D4AFF;">P</div>
+            <div class="shot">
+              <img src="/screenshots/wochenansicht.jpg" width="1600" height="906" loading="lazy" decoding="async"
+                   alt="Wochenansicht mit Terminen aus Google, Outlook und Proton Calendar, farblich getrennt; der Proton-Kalender ist als schreibgeschützt markiert." />
             </div>
           </div>
         </div>
@@ -168,15 +140,13 @@ const appUrl = 'https://app.mein-kalender.link';
             <p>Board Meeting um 14 Uhr bei Firma A, Kundencall um 14 Uhr bei Firma B? Wir sagen dir Bescheid.</p>
           </div>
           <div class="feature-visual">
-            <div class="conflict-card">
-              <span class="conflict-icon">&#9888;</span>
-              <div>
-                <strong>Terminüberschneidung erkannt</strong>
-                <p>Board Meeting (Outlook) und Kundencall (Google)<br/>Morgen, 14:00 — 15:00</p>
-              </div>
+            <div class="shot">
+              <img src="/screenshots/ueberschneidungen.jpg" width="1600" height="906" loading="lazy" decoding="async"
+                   alt="Erkannte Terminüberschneidung zwischen einem Outlook- und einem Google-Termin am selben Vormittag." />
             </div>
           </div>
         </div>
+
       </div>
     </section>
 
@@ -272,19 +242,8 @@ const appUrl = 'https://app.mein-kalender.link';
     .trust-text { flex: 1; }
     .trust-text h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
     .trust-text p { margin-top: 12px; color: var(--color-stone-600); }
-    .trust-card { flex: 1; background: #fff; border: 1px solid var(--color-stone-200); border-radius: 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
-    .trust-label { font-family: var(--font-display); font-size: 12px; font-weight: 500; color: var(--color-stone-600); letter-spacing: 0.08em; margin-bottom: 16px; }
-    .trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .trust-stat { background: var(--color-stone-50); border-radius: 12px; padding: 16px; }
-    .stat-number { font-family: var(--font-display); font-size: 24px; font-weight: 700; display: block; }
-    .stat-green { color: #059669; }
-    .stat-label { font-size: 12px; color: var(--color-stone-600); }
-    .trust-providers { display: flex; align-items: center; gap: 12px; margin-top: 16px; font-size: 12px; color: var(--color-stone-600); }
-    .provider-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
-    .provider-dot.green { background: #059669; }
     @media (max-width: 768px) {
       .trust-inner { flex-direction: column; }
-      .trust-grid { grid-template-columns: 1fr; }
     }
 
     /* Hosting */
@@ -292,6 +251,20 @@ const appUrl = 'https://app.mein-kalender.link';
     .hosting-inner { max-width: 720px; }
     .hosting h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
     .hosting p { margin-top: 12px; color: var(--color-stone-600); }
+
+    /* Screenshots — echte Oberflaeche, deshalb nur gerahmt, nicht beschnitten
+       oder perspektivisch verzerrt. Feste Seitenverhaeltnisse ueber width/height
+       am img, damit beim Nachladen nichts springt. */
+    /* Etwas breiter als die Textspalte: eine 16:9-Aufnahme einer Desktop-
+       Oberflaeche wird auf halber Breite unleserlich. */
+    .shot { flex: 1.35; min-width: 0; }
+    .shot img {
+      width: 100%; height: auto;
+      border: 1px solid var(--color-stone-200);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      background: #fff;
+    }
 
     /* Features */
     .features { padding: 80px 0; }
@@ -301,25 +274,13 @@ const appUrl = 'https://app.mein-kalender.link';
     .feature-text { flex: 1; }
     .feature-text h2 { font-family: var(--font-display); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
     .feature-text p { margin-top: 8px; color: var(--color-stone-600); }
-    .feature-visual { flex: 1; display: flex; justify-content: center; }
+    .feature-visual { flex: 1.35; min-width: 0; display: flex; justify-content: center; }
     @media (max-width: 768px) {
       .feature-row, .feature-row.reversed { flex-direction: column; gap: 24px; margin-bottom: 48px; }
     }
 
-    /* Booking cards fan */
-    .cards-fan { position: relative; width: 256px; height: 192px; }
-    .fan-card { position: absolute; width: 192px; height: 160px; background: #fff; border: 1px solid var(--color-stone-200); border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .fan-bar { height: 8px; width: 64px; border-radius: 999px; }
 
-    /* Provider logos */
-    .provider-logos { display: flex; align-items: center; gap: 16px; }
-    .provider-logo { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
 
-    /* Conflict card */
-    .conflict-card { display: flex; align-items: flex-start; gap: 12px; background: var(--color-amber-50); border: 1px solid var(--color-amber-200); border-radius: 12px; padding: 16px; max-width: 320px; }
-    .conflict-icon { font-size: 20px; margin-top: 2px; }
-    .conflict-card strong { font-size: 14px; color: var(--color-amber-800); display: block; }
-    .conflict-card p { font-size: 12px; color: var(--color-amber-700); margin-top: 4px; line-height: 1.5; }
 
     /* Pricing */
     .pricing { background: #fff; padding: 80px 0; }
