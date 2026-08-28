@@ -27,22 +27,13 @@ import { feedbackRoutes } from "./routes/feedback";
 import { billingRoutes } from "./routes/billing";
 import { mcpRoutes } from "./routes/mcp";
 import { mailInboundRoutes } from "./routes/mail-inbound";
+import { allowedOrigins, corsOrigin } from "./lib/cors";
 
 validateEnv();
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "https://app.mein-kalender.link,http://localhost:3000").split(",");
-
 const server = Fastify({ logger: true });
 
-server.register(cors, {
-  origin: (origin, cb) => {
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Not allowed by CORS"), false);
-    }
-  },
-});
+server.register(cors, { origin: corsOrigin(allowedOrigins()) });
 server.register(compress);
 server.register(rateLimit, { max: 100, timeWindow: "1 minute" });
 server.register(multipart, { limits: { fileSize: 5 * 1024 * 1024 } });
