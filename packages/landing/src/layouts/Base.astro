@@ -2,11 +2,16 @@
 interface Props {
   title: string;
   description?: string;
+  lang?: string;
+  /** Path of the same page in the other language, for hreflang. */
+  otherLangHref?: string;
 }
 
 const {
   title,
   description = 'Google, Outlook und Proton in einem Kalender. Andere Werkzeuge planen Termine — Mein Kalender sorgt dafür, dass deine Kalender sich einig sind, wann du frei bist. Gehostet in der EU.',
+  lang = 'de',
+  otherLangHref,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://mein-kalender.link');
@@ -14,13 +19,20 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://mein-kalender.link');
 ---
 
 <!doctype html>
-<html lang="de">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="canonical" href={canonical.href} />
+    {otherLangHref && (
+      <>
+        <link rel="alternate" hreflang={lang === 'de' ? 'en' : 'de'} href={new URL(otherLangHref, Astro.site ?? 'https://mein-kalender.link').href} />
+        <link rel="alternate" hreflang={lang} href={canonical.href} />
+        <link rel="alternate" hreflang="x-default" href={new URL('/', Astro.site ?? 'https://mein-kalender.link').href} />
+      </>
+    )}
 
     <!-- Schriften liegen lokal. Von fonts.gstatic.com oder cdn.fontshare.com
          geladen, ginge die IP jedes Besuchers in die USA beziehungsweise nach
@@ -32,7 +44,7 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://mein-kalender.link');
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="mein-kalender.link" />
-    <meta property="og:locale" content="de_DE" />
+    <meta property="og:locale" content={lang === 'de' ? 'de_DE' : 'en_GB'} />
     <meta property="og:url" content={canonical.href} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />

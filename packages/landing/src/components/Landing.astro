@@ -1,0 +1,338 @@
+---
+import Base from '../layouts/Base.astro';
+import { copy, type Lang } from '../copy';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = copy[lang];
+
+const appUrl = 'https://app.mein-kalender.link';
+---
+
+<Base title={t.title} description={t.description} lang={lang} otherLangHref={t.langSwitch.otherHref}>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container navbar-inner">
+      <a href={t.langSwitch.otherHref === "/en/" ? "/" : "/en/"} aria-label="Home">
+        <img src="/logo-horizontal.svg" alt="mein-kalender.link" class="navbar-logo" />
+      </a>
+      <div class="navbar-links">
+        <a href="#features">{t.nav.features}</a>
+        <a href="#preise">{t.nav.pricing}</a>
+        <a href={t.langSwitch.otherHref} class="nav-link-muted" hreflang={lang === "de" ? "en" : "de"}>{t.langSwitch.other}</a>
+        <a href={`${appUrl}/auth/signin`} class="nav-link-muted">{t.nav.signIn}</a>
+        <a href={`${appUrl}/auth/signup`} class="btn-nav">{t.nav.cta}</a>
+      </div>
+      <a href={`${appUrl}/auth/signup`} class="btn-nav mobile-only">{t.nav.cta}</a>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <h1>{t.hero.h1}</h1>
+          <p class="hero-sub">
+            {t.hero.sub}
+            <span class="text-muted">{t.hero.subMuted}</span>
+          </p>
+          <div class="hero-cta">
+            <a href={`${appUrl}/auth/signup`} class="btn-primary">{t.nav.cta}</a>
+            <p class="cta-sub">{t.hero.ctaNote}</p>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <svg width="320" height="280" viewBox="0 0 320 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="20" width="72" height="72" rx="16" fill="#4285F4" opacity="0.9"/>
+            <rect x="32" y="38" width="48" height="4" rx="2" fill="#fff" opacity="0.8"/>
+            <rect x="32" y="48" width="36" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <rect x="32" y="58" width="42" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <text x="56" y="34" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Google</text>
+
+            <rect x="230" y="20" width="72" height="72" rx="16" fill="#0078D4" opacity="0.9"/>
+            <rect x="242" y="38" width="48" height="4" rx="2" fill="#fff" opacity="0.8"/>
+            <rect x="242" y="48" width="36" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <rect x="242" y="58" width="42" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <text x="266" y="34" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Outlook</text>
+
+            <rect x="125" y="0" width="72" height="72" rx="16" fill="#6D4AFF" opacity="0.9"/>
+            <rect x="137" y="18" width="48" height="4" rx="2" fill="#fff" opacity="0.8"/>
+            <rect x="137" y="28" width="36" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <rect x="137" y="38" width="42" height="4" rx="2" fill="#fff" opacity="0.6"/>
+            <text x="161" y="14" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Proton</text>
+
+            <path d="M56 92 L140 140" stroke="#FDA4AF" stroke-width="2" stroke-dasharray="4 4"/>
+            <path d="M266 92 L180 140" stroke="#FDA4AF" stroke-width="2" stroke-dasharray="4 4"/>
+            <path d="M161 72 L161 140" stroke="#FDA4AF" stroke-width="2" stroke-dasharray="4 4"/>
+
+            <rect x="110" y="140" width="100" height="100" rx="20" fill="#9F1239"/>
+            <rect x="124" y="162" width="72" height="4" rx="2" fill="#fff" opacity="0.9"/>
+            <rect x="124" y="174" width="56" height="4" rx="2" fill="#fff" opacity="0.7"/>
+            <rect x="124" y="186" width="64" height="4" rx="2" fill="#fff" opacity="0.7"/>
+            <rect x="124" y="198" width="40" height="4" rx="2" fill="#fff" opacity="0.5"/>
+            <text x="160" y="156" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Satoshi, sans-serif">Mein Kalender</text>
+
+            <circle cx="200" cy="150" r="8" fill="#059669"/>
+            <path d="M196 150 L199 153 L204 147" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trust Section -->
+    <section class="trust-section">
+      <div class="container trust-inner">
+        <div class="trust-text">
+          <h2>{t.trust.h2}</h2>
+          <p>{t.trust.body}</p>
+        </div>
+        <div class="shot">
+          <img src="/screenshots/dashboard.jpg" width="1600" height="906" loading="lazy" decoding="async"
+               alt={t.trust.alt} />
+        </div>
+      </div>
+    </section>
+
+    <!-- Hosting -->
+    <section class="hosting">
+      <div class="container hosting-inner">
+        <h2>{t.hosting.h2}</h2>
+        <p>{t.hosting.body}</p>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="features">
+      <div class="container">
+        {t.features.map((f) => (
+          <div class:list={["feature-row", f.reversed && "reversed"]}>
+            <div class="feature-text">
+              <h2>{f.h2}</h2>
+              <p>{f.body}</p>
+            </div>
+            <div class="feature-visual">
+              <div class="shot">
+                <img src={f.img} width="1600" height="906" loading="lazy" decoding="async" alt={f.alt} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="preise" class="pricing">
+      <div class="container pricing-inner">
+        <h2>{t.pricing.h2}</h2>
+        <div class="price-toggle" role="group" aria-label={t.pricing.toggleLabel}>
+          <button type="button" class="price-tab is-active" data-plan="monthly" aria-pressed="true">{t.pricing.monthly}</button>
+          <button type="button" class="price-tab" data-plan="yearly" aria-pressed="false">
+            {t.pricing.yearly} <span class="price-save">{t.pricing.save}</span>
+          </button>
+        </div>
+        <div class="price-card">
+          <div class="price-amount">
+            <span class="price-number" data-price>{t.pricing.plans.monthly.price}</span>
+            <span class="price-period" data-period>{t.pricing.plans.monthly.period}</span>
+          </div>
+          <p class="price-note" data-note>{t.pricing.plans.monthly.note}</p>
+          <ul class="price-features">
+            {t.pricing.features.map((f) => (
+              <li>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <a href={`${appUrl}/auth/signup`} class="btn-primary" style="width:100%;">{t.nav.cta}</a>
+          <p class="cta-sub">{t.hero.ctaNote}</p>
+          {t.disclosure && <p class="price-disclosure">{t.disclosure}</p>}
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer CTA -->
+    <section class="footer-cta">
+      <div class="container" style="text-align:center;">
+        <h2>{t.finalCta.h2}</h2>
+        <a href={`${appUrl}/auth/signup`} class="btn-white">{t.finalCta.button}</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-company">
+        <p class="footer-name">Expert Sieve UG (haftungsbeschränkt)</p>
+        <p class="footer-address">Wilhelm-Raabe-Str. 6, 04416 Markkleeberg</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="/impressum">{t.footer.imprint}</a>
+        <a href="/datenschutz">{t.footer.privacy}</a>
+      </nav>
+      <p class="footer-copy">&copy; {new Date().getFullYear()} Expert Sieve UG (haftungsbeschränkt)</p>
+    </div>
+  </footer>
+
+  <style>
+    /* Navbar */
+    .navbar { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--color-stone-200); }
+    .navbar-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    .navbar-logo { height: 32px; width: auto; }
+    .navbar-links { display: flex; align-items: center; gap: 32px; }
+    .navbar-links a { font-size: 14px; font-weight: 500; color: var(--color-stone-500); transition: color 0.15s; }
+    .navbar-links a:hover { color: var(--color-stone-900); }
+    .nav-link-muted { color: var(--color-stone-500); }
+    .btn-nav { display: inline-flex; align-items: center; background: var(--color-rose-700); color: #fff !important; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; transition: background 0.15s; }
+    .btn-nav:hover { background: var(--color-rose-800); color: #fff; }
+    .mobile-only { display: none; }
+    @media (max-width: 768px) {
+      .navbar-links { display: none; }
+      .mobile-only { display: inline-flex; }
+    }
+
+    /* Hero */
+    .hero { padding: 80px 0 64px; }
+    .hero-inner { display: flex; align-items: center; gap: 48px; }
+    .hero-text { flex: 1; }
+    .hero-text h1 { font-family: var(--font-display); font-size: 52px; font-weight: 700; line-height: 1.1; letter-spacing: -0.04em; color: var(--color-stone-900); }
+    .hero-sub { margin-top: 16px; font-size: 18px; line-height: 1.6; color: var(--color-stone-600); }
+    .text-muted { color: var(--color-stone-500); }
+    .hero-cta { margin-top: 24px; }
+    .cta-sub { margin-top: 8px; font-size: 14px; color: var(--color-stone-600); }
+    .hero-visual { flex-shrink: 0; }
+    @media (max-width: 768px) {
+      .hero { padding: 48px 0 32px; }
+      .hero-inner { flex-direction: column; text-align: center; }
+      .hero-text h1 { font-size: 36px; }
+      .hero-visual { order: -1; }
+      .hero-cta { display: flex; flex-direction: column; align-items: center; }
+    }
+
+    /* Trust Section */
+    .trust-section { background: #fff; padding: 80px 0; }
+    .trust-inner { display: flex; align-items: center; gap: 48px; }
+    .trust-text { flex: 1; }
+    .trust-text h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+    .trust-text p { margin-top: 12px; color: var(--color-stone-600); }
+    @media (max-width: 768px) {
+      .trust-inner { flex-direction: column; }
+    }
+
+    /* Hosting */
+    .hosting { padding: 64px 0; border-top: 1px solid var(--color-stone-200); }
+    .hosting-inner { max-width: 720px; }
+    .hosting h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+    .hosting p { margin-top: 12px; color: var(--color-stone-600); }
+
+    /* Screenshots — echte Oberflaeche, deshalb nur gerahmt, nicht beschnitten
+       oder perspektivisch verzerrt. Feste Seitenverhaeltnisse ueber width/height
+       am img, damit beim Nachladen nichts springt. */
+    /* Etwas breiter als die Textspalte: eine 16:9-Aufnahme einer Desktop-
+       Oberflaeche wird auf halber Breite unleserlich. */
+    .shot { flex: 1.35; min-width: 0; }
+    .shot img {
+      width: 100%; height: auto;
+      border: 1px solid var(--color-stone-200);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      background: #fff;
+    }
+
+    /* Features */
+    .features { padding: 80px 0; }
+    .feature-row { display: flex; align-items: center; gap: 48px; margin-bottom: 80px; }
+    .feature-row:last-child { margin-bottom: 0; }
+    .feature-row.reversed { flex-direction: row-reverse; }
+    .feature-text { flex: 1; }
+    .feature-text h2 { font-family: var(--font-display); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
+    .feature-text p { margin-top: 8px; color: var(--color-stone-600); }
+    .feature-visual { flex: 1.35; min-width: 0; display: flex; justify-content: center; }
+    @media (max-width: 768px) {
+      .feature-row, .feature-row.reversed { flex-direction: column; gap: 24px; margin-bottom: 48px; }
+    }
+
+
+
+
+    /* Pricing */
+    .pricing { background: #fff; padding: 80px 0; }
+    .pricing-inner { display: flex; flex-direction: column; align-items: center; }
+    .pricing-inner > h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+    .price-toggle {
+      margin-top: 32px; display: inline-flex; gap: 4px; padding: 4px;
+      background: var(--color-stone-100); border-radius: 999px;
+    }
+    .price-tab {
+      appearance: none; border: none; cursor: pointer;
+      font-family: var(--font-body); font-size: 14px; font-weight: 500;
+      color: var(--color-stone-600); background: transparent;
+      padding: 8px 20px; border-radius: 999px; transition: background 0.15s, color 0.15s;
+    }
+    .price-tab:hover { color: var(--color-stone-900); }
+    .price-tab.is-active {
+      background: #fff; color: var(--color-stone-900);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+    .price-card { margin-top: 24px; width: 100%; max-width: 420px; border: 1px solid var(--color-stone-200); border-radius: 16px; padding: 32px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); background: #fff; text-align: center; }
+    .price-amount { display: flex; align-items: baseline; justify-content: center; gap: 4px; }
+    .price-number { font-family: var(--font-display); font-size: 52px; font-weight: 700; letter-spacing: -0.04em; }
+    .price-period { font-size: 18px; color: var(--color-stone-600); }
+    .price-note { margin: 8px 0 0; font-size: 14px; color: var(--color-stone-600); }
+    .price-save { color: #047857; font-weight: 500; }
+    .price-features { list-style: none; margin-top: 32px; text-align: left; display: flex; flex-direction: column; gap: 12px; }
+    .price-features li { display: flex; align-items: center; gap: 12px; font-size: 16px; }
+    .price-features li svg { flex-shrink: 0; }
+    .price-card .btn-primary { margin-top: 32px; }
+    .price-card .cta-sub { margin-top: 12px; text-align: center; }
+    .price-disclosure {
+      margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-stone-100);
+      font-size: 13px; line-height: 1.5; color: var(--color-stone-600); text-align: left;
+    }
+
+    /* Footer CTA */
+    .footer-cta { background: var(--color-stone-900); padding: 64px 0; }
+    .footer-cta h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: #fff; margin-bottom: 24px; }
+    .btn-white { display: inline-flex; align-items: center; justify-content: center; background: #fff; color: var(--color-rose-700); font-family: var(--font-body); font-weight: 500; font-size: 16px; padding: 14px 32px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.15s; }
+    .btn-white:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,0,0,0.1); color: var(--color-rose-700); }
+
+    /* Footer */
+    .footer { background: var(--color-stone-900); border-top: 1px solid rgba(255,255,255,0.1); padding: 32px 0; }
+    .footer-inner { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+    .footer-company { font-size: 14px; color: var(--color-stone-300); }
+    .footer-name { font-weight: 500; }
+    .footer-address { color: var(--color-stone-300); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 14px; color: var(--color-stone-300); }
+    .footer-links a:hover { color: var(--color-stone-200); }
+    .footer-copy { font-size: 12px; color: var(--color-stone-300); }
+  </style>
+
+  <script define:vars={{ PLANS: t.pricing.plans }}>
+    // Die Beträge stehen hier (über copy.ts) und in
+    // packages/backend/src/lib/mollie.ts, das tatsächlich abbucht.
+    // Ändert sich einer, muss der andere mit.
+    const tabs = document.querySelectorAll(".price-tab");
+    const priceEl = document.querySelector("[data-price]");
+    const periodEl = document.querySelector("[data-period]");
+    const noteEl = document.querySelector("[data-note]");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const plan = PLANS[tab.dataset.plan];
+        if (!plan) return;
+        tabs.forEach((t) => {
+          const active = t === tab;
+          t.classList.toggle("is-active", active);
+          t.setAttribute("aria-pressed", String(active));
+        });
+        priceEl.textContent = plan.price;
+        periodEl.textContent = plan.period;
+        noteEl.textContent = plan.note;
+      });
+    });
+  </script>
+</Base>
