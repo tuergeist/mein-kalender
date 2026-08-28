@@ -4,7 +4,7 @@ FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/landing/package.json ./packages/landing/
-RUN npm install --workspace=packages/landing
+RUN npm ci --workspace=packages/landing
 
 FROM base AS builder
 WORKDIR /app
