@@ -89,18 +89,31 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
   const [fbDesc, setFbDesc] = useState("");
   const [fbSending, setFbSending] = useState(false);
   const [fbDone, setFbDone] = useState(false);
+  const [fbError, setFbError] = useState<string | null>(null);
 
   async function handleFeedbackSubmit() {
     const token = (session as { accessToken?: string } | null)?.accessToken;
     if (!token || !fbTitle.trim()) return;
     setFbSending(true);
+    setFbError(null);
     try {
-      await apiAuthFetch("/api/feedback", token, {
+      // Die Antwort wurde bisher nicht geprüft: Als Todoist die alte
+      // Schnittstelle abschaltete, antwortete die Route mit 500 und der Dialog
+      // meldete trotzdem Erfolg. Monatelang ist so jede Meldung verschwunden,
+      // ohne dass es jemand sehen konnte.
+      const res = await apiAuthFetch("/api/feedback", token, {
         method: "POST",
         body: JSON.stringify({ type: fbType, title: fbTitle.trim(), description: fbDesc.trim() || undefined }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setFbError(body?.error || "Konnte nicht gesendet werden. Bitte später erneut versuchen.");
+        return;
+      }
       setFbDone(true);
       setTimeout(() => { setShowFeedback(false); setFbDone(false); setFbTitle(""); setFbDesc(""); setFbType("bug"); }, 1500);
+    } catch {
+      setFbError("Keine Verbindung. Bitte später erneut versuchen.");
     } finally {
       setFbSending(false);
     }
@@ -272,9 +285,12 @@ export function AppShell({ children, section, settingsSection, sidebarContent }:
                 </RadioGroup>
                 <Input label="Titel" placeholder="Kurze Beschreibung" value={fbTitle} onValueChange={setFbTitle} variant="bordered" />
                 <Textarea label="Details (optional)" placeholder="Was ist passiert? Was wuenschst du dir?" value={fbDesc} onValueChange={setFbDesc} variant="bordered" minRows={3} />
+                {fbError && (
+                  <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{fbError}</p>
+                )}
               </ModalBody>
               <ModalFooter>
-                <Button variant="light" onPress={() => setShowFeedback(false)}>Abbrechen</Button>
+                <Button variant="light" onPress={() => { setShowFeedback(false); setFbError(null); }}>Abbrechen</Button>
                 <Button color="primary" isLoading={fbSending} isDisabled={fbTitle.trim().length < 3} onPress={handleFeedbackSubmit}>Absenden</Button>
               </ModalFooter>
             </>

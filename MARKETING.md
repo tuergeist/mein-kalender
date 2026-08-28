@@ -6,6 +6,13 @@
 **Tagline:** "Nie wieder doppelt gebucht"
 **URL:** mein-kalender.link
 **Date:** March 2026
+> **Stand 2026-08-28: Dieser Plan ruht.** Mein Kalender ist ein Hobbyprojekt,
+> das der Betreiber selbst nutzt. Keine Kundengewinnung, keine Kanäle, kein
+> Umsatzziel. Das Dokument bleibt als Beschreibung der Zielgruppe und des
+> Wettbewerbs erhalten, ist aber keine Aufgabenliste mehr. Wer es wieder
+> aktiviert, muss vorher die Preisfrage klären: 20–25 zahlende Nutzer ergeben
+> bei 5 € rund 120 € im Monat, und aktive Akquise rechnet sich dabei nicht.
+
 
 ---
 

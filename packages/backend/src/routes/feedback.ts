@@ -5,7 +5,11 @@ interface AuthenticatedRequest {
   user: AuthUser;
 }
 
-const TODOIST_API = "https://api.todoist.com/rest/v2";
+// api/v1, nicht rest/v2: Todoist hat die v2-Adresse abgeschaltet, sie antwortet
+// seitdem mit 410 "This endpoint is deprecated". Die Nutzlast ist unverändert —
+// gegen die echte Schnittstelle geprüft: content, description, project_id,
+// section_id, labels und priority werden gleich verarbeitet.
+const TODOIST_API = "https://api.todoist.com/api/v1";
 const PROJECT_ID = "6gFMx58H5p8Q9Xcv";
 const BUGS_SECTION_ID = "6gFP56GqqMhm4pqM";
 const FEATURES_SECTION_ID = "6gFP55v8gm95h8qM";
