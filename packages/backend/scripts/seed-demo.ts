@@ -9,6 +9,8 @@
 
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const prisma = new PrismaClient();
 
@@ -144,14 +146,61 @@ async function main() {
     }
   }
 
+  // Branding je Buchungsseite. Das ist der Kern des Versprechens "drei Firmen,
+  // drei Buchungsseiten", also bekommt jede ein eigenes Logo, einen eigenen
+  // Hintergrund und eigene Farben — eine nackte Seite belegt nichts.
+  //
+  // Die Bilder liegen als Bytes in user_images und werden über
+  // /api/public/image/<id> ausgeliefert. Der eindeutige Index dort ist
+  // (userId, type), und type ist ein freier String — deshalb je Marke ein
+  // eigener type, sonst ginge nur ein Hintergrund pro Konto.
+  const assetDir = join(__dirname, "demo-assets");
+  async function storeImage(type: string, file: string, mimeType: string): Promise<string> {
+    const data = readFileSync(join(assetDir, file));
+    const existing = await prisma.userImage.findFirst({ where: { userId: user.id, type } });
+    const row = existing
+      ? await prisma.userImage.update({ where: { id: existing.id }, data: { data, mimeType } })
+      : await prisma.userImage.create({ data: { userId: user.id, type, data, mimeType } });
+    return `/api/public/image/${row.id}`;
+  }
+
+  const brands = [
+    { slug: "fyltura",   name: "Fyltura",  brand: "#9F1239", accent: "#D97706" },
+    { slug: "nordmann",  name: "Nordmann", brand: "#0B4A6F", accent: "#0EA5E9" },
+    { slug: "gruenwald", name: "Grünwald", brand: "#14532D", accent: "#CA8A04" },
+  ];
+  const branding: Record<string, { avatarUrl: string; backgroundUrl: string }> = {};
+  for (const b of brands) {
+    branding[b.slug] = {
+      avatarUrl: await storeImage(`logo-${b.slug}`, `${b.slug}-logo.png`, "image/png"),
+      backgroundUrl: await storeImage(`bg-${b.slug}`, `${b.slug}-bg.jpg`, "image/jpeg"),
+    };
+  }
+
   await prisma.eventType.deleteMany({ where: { userId: user.id } });
   const eventTypes = [
-    { name: "Kennenlernen", slug: "kennenlernen", durationMinutes: 30, color: "#9F1239", description: "Kurzes Gespräch, ob wir zueinander passen." },
-    { name: "Beratung", slug: "beratung", durationMinutes: 60, color: "#D97706", description: "Für bestehende Mandate." },
-    { name: "Board-Termin", slug: "board", durationMinutes: 90, color: "#0078D4", description: null },
+    { slug: "kennenlernen", name: "Kennenlernen", durationMinutes: 30, description: "Kurzes Gespräch, ob wir zueinander passen.", brand: "fyltura" },
+    { slug: "beratung", name: "Strategieberatung", durationMinutes: 60, description: "Für bestehende Mandate der Nordmann Beratung.", brand: "nordmann" },
+    { slug: "sprechstunde", name: "Sprechstunde", durationMinutes: 45, description: "Offene Sprechstunde der Praxis Grünwald.", brand: "gruenwald" },
   ];
   for (const et of eventTypes) {
-    await prisma.eventType.create({ data: { userId: user.id, ...et, enabled: true } });
+    const b = brands.find((x) => x.slug === et.brand)!;
+    await prisma.eventType.create({
+      data: {
+        userId: user.id,
+        name: et.name,
+        slug: et.slug,
+        durationMinutes: et.durationMinutes,
+        description: et.description,
+        color: b.brand,
+        brandColor: b.brand,
+        accentColor: b.accent,
+        avatarUrl: branding[b.slug].avatarUrl,
+        backgroundUrl: branding[b.slug].backgroundUrl,
+        backgroundOpacity: 0.35,
+        enabled: true,
+      },
+    });
   }
 
   await prisma.availabilityRule.deleteMany({ where: { userId: user.id } });
@@ -164,7 +213,8 @@ async function main() {
   console.log(`user        ${EMAIL} / ${PASSWORD}`);
   console.log(`calendars   ${calendars.length}`);
   console.log(`events      ${eventCount} (Woche ab ${week.toISOString().slice(0, 10)})`);
-  console.log(`eventTypes  ${eventTypes.length}`);
+  console.log(`eventTypes  ${eventTypes.length}, je eigenes Branding`);
+  for (const et of eventTypes) console.log(`            /book/christoph/${et.slug}`);
 }
 
 main()

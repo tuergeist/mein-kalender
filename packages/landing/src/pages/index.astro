@@ -108,8 +108,8 @@ const appUrl = 'https://app.mein-kalender.link';
         <!-- Feature 1 -->
         <div class="feature-row">
           <div class="feature-text">
-            <h2>Drei Firmen. Drei Buchungsseiten. Ein Tool.</h2>
-            <p>Jede Buchungsseite mit eigenem Branding. Dein Beratungsmandat sieht anders aus als dein Board-Sitz.</p>
+            <h2>So viele Buchungsseiten, wie du Rollen hast.</h2>
+            <p>Jede mit eigenem Logo, eigenem Hintergrund, eigenen Farben — dein Beratungsmandat sieht anders aus als dein Board-Sitz. Die Zahl ist nicht gedeckelt, die der Kalender auch nicht.</p>
           </div>
           <div class="feature-visual">
             <div class="shot">
@@ -154,15 +154,18 @@ const appUrl = 'https://app.mein-kalender.link';
     <section id="preise" class="pricing">
       <div class="container pricing-inner">
         <h2>Ein Plan. Alles drin.</h2>
+        <div class="price-toggle" role="group" aria-label="Abrechnungszeitraum">
+          <button type="button" class="price-tab is-active" data-plan="monthly" aria-pressed="true">Monatlich</button>
+          <button type="button" class="price-tab" data-plan="yearly" aria-pressed="false">
+            Jährlich <span class="price-save">&minus;17&thinsp;%</span>
+          </button>
+        </div>
         <div class="price-card">
           <div class="price-amount">
-            <span class="price-number">5&thinsp;&euro;</span>
-            <span class="price-period">/Monat</span>
+            <span class="price-number" data-price>5&thinsp;&euro;</span>
+            <span class="price-period" data-period>/Monat</span>
           </div>
-          <p class="price-note">
-            inkl. MwSt. &middot; oder 50&thinsp;&euro;/Jahr
-            <span class="price-save">spare 17&thinsp;%</span>
-          </p>
+          <p class="price-note" data-note>inkl. MwSt. &middot; monatlich kündbar</p>
           <ul class="price-features">
             <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Multi-Kalender-Sync</li>
             <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Gebrandete Buchungsseiten</li>
@@ -286,7 +289,22 @@ const appUrl = 'https://app.mein-kalender.link';
     .pricing { background: #fff; padding: 80px 0; }
     .pricing-inner { display: flex; flex-direction: column; align-items: center; }
     .pricing-inner > h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
-    .price-card { margin-top: 40px; width: 100%; max-width: 420px; border: 1px solid var(--color-stone-200); border-radius: 16px; padding: 32px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); background: #fff; text-align: center; }
+    .price-toggle {
+      margin-top: 32px; display: inline-flex; gap: 4px; padding: 4px;
+      background: var(--color-stone-100); border-radius: 999px;
+    }
+    .price-tab {
+      appearance: none; border: none; cursor: pointer;
+      font-family: var(--font-body); font-size: 14px; font-weight: 500;
+      color: var(--color-stone-600); background: transparent;
+      padding: 8px 20px; border-radius: 999px; transition: background 0.15s, color 0.15s;
+    }
+    .price-tab:hover { color: var(--color-stone-900); }
+    .price-tab.is-active {
+      background: #fff; color: var(--color-stone-900);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+    .price-card { margin-top: 24px; width: 100%; max-width: 420px; border: 1px solid var(--color-stone-200); border-radius: 16px; padding: 32px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); background: #fff; text-align: center; }
     .price-amount { display: flex; align-items: baseline; justify-content: center; gap: 4px; }
     .price-number { font-family: var(--font-display); font-size: 52px; font-weight: 700; letter-spacing: -0.04em; }
     .price-period { font-size: 18px; color: var(--color-stone-600); }
@@ -315,4 +333,32 @@ const appUrl = 'https://app.mein-kalender.link';
     .footer-links a:hover { color: var(--color-stone-200); }
     .footer-copy { font-size: 12px; color: var(--color-stone-300); }
   </style>
+
+  <script>
+    // Die Beträge stehen hier und in packages/backend/src/lib/mollie.ts, das
+    // tatsächlich abbucht. Ändert sich einer, muss der andere mit.
+    const PLANS = {
+      monthly: { price: "5\u2009€", period: "/Monat", note: "inkl. MwSt. · monatlich kündbar" },
+      yearly:  { price: "50\u2009€", period: "/Jahr",  note: "inkl. MwSt. · entspricht 4,17\u2009€ im Monat" },
+    };
+    const tabs = document.querySelectorAll(".price-tab");
+    const priceEl = document.querySelector("[data-price]");
+    const periodEl = document.querySelector("[data-period]");
+    const noteEl = document.querySelector("[data-note]");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const plan = PLANS[tab.dataset.plan];
+        if (!plan) return;
+        tabs.forEach((t) => {
+          const active = t === tab;
+          t.classList.toggle("is-active", active);
+          t.setAttribute("aria-pressed", String(active));
+        });
+        priceEl.textContent = plan.price;
+        periodEl.textContent = plan.period;
+        noteEl.textContent = plan.note;
+      });
+    });
+  </script>
 </Base>
