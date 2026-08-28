@@ -29,7 +29,8 @@ const appUrl = 'https://app.mein-kalender.link';
         <div class="hero-text">
           <h1>Nie wieder doppelt gebucht.</h1>
           <p class="hero-sub">
-            Kalender-Sync, die deine Daten nicht zerstört.
+            Andere Werkzeuge planen Termine. Mein Kalender sorgt dafür, dass deine
+            Kalender sich einig sind, wann du frei bist.
             <span class="text-muted">Google, Outlook und Proton — alles auf einen Blick.</span>
           </p>
           <div class="hero-cta">
@@ -90,8 +91,8 @@ const appUrl = 'https://app.mein-kalender.link';
               <span class="stat-label">Events synchronisiert</span>
             </div>
             <div class="trust-stat">
-              <span class="stat-number stat-green">99.9%</span>
-              <span class="stat-label">Integrität</span>
+              <span class="stat-number stat-green">vor 2 Min</span>
+              <span class="stat-label">Letzter Abgleich</span>
             </div>
             <div class="trust-stat">
               <span class="stat-number">3</span>
@@ -104,6 +105,18 @@ const appUrl = 'https://app.mein-kalender.link';
             <span class="provider-dot green"></span><span>Proton</span>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Hosting -->
+    <section class="hosting">
+      <div class="container hosting-inner">
+        <h2>In Europa gebaut, in Europa gehostet.</h2>
+        <p>
+          Server in Deutschland, Mailversand in Frankreich, Sicherungen in den Niederlanden.
+          Keine Auftragsverarbeitung in den USA — auch nicht für Schriften oder Statistik.
+          Betrieben von einer deutschen UG, nicht von einer Holding in Delaware.
+        </p>
       </div>
     </section>
 
@@ -135,7 +148,7 @@ const appUrl = 'https://app.mein-kalender.link';
         <div class="feature-row reversed">
           <div class="feature-text">
             <h2>Proton. Outlook. Google. Alles im Blick.</h2>
-            <p>Google und Outlook voll synchronisiert. Proton Calendar als Leseansicht integriert — Schreib-Sync kommt bald.</p>
+            <p>Google und Outlook gleichen sich in beide Richtungen ab. Proton Calendar bindest du als Leseansicht ein — ohne Bridge, ohne Umweg.</p>
           </div>
           <div class="feature-visual">
             <div class="provider-logos">
@@ -173,10 +186,13 @@ const appUrl = 'https://app.mein-kalender.link';
         <h2>Ein Plan. Alles drin.</h2>
         <div class="price-card">
           <div class="price-amount">
-            <span class="price-number">19&thinsp;&euro;</span>
+            <span class="price-number">5&thinsp;&euro;</span>
             <span class="price-period">/Monat</span>
           </div>
-          <p style="margin:-0.5rem 0 1rem; font-size:0.85rem; color:#78716C;">oder 190&thinsp;&euro;/Jahr <span style="color:#059669; font-weight:500;">spare 17&thinsp;%</span></p>
+          <p class="price-note">
+            inkl. MwSt. &middot; oder 50&thinsp;&euro;/Jahr
+            <span class="price-save">spare 17&thinsp;%</span>
+          </p>
           <ul class="price-features">
             <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Multi-Kalender-Sync</li>
             <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10L9 13L14 7" stroke="#9F1239" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Gebrandete Buchungsseiten</li>
@@ -238,9 +254,9 @@ const appUrl = 'https://app.mein-kalender.link';
     .hero-text { flex: 1; }
     .hero-text h1 { font-family: var(--font-display); font-size: 52px; font-weight: 700; line-height: 1.1; letter-spacing: -0.04em; color: var(--color-stone-900); }
     .hero-sub { margin-top: 16px; font-size: 18px; line-height: 1.6; color: var(--color-stone-600); }
-    .text-muted { color: var(--color-stone-400); }
+    .text-muted { color: var(--color-stone-500); }
     .hero-cta { margin-top: 24px; }
-    .cta-sub { margin-top: 8px; font-size: 14px; color: var(--color-stone-400); }
+    .cta-sub { margin-top: 8px; font-size: 14px; color: var(--color-stone-600); }
     .hero-visual { flex-shrink: 0; }
     @media (max-width: 768px) {
       .hero { padding: 48px 0 32px; }
@@ -257,19 +273,25 @@ const appUrl = 'https://app.mein-kalender.link';
     .trust-text h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
     .trust-text p { margin-top: 12px; color: var(--color-stone-600); }
     .trust-card { flex: 1; background: #fff; border: 1px solid var(--color-stone-200); border-radius: 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
-    .trust-label { font-family: var(--font-display); font-size: 12px; font-weight: 600; color: var(--color-stone-400); letter-spacing: 0.08em; margin-bottom: 16px; }
+    .trust-label { font-family: var(--font-display); font-size: 12px; font-weight: 600; color: var(--color-stone-600); letter-spacing: 0.08em; margin-bottom: 16px; }
     .trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
     .trust-stat { background: var(--color-stone-50); border-radius: 12px; padding: 16px; }
     .stat-number { font-family: var(--font-display); font-size: 24px; font-weight: 700; display: block; }
     .stat-green { color: #059669; }
-    .stat-label { font-size: 12px; color: var(--color-stone-400); }
-    .trust-providers { display: flex; align-items: center; gap: 12px; margin-top: 16px; font-size: 12px; color: var(--color-stone-400); }
+    .stat-label { font-size: 12px; color: var(--color-stone-600); }
+    .trust-providers { display: flex; align-items: center; gap: 12px; margin-top: 16px; font-size: 12px; color: var(--color-stone-600); }
     .provider-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
     .provider-dot.green { background: #059669; }
     @media (max-width: 768px) {
       .trust-inner { flex-direction: column; }
       .trust-grid { grid-template-columns: 1fr; }
     }
+
+    /* Hosting */
+    .hosting { padding: 64px 0; border-top: 1px solid var(--color-stone-200); }
+    .hosting-inner { max-width: 720px; }
+    .hosting h2 { font-family: var(--font-display); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+    .hosting p { margin-top: 12px; color: var(--color-stone-600); }
 
     /* Features */
     .features { padding: 80px 0; }
@@ -306,7 +328,9 @@ const appUrl = 'https://app.mein-kalender.link';
     .price-card { margin-top: 40px; width: 100%; max-width: 420px; border: 1px solid var(--color-stone-200); border-radius: 16px; padding: 32px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); background: #fff; text-align: center; }
     .price-amount { display: flex; align-items: baseline; justify-content: center; gap: 4px; }
     .price-number { font-family: var(--font-display); font-size: 52px; font-weight: 700; letter-spacing: -0.04em; }
-    .price-period { font-size: 18px; color: var(--color-stone-400); }
+    .price-period { font-size: 18px; color: var(--color-stone-600); }
+    .price-note { margin: 8px 0 0; font-size: 14px; color: var(--color-stone-600); }
+    .price-save { color: #047857; font-weight: 500; }
     .price-features { list-style: none; margin-top: 32px; text-align: left; display: flex; flex-direction: column; gap: 12px; }
     .price-features li { display: flex; align-items: center; gap: 12px; font-size: 16px; }
     .price-features li svg { flex-shrink: 0; }
@@ -322,12 +346,12 @@ const appUrl = 'https://app.mein-kalender.link';
     /* Footer */
     .footer { background: var(--color-stone-900); border-top: 1px solid rgba(255,255,255,0.1); padding: 32px 0; }
     .footer-inner { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
-    .footer-company { font-size: 14px; color: var(--color-stone-400); }
+    .footer-company { font-size: 14px; color: var(--color-stone-300); }
     .footer-name { font-weight: 500; }
-    .footer-address { color: var(--color-stone-500); }
+    .footer-address { color: var(--color-stone-300); }
     .footer-links { display: flex; gap: 24px; }
-    .footer-links a { font-size: 14px; color: var(--color-stone-400); }
+    .footer-links a { font-size: 14px; color: var(--color-stone-300); }
     .footer-links a:hover { color: var(--color-stone-200); }
-    .footer-copy { font-size: 12px; color: var(--color-stone-500); }
+    .footer-copy { font-size: 12px; color: var(--color-stone-300); }
   </style>
 </Base>

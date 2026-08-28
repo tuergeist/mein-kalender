@@ -19,7 +19,8 @@
 - **UI/Labels:** DM Sans (same as body, 500 weight for labels)
 - **Data/Tables:** Geist Mono (tabular-nums) — crisp for times, dates, and numerical data
 - **Code:** Geist Mono
-- **Loading:** Satoshi via `https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap`, DM Sans + Geist Mono via Google Fonts
+- **Loading:** Self-hosted (`/fonts/fonts.css`). Loading from `fonts.gstatic.com` or `cdn.fontshare.com` sends every visitor's IP outside the EU, which contradicts the EU-hosting claim and is actionable in Germany (LG München, 2022).
+- **Satoshi has no 600.** The foundry ships 300/400/500/700/900. A rule asking for 600 resolves to 700 in every browser, so the H2/H3 weights below have always rendered at 700. Use 500 or 700 deliberately rather than writing 600 and getting something else.
 - **Scale:**
   - Hero: 52px / 700 / -0.04em tracking / 1.1 line-height
   - H1: 28px / 700 / -0.03em / 1.2
@@ -116,3 +117,6 @@ Never use: Inter, Roboto, Poppins, Montserrat, Open Sans, Lato as primary fonts 
 | 2026-03-27 | Subtle grain texture on surfaces | Adds tactile craft feel, moves away from flat clinical SaaS. |
 | 2026-03-27 | Warm Stone neutrals (not cool grays) | Reinforces the warm, approachable aesthetic vs. cold/corporate. |
 | 2026-03-27 | Teal rejected as primary | Already used for heykurt.de — need distinct brand identity. |
+| 2026-08-28 | Fonts self-hosted | Google Fonts and Fontshare send the visitor's IP to the US and India. The landing page claims EU hosting; loading fonts from there would make that claim false. 129 KB for five files. |
+| 2026-08-28 | Prices 5 EUR / 50 EUR incl. VAT | Lowered from 19/190. Shown gross with a VAT note — the Preisangabenverordnung requires it, and the page had no VAT statement at all. |
+| 2026-08-28 | Body text no lighter than stone-500 on light surfaces | stone-400 on stone-50 is 2.41:1 and fails WCAG AA. It was being used for the sub-headline, both trial notices and every stat label — the lines meant to reduce friction were the least readable on the page. |

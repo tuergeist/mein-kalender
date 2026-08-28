@@ -163,11 +163,11 @@ function BillingPageContent() {
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-stone-500">
-                    {billing.plan === "monthly" ? "19 EUR / Monat" : "190 EUR / Jahr"}
+                    {billing.plan === "monthly" ? "5 EUR / Monat" : "50 EUR / Jahr"} inkl. MwSt.
                   </p>
                 </div>
                 <p className="font-display text-2xl font-bold text-stone-900">
-                  {billing.plan === "monthly" ? "19 EUR" : "190 EUR"}
+                  {billing.plan === "monthly" ? "5 EUR" : "50 EUR"}
                 </p>
               </div>
 
@@ -259,9 +259,12 @@ function BillingPageContent() {
                     Monatlich
                   </p>
                   <div className="mt-3 flex items-baseline gap-1">
-                    <span className="font-display text-3xl font-bold tracking-tight">19 EUR</span>
-                    <span className="text-sm text-stone-400">/ Monat</span>
+                    <span className="font-display text-3xl font-bold tracking-tight">5 EUR</span>
+                    <span className="text-sm text-stone-500">/ Monat</span>
                   </div>
+                  <p className="mt-1 text-xs text-stone-500">
+                    inkl. MwSt.
+                  </p>
                   <ul className="mt-5 space-y-2 text-sm text-stone-600">
                     <li className="flex items-center gap-2">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
@@ -302,11 +305,11 @@ function BillingPageContent() {
                     Jährlich
                   </p>
                   <div className="mt-3 flex items-baseline gap-1">
-                    <span className="font-display text-3xl font-bold tracking-tight">190 EUR</span>
-                    <span className="text-sm text-stone-400">/ Jahr</span>
+                    <span className="font-display text-3xl font-bold tracking-tight">50 EUR</span>
+                    <span className="text-sm text-stone-500">/ Jahr</span>
                   </div>
                   <p className="mt-1 text-xs text-stone-400">
-                    entspricht ~15,83 EUR / Monat
+                    inkl. MwSt. · entspricht ~4,17 EUR / Monat
                   </p>
                   <ul className="mt-5 space-y-2 text-sm text-stone-600">
                     <li className="flex items-center gap-2">

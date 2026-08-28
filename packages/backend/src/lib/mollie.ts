@@ -8,9 +8,11 @@ function getMollieClient() {
   return createMollieClient({ apiKey: process.env.MOLLIE_API_KEY });
 }
 
+// Bruttopreise inkl. MwSt., identisch mit der Ausweisung auf mein-kalender.link.
+// Mollie bucht genau diesen Betrag ab.
 const PLANS = {
-  monthly: { amount: { currency: "EUR", value: "19.00" }, interval: "1 month", description: "Mein Kalender Monthly" },
-  yearly: { amount: { currency: "EUR", value: "190.00" }, interval: "12 months", description: "Mein Kalender Yearly" },
+  monthly: { amount: { currency: "EUR", value: "5.00" }, interval: "1 month", description: "Mein Kalender Monthly" },
+  yearly: { amount: { currency: "EUR", value: "50.00" }, interval: "12 months", description: "Mein Kalender Yearly" },
 } as const;
 
 export async function getOrCreateCustomer(

@@ -4,7 +4,13 @@ interface Props {
   description?: string;
 }
 
-const { title, description = 'Kalender-Sync für Profis: Google, Outlook und Proton in einem Blick. Ohne deine Daten zu zerstören.' } = Astro.props;
+const {
+  title,
+  description = 'Google, Outlook und Proton in einem Kalender. Andere Werkzeuge planen Termine — Mein Kalender sorgt dafür, dass deine Kalender sich einig sind, wann du frei bist. Gehostet in der EU.',
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://mein-kalender.link');
+const ogImage = new URL('/og.png', Astro.site ?? 'https://mein-kalender.link');
 ---
 
 <!doctype html>
@@ -14,11 +20,32 @@ const { title, description = 'Kalender-Sync für Profis: Google, Outlook und Pro
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
-    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="canonical" href={canonical.href} />
+
+    <!-- Schriften liegen lokal. Von fonts.gstatic.com oder cdn.fontshare.com
+         geladen, ginge die IP jedes Besuchers in die USA beziehungsweise nach
+         Indien — auf einer Seite, die mit EU-Hosting wirbt, waere das schlicht
+         unwahr, und in Deutschland abmahnfaehig. -->
+    <link rel="preload" href="/fonts/satoshi-700-normal-2.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dmsans-400-normal-1.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="mein-kalender.link" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage.href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Nie wieder doppelt gebucht — Google, Outlook und Proton in einem Kalender." />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage.href} />
+
     <script defer src="https://api.pirsch.io/pa.js" id="pianjs" data-code="tlkwjKBDo5OXWaLS7O7kFPuDT8XFnH55"></script>
     <title>{title}</title>
   </head>
@@ -46,9 +73,11 @@ const { title, description = 'Kalender-Sync für Profis: Google, Outlook und Pro
         --color-stone-50:  #FAFAF9;
         --color-stone-100: #F5F5F4;
         --color-stone-200: #E7E5E4;
+        --color-stone-300: #D6D3D1;
         --color-stone-400: #A8A29E;
         --color-stone-500: #78716C;
         --color-stone-600: #57534E;
+        --color-stone-700: #44403C;
         --color-stone-900: #1C1917;
 
         --font-display: 'Satoshi', system-ui, sans-serif;
