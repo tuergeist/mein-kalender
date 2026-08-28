@@ -1,3 +1,10 @@
+> **Archived unbuilt, 2026-08-28.** The Todoist route was not broken by
+> design, it was broken by a version: the app still called `rest/v2`, which
+> Todoist answers with 410 since the shutdown, and the dialog never checked the
+> response. Moving to `api/v1` fixed it. What remains of the reasoning below is
+> a return channel for reporters — and the app has no reporters: no stranger
+> has ever signed up. Build this if that changes.
+
 ## Why
 
 Feedback from the app becomes a Todoist task and then disappears. Nothing is stored on our side, so the reporter never learns whether their bug was fixed, their idea rejected, or their report even read. The dialog closes after 1.5 seconds and that is the end of it. Anyone who wants an answer has to write an email instead, which defeats the point of having a feedback button.
