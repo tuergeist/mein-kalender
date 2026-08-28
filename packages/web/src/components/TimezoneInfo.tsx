@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { useLocale } from "@/lib/i18n";
+import { useMounted } from "@/lib/use-mounted";
 
 type T = ReturnType<typeof useLocale>["t"];
 
@@ -32,13 +33,17 @@ interface TimezoneInfoProps {
 }
 
 export function TimezoneInfo({ hostTimezone, hostName, t, bcp47 }: TimezoneInfoProps) {
+  // Die Zeitzone des Besuchers kennt nur der Browser. Würde sie schon beim
+  // Serverrendern gelesen, stünde dort UTC und im Browser etwas anderes — ein
+  // Textunterschied, an dem das Hydrieren scheitert (React #418).
+  const mounted = useMounted();
   const visitorTimezone = useMemo(() => {
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone;
     } catch {
       return "UTC";
     }
-  }, []);
+  }, [mounted]);
 
   const isDifferent = visitorTimezone !== hostTimezone;
 
@@ -52,7 +57,7 @@ export function TimezoneInfo({ hostTimezone, hostName, t, bcp47 }: TimezoneInfoP
     return diffHours;
   }, [isDifferent, visitorTimezone, hostTimezone]);
 
-  if (!isDifferent) return null;
+  if (!mounted || !isDifferent) return null;
 
   const visitorTzName = tzDisplayName(visitorTimezone, bcp47);
   const hostTzName = tzDisplayName(hostTimezone, bcp47);

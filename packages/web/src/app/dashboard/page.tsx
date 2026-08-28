@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { apiAuthFetch } from "@/lib/api";
+import { useMounted } from "@/lib/use-mounted";
 
 interface BriefingEvent {
   id: string;
@@ -96,10 +97,16 @@ export default function DashboardPage() {
     });
   }, [accessToken]);
 
-  const now = new Date();
+  // Erst nach dem Hydrieren: getHours() liefert die Stunde der Laufzeit, auf
+  // dem Server also UTC und im Browser Europa/Berlin. Zwischen 10 und 12 Uhr
+  // UTC schreibt der Server "Guten Morgen", der Browser erwartet "Guten Tag" —
+  // React bricht das Hydrieren mit Fehler #418 ab. Vor dem Hydrieren steht hier
+  // nichts, danach die richtige Anrede.
+  const mounted = useMounted();
+  const now = useMemo(() => new Date(), [mounted]);
   const userName = session?.user?.name || session?.user?.email?.split("@")[0] || "";
   const hour = now.getHours();
-  const greeting = hour < 12 ? "Guten Morgen" : hour < 18 ? "Guten Tag" : "Guten Abend";
+  const greeting = !mounted ? null : hour < 12 ? "Guten Morgen" : hour < 18 ? "Guten Tag" : "Guten Abend";
 
   const trialDaysLeft = billing?.trialEndsAt && !billing.plan
     ? Math.max(0, Math.ceil((new Date(billing.trialEndsAt).getTime() - Date.now()) / 86400000))
@@ -146,7 +153,7 @@ export default function DashboardPage() {
         {/* Greeting */}
         <div>
           <h1 className="font-display text-[28px] font-bold leading-[1.2] tracking-[-0.03em]">
-            {greeting}{userName ? `, ${userName}` : ""}.
+            {greeting ? `${greeting}, ` : ""}{userName}{greeting || userName ? "." : ""}
           </h1>
           {briefing && !loading && (() => {
             const dayOfYear = Math.floor((+now - +new Date(now.getFullYear(), 0, 0)) / 86400000);
