@@ -60,7 +60,12 @@ export async function billingRoutes(app: FastifyInstance) {
     "/api/webhooks/mollie",
     { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
     async (request, reply) => {
-      const { id: paymentId } = request.body;
+      // Nicht destrukturieren: Bei einem POST ohne Body ist request.body
+      // undefined, und der Zugriff wirft, bevor die Prüfung darunter greift —
+      // aus fehlerhafter Eingabe wurde so ein 500er. Der Endpunkt ist
+      // öffentlich und ohne Anmeldung erreichbar, jeder Scanner löste damit
+      // den 500er-Alarm aus.
+      const paymentId = (request.body as { id?: unknown } | undefined)?.id;
 
       if (!paymentId || typeof paymentId !== "string") {
         return reply.code(400).send({ error: "Missing payment id" });
