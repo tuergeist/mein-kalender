@@ -1,11 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button, Input, Card, CardBody, CardHeader, Divider } from "@heroui/react";
 import Link from "next/link";
 
 export default function SignInPage() {
+  // Wer angemeldet ist, hat auf dieser Seite nichts verloren. Sie hat die
+  // Sitzung bisher nicht angesehen und immer das Formular gezeigt — wer aus
+  // einem Lesezeichen hier landete, hielt sich für abgemeldet, obwohl das
+  // Cookie noch wochenlang gültig war.
+  const { status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      // Aus window statt useSearchParams: Letzteres zwingt die Seite hinter
+      // eine Suspense-Grenze und bricht das Vorab-Rendern. Hier läuft ohnehin
+      // schon Browser-Code.
+      const target = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
+      // replace, nicht push: Der Zurück-Knopf soll nicht auf die Anmeldeseite
+      // zurückführen, von der gerade weitergeleitet wurde.
+      router.replace(target);
+    }
+  }, [status, router]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -29,6 +49,12 @@ export default function SignInPage() {
     }
     setLoading(false);
   };
+
+  // Solange die Sitzung geprüft wird oder bereits gültig ist, kein Formular:
+  // Sonst blitzt eine Anmeldemaske auf, bevor weitergeleitet wird.
+  if (status === "loading" || status === "authenticated") {
+    return <div className="flex min-h-screen items-center justify-center p-4" aria-busy="true" />;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
