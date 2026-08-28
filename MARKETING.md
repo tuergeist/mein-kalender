@@ -2,7 +2,7 @@
 
 **Product:** Multi-calendar sync (Google + Outlook full two-way, Proton read-only via ICS) with multi-branded booking pages
 **Market:** Germany (DACH expansion later)
-**Price:** 19 EUR/month, 14-day free trial, no credit card required
+**Price:** 5 EUR/month or 50 EUR/year incl. VAT, 14-day free trial, no credit card required
 **Tagline:** "Nie wieder doppelt gebucht"
 **URL:** mein-kalender.link
 **Date:** March 2026
@@ -54,7 +54,7 @@ Privacy-conscious professionals who chose Proton and now find themselves locked 
 | Calendly | $10/mo | No | Yes | No | No | No |
 | CalendarBridge | $6/mo | Yes | No | No | No | No |
 | SyncThemCalendars | $5/mo | Yes | No | No | No | No |
-| **Mein Kalender** | **19 EUR/mo** | **Yes** | **Multi-branded** | **Yes** | **Yes** | **Yes** |
+| **Mein Kalender** | **5 EUR/mo** | **Yes** | **Multi-branded** | **Yes** | **Yes** | **Yes** |
 
 ### Attack angles against competitors
 
@@ -98,17 +98,11 @@ Day 7 (if no response):
 - Proton UserVoice (two-way sync feature request has hundreds of votes)
 - r/privacy, r/degoogle
 
-**Post for r/ProtonMail:**
+Link to the English page, https://mein-kalender.link/en/ — this audience does not read German.
 
-Title: "I built a calendar sync tool that actually works with Proton Calendar"
-
-> I'm a solo developer in Germany. I use Proton Calendar for personal life but Google Calendar and Outlook at different companies I work with. The lack of third-party sync support has been driving me crazy.
->
-> So I built Mein Kalender -- it syncs Proton Calendar with Google and Outlook, both directions. It also has a sync health dashboard so you can actually see that your events are syncing correctly instead of just hoping.
->
-> It's 19 EUR/month with a 14-day free trial, no credit card required. Made in Germany, data stored in the EU.
->
-> mein-kalender.link
+Any post has to say that Proton is read-only. The draft that stood here claimed
+two-way sync with Proton, which is not what the product does, in front of the
+one audience that would notice.
 
 ### Channel 3: German Business Communities (Target: 2 users)
 
@@ -202,7 +196,7 @@ Offer: referred user gets 30-day trial instead of 14.
 - First webinar: "Kalender-Setup fuer Multi-Mandate"
 - Evaluate unit economics, consider small LinkedIn Ads budget
 
-**Target: 50 trial signups, 20-25 paying users, MRR 380-475 EUR**
+**Target: 50 trial signups, 20-25 paying users, MRR 100-125 EUR** (was 380-475 at the old 19 EUR price)
 
 ---
 
@@ -275,5 +269,5 @@ Track with UTM: `?ref=linkedin-post`, `?ref=linkedin-dm`, `?ref=reddit-proton`, 
 1. **Proton is a wedge, but be honest.** Currently read-only via ICS. No competitor has even that. The r/ProtonMail community wants full sync -- position as "we're building toward it, here's read integration today." Write-sync via bot invitations is the roadmap.
 2. **LinkedIn DMs to interim managers is the highest-conversion channel.** Identifiable by role, reachable, have the exact problem. DDIM gives 2,000+ qualified targets.
 3. **Sync health dashboard is the positioning moat.** Every message reinforces "we show you proof it works."
-4. **19 EUR/month is the right price.** Do not discount. A double-booking costs them orders of magnitude more.
+4. **5 EUR/month incl. VAT is the price.** Lowered from 19 on 2026-08-28, before any customer paid either figure.
 5. **German-language content is non-negotiable.** Except for Proton/Reddit/HN communities which are international.
