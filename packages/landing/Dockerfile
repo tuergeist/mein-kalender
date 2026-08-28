@@ -14,6 +14,7 @@ COPY package.json turbo.json ./
 RUN cd packages/landing && npx astro build
 
 FROM nginx:alpine AS runner
+COPY packages/landing/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/packages/landing/dist /usr/share/nginx/html
 
 EXPOSE 80
