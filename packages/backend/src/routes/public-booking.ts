@@ -13,6 +13,31 @@ interface SlotParams {
   slug: string;
 }
 
+/**
+ * True for a calendar day that actually exists.
+ *
+ * The routes below used to check only the shape with a regex, so "2026-13-45"
+ * passed, `new Date` produced an Invalid Date, and the handler died with a 500
+ * further down. On a public endpoint that turns a typo — or a scanner — into a
+ * server error and, since the 500 alert exists, into mail.
+ */
+function isRealDate(iso: string): boolean {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return (
+    !Number.isNaN(dt.getTime()) &&
+    dt.getUTCFullYear() === y &&
+    dt.getUTCMonth() === m - 1 &&
+    dt.getUTCDate() === d
+  );
+}
+
+/** True for a month that actually exists, given as YYYY-MM. */
+function isRealMonth(iso: string): boolean {
+  const [y, m] = iso.split("-").map(Number);
+  return Number.isFinite(y) && y > 1970 && y < 3000 && m >= 1 && m <= 12;
+}
+
 function isTokenExpired(booking: { managementTokenExpiresAt: Date | null }): boolean {
   return booking.managementTokenExpiresAt !== null && new Date() > booking.managementTokenExpiresAt;
 }
@@ -62,7 +87,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       const { username, slug } = request.params;
       const { month } = request.query;
 
-      if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      if (!month || !/^\d{4}-\d{2}$/.test(month) || !isRealMonth(month)) {
         return reply.code(400).send({ error: "month query param required (YYYY-MM)" });
       }
 
@@ -98,7 +123,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       const { username, slug } = request.params;
       const { date } = request.query;
 
-      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !isRealDate(date)) {
         return reply.code(400).send({ error: "date query param required (YYYY-MM-DD)" });
       }
 
@@ -549,7 +574,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       const { token } = request.params;
       const { date } = request.query;
 
-      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !isRealDate(date)) {
         return reply.code(400).send({ error: "date query param required (YYYY-MM-DD)" });
       }
 
@@ -587,7 +612,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       const { token } = request.params;
       const { month } = request.query;
 
-      if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      if (!month || !/^\d{4}-\d{2}$/.test(month) || !isRealMonth(month)) {
         return reply.code(400).send({ error: "month query param required (YYYY-MM)" });
       }
 
