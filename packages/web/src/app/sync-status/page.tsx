@@ -15,11 +15,15 @@ interface SyncSource {
   lastSyncAt: string | null;
 }
 
-interface SyncSummary {
-  period: string;
+interface SyncMetrics {
   syncSuccessRate: number;
   syncCycles: number;
   latency: { p50: number; p95: number };
+}
+
+interface SyncSummary extends SyncMetrics {
+  period: string;
+  last24h: SyncMetrics;
 }
 
 interface CloneTarget {
@@ -29,7 +33,8 @@ interface CloneTarget {
   label: string | null;
   syncMode: string;
   totalMappings: number;
-  syncedThisWeek: number;
+  syncedLast24h: number;
+  syncedLast7d: number;
   lastSyncedAt: string | null;
 }
 
@@ -77,6 +82,9 @@ export default function SyncStatusPage() {
       setLoading(false);
     });
   }, [accessToken, period]);
+
+  const rateColor = (rate: number) =>
+    rate >= 97 ? "text-[#059669]" : rate >= 90 ? "text-[var(--color-amber-600)]" : "text-red-600";
 
   const statusColor = (s: string) =>
     s === "ok" ? "bg-[#059669]" :
@@ -168,7 +176,7 @@ export default function SyncStatusPage() {
                       <p className="text-xs text-[var(--text-tertiary)]">Sync-Zyklen</p>
                     </div>
                     <div>
-                      <p className={`font-display text-xl font-bold ${summary.syncSuccessRate >= 97 ? "text-[#059669]" : summary.syncSuccessRate >= 90 ? "text-[var(--color-amber-600)]" : "text-red-600"}`}>
+                      <p className={`font-display text-xl font-bold ${rateColor(summary.syncSuccessRate)}`}>
                         {summary.syncSuccessRate}%
                       </p>
                       <p className="text-xs text-[var(--text-tertiary)]">Erfolgsrate</p>
@@ -184,6 +192,22 @@ export default function SyncStatusPage() {
                 </>
               ) : (
                 <p className="mt-3 text-xs text-[var(--text-tertiary)]">Keine Sync-Daten für diesen Zeitraum.</p>
+              )}
+              {summary && period !== "24h" && (
+                <p className="mt-3 border-t border-[var(--border-default)] pt-2 font-mono text-xs text-[var(--text-tertiary)]">
+                  Letzte 24 h:{" "}
+                  {summary.last24h.syncCycles > 0 ? (
+                    <>
+                      {summary.last24h.syncCycles} Zyklen ·{" "}
+                      <span className={rateColor(summary.last24h.syncSuccessRate)}>
+                        {summary.last24h.syncSuccessRate}%
+                      </span>{" "}
+                      · p50 {summary.last24h.latency.p50}ms
+                    </>
+                  ) : (
+                    "kein Sync"
+                  )}
+                </p>
               )}
             </div>
           </>
@@ -206,6 +230,10 @@ export default function SyncStatusPage() {
                   <div className="text-right">
                     <p className="font-display text-lg font-bold">{t.totalMappings}</p>
                     <p className="text-[10px] text-[var(--text-tertiary)]">Events</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-display text-lg font-bold">{t.syncedLast24h}</p>
+                    <p className="text-[10px] text-[var(--text-tertiary)]">in 24 h</p>
                   </div>
                 </div>
               ))}

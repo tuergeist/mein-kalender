@@ -6,6 +6,19 @@ interface AuthenticatedRequest {
   user: AuthUser;
 }
 
+// Erfolgsrate und Latenz aus den SyncHealth-Zyklen eines Zeitraums.
+function syncMetrics(records: { checksumMatch: boolean; latencyMs: number }[]) {
+  const syncCycles = records.length;
+  const matchingCycles = records.filter((r) => r.checksumMatch).length;
+  const syncSuccessRate = syncCycles > 0 ? Math.round((matchingCycles / syncCycles) * 1000) / 10 : 100;
+
+  const latencies = records.map((r) => r.latencyMs).sort((a, b) => a - b);
+  const p50 = latencies.length > 0 ? latencies[Math.floor(latencies.length * 0.5)] : 0;
+  const p95 = latencies.length > 0 ? latencies[Math.floor(latencies.length * 0.95)] : 0;
+
+  return { syncSuccessRate, syncCycles, latency: { p50, p95 } };
+}
+
 export async function dashboardRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authenticate);
 
@@ -96,16 +109,21 @@ export async function dashboardRoutes(app: FastifyInstance) {
         periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         periodLabel = "30d";
         break;
-      default: {
-        // 7d — start of current week (Monday)
-        periodStart = new Date(now);
-        periodStart.setDate(now.getDate() - now.getDay() + 1);
-        periodStart.setHours(0, 0, 0, 0);
+      default:
+        // 7d — rollend wie 24h und 30d. Der frühere Wochenstart ab Montag
+        // rechnete sonntags in die Zukunft (getDay() ist dann 0) und lieferte
+        // ein leeres Fenster.
+        periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         periodLabel = "7d";
-      }
     }
 
     const periodEnd = new Date(now);
+
+    // Der Status auf dem Dashboard hängt an den letzten 24 Stunden; die
+    // längeren Zeiträume liefern nur den Kontext. Beide kommen aus einer
+    // Abfrage über den früheren der beiden Startpunkte.
+    const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const healthStart = periodStart < last24hStart ? periodStart : last24hStart;
 
     const [eventCount, conflictsDetected, calendarCount, healthRecords] = await Promise.all([
       prisma.event.count({
@@ -121,18 +139,13 @@ export async function dashboardRoutes(app: FastifyInstance) {
       }),
       prisma.calendarSource.count({ where: { userId: user.id } }),
       prisma.syncHealth.findMany({
-        where: { userId: user.id, createdAt: { gte: periodStart } },
-        select: { checksumMatch: true, latencyMs: true },
+        where: { userId: user.id, createdAt: { gte: healthStart } },
+        select: { checksumMatch: true, latencyMs: true, createdAt: true },
       }),
     ]);
 
-    const totalCycles = healthRecords.length;
-    const matchingCycles = healthRecords.filter((r) => r.checksumMatch).length;
-    const syncSuccessRate = totalCycles > 0 ? Math.round((matchingCycles / totalCycles) * 1000) / 10 : 100;
-
-    const latencies = healthRecords.map((r) => r.latencyMs).sort((a, b) => a - b);
-    const p50 = latencies.length > 0 ? latencies[Math.floor(latencies.length * 0.5)] : 0;
-    const p95 = latencies.length > 0 ? latencies[Math.floor(latencies.length * 0.95)] : 0;
+    const periodMetrics = syncMetrics(healthRecords.filter((r) => r.createdAt >= periodStart));
+    const last24h = syncMetrics(healthRecords.filter((r) => r.createdAt >= last24hStart));
 
     return {
       period: periodLabel,
@@ -140,9 +153,8 @@ export async function dashboardRoutes(app: FastifyInstance) {
       meetings: eventCount,
       overlapsDetected: conflictsDetected,
       calendarsConnected: calendarCount,
-      syncSuccessRate,
-      syncCycles: totalCycles,
-      latency: { p50, p95 },
+      ...periodMetrics,
+      last24h,
     };
   });
 
@@ -215,8 +227,11 @@ export async function dashboardRoutes(app: FastifyInstance) {
 
     const stats = await Promise.all(
       targets.map(async (t) => {
-        const [total, recentCount, lastMapping] = await Promise.all([
+        const [total, syncedLast24h, syncedLast7d, lastMapping] = await Promise.all([
           prisma.targetEventMapping.count({ where: { targetCalendarEntryId: t.id } }),
+          prisma.targetEventMapping.count({
+            where: { targetCalendarEntryId: t.id, lastSyncedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+          }),
           prisma.targetEventMapping.count({
             where: { targetCalendarEntryId: t.id, lastSyncedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
           }),
@@ -233,7 +248,8 @@ export async function dashboardRoutes(app: FastifyInstance) {
           label: t.source.label,
           syncMode: t.syncMode,
           totalMappings: total,
-          syncedThisWeek: recentCount,
+          syncedLast24h,
+          syncedLast7d,
           lastSyncedAt: lastMapping?.lastSyncedAt || null,
         };
       })

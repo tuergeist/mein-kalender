@@ -27,13 +27,17 @@ interface Briefing {
   events: BriefingEvent[];
 }
 
-interface WeeklySummary {
-  meetings: number;
-  overlapsDetected: number;
-  calendarsConnected: number;
+interface SyncMetrics {
   syncSuccessRate: number;
   syncCycles: number;
   latency: { p50: number; p95: number };
+}
+
+interface WeeklySummary extends SyncMetrics {
+  meetings: number;
+  overlapsDetected: number;
+  calendarsConnected: number;
+  last24h: SyncMetrics;
 }
 
 interface SyncSource {
@@ -111,6 +115,34 @@ export default function DashboardPage() {
   const trialDaysLeft = billing?.trialEndsAt && !billing.plan
     ? Math.max(0, Math.ceil((new Date(billing.trialEndsAt).getTime() - Date.now()) / 86400000))
     : null;
+
+  // Der Sync-Status zeigt die letzten 24 Stunden: was letzte Woche schieflief,
+  // sagt nichts darüber, ob der Kalender jetzt aktuell ist.
+  const sync24h = (() => {
+    const m = weekly?.last24h;
+    if (!m || m.syncCycles === 0) {
+      return {
+        label: "Keine Daten",
+        hint: "Kein Sync in den letzten 24 h",
+        color: "text-[var(--text-tertiary)]",
+      };
+    }
+    if (m.syncSuccessRate >= 97) {
+      return { label: "Alles OK", hint: "Letzte 24 h synchron", color: "text-[#059669]" };
+    }
+    if (m.syncSuccessRate >= 90) {
+      return {
+        label: "Teilweise",
+        hint: "Einzelne Syncs der letzten 24 h verzögert",
+        color: "text-[var(--color-amber-600)]",
+      };
+    }
+    return {
+      label: "Gestört",
+      hint: "Sync-Probleme in den letzten 24 h",
+      color: "text-red-600",
+    };
+  })();
 
   const upcomingBookings = bookings
     .filter((b) => b.status === "confirmed" && new Date(b.startTime) > now)
@@ -199,7 +231,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Link href="/calendar" className="group rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-all duration-200 ease-out hover:shadow-md hover:-translate-y-0.5">
               <p className="font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left">{weekly.meetings}</p>
-              <p className="text-xs text-[var(--text-tertiary)]">Termine diese Woche</p>
+              <p className="text-xs text-[var(--text-tertiary)]">Termine, letzte 7 Tage</p>
             </Link>
             <Link href="/conflicts" className="group rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-all duration-200 ease-out hover:shadow-md hover:-translate-y-0.5">
               <p className={`font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left ${briefing && briefing.unresolvedConflicts > 0 ? "text-[var(--color-amber-600)]" : ""}`}>{briefing?.unresolvedConflicts ?? 0}</p>
@@ -210,22 +242,8 @@ export default function DashboardPage() {
               <p className="text-xs text-[var(--text-tertiary)]">Kalender verbunden</p>
             </Link>
             <Link href="/sync-status" className="group rounded-xl bg-white p-4 shadow-sm border border-[var(--border-default)] transition-all duration-200 ease-out hover:shadow-md hover:-translate-y-0.5">
-              {weekly.syncSuccessRate >= 97 ? (
-                <>
-                  <p className="font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left text-[#059669]">Alles OK</p>
-                  <p className="text-xs text-[var(--text-tertiary)]">Alle Kalender synchron</p>
-                </>
-              ) : weekly.syncSuccessRate >= 90 ? (
-                <>
-                  <p className="font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left text-[var(--color-amber-600)]">Teilweise</p>
-                  <p className="text-xs text-[var(--text-tertiary)]">Einzelne Syncs verzögert</p>
-                </>
-              ) : (
-                <>
-                  <p className="font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left text-red-600">Gestört</p>
-                  <p className="text-xs text-[var(--text-tertiary)]">Sync-Probleme erkannt</p>
-                </>
-              )}
+              <p className={`font-display text-2xl font-bold transition-transform duration-200 ease-out group-hover:scale-[1.03] origin-left ${sync24h.color}`}>{sync24h.label}</p>
+              <p className="text-xs text-[var(--text-tertiary)]">{sync24h.hint}</p>
             </Link>
           </div>
         )}
