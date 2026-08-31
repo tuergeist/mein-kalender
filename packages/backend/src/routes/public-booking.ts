@@ -8,6 +8,7 @@ import { syncQueue, emailQueue } from "../queues";
 import { buildIcsInvitation } from "../lib/ics-invitation";
 import { bookingSchema, zodPreValidation } from "../lib/validators";
 import { isIgnoredForBooking } from "../lib/reclaim";
+import { wallTimeToUtc } from "../lib/timezone";
 
 interface SlotParams {
   username: string;
@@ -873,20 +874,6 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
 
   if (!rule || !rule.enabled) return [];
 
-  // Parse working hours into UTC timestamps for this date
-  const [startH, startM] = rule.startTime.split(":").map(Number);
-  const [endH, endM] = rule.endTime.split(":").map(Number);
-  const dayStart = new Date(date);
-  dayStart.setUTCHours(startH, startM, 0, 0);
-  const dayEnd = new Date(date);
-  dayEnd.setUTCHours(endH, endM, 0, 0);
-
-  // Don't offer slots in the past
-  const now = new Date();
-  const effectiveStart = dayStart > now ? dayStart : now;
-  if (effectiveStart >= dayEnd) return [];
-
-  // Resolve buffer times: event type overrides user defaults (null = use default, 0 = explicit zero)
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -895,8 +882,19 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
       applyBuffersToAllEvents: true,
       ignoreReclaimTasks: true,
       ignoreReclaimHabits: true,
+      timezone: true,
     },
   });
+
+  // Die Regel steht als Wanduhrzeit in der Zeitzone des Gastgebers, nicht in UTC.
+  const timezone = user?.timezone || "UTC";
+  const dayStart = wallTimeToUtc(dateStr, rule.startTime, timezone);
+  const dayEnd = wallTimeToUtc(dateStr, rule.endTime, timezone);
+
+  // Don't offer slots in the past
+  const now = new Date();
+  const effectiveStart = dayStart > now ? dayStart : now;
+  if (effectiveStart >= dayEnd) return [];
 
   let bufferBefore = user?.defaultBufferBeforeMinutes ?? 0;
   let bufferAfter = user?.defaultBufferAfterMinutes ?? 0;
@@ -933,7 +931,7 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
           : { enabled: true }),
       },
     },
-    select: { startTime: true, endTime: true, allDay: true, providerMetadata: true, description: true },
+    select: { startTime: true, endTime: true, allDay: true, providerMetadata: true, description: true, title: true },
   });
 
   const reclaimFilters = {
@@ -946,7 +944,7 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
     const meta = e.providerMetadata as Record<string, unknown> | null;
     if (meta?.showAs === "free" || meta?.transparency === "transparent") return false;
     if (meta?.eventType === "workingLocation") return false;
-    if (isIgnoredForBooking(e.description, reclaimFilters)) return false;
+    if (isIgnoredForBooking(e, reclaimFilters)) return false;
     return true;
   });
 

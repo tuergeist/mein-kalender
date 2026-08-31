@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
 import { computeSlotsForPreview } from "./public-booking";
 import { isIgnoredForBooking } from "../lib/reclaim";
+import { wallTimeToUtc } from "../lib/timezone";
 
 async function generateShortHash(): Promise<string> {
   for (let i = 0; i < 10; i++) {
@@ -259,8 +260,9 @@ export async function eventTypesRoutes(app: FastifyInstance) {
       // Vorschau einen Balken über einer Zeit, die buchbar ist.
       const settings = await prisma.user.findUnique({
         where: { id: user.id },
-        select: { ignoreReclaimTasks: true, ignoreReclaimHabits: true },
+        select: { ignoreReclaimTasks: true, ignoreReclaimHabits: true, timezone: true },
       });
+      const timezone = settings?.timezone || "UTC";
       const reclaimFilters = {
         ignoreReclaimTasks: settings?.ignoreReclaimTasks ?? false,
         ignoreReclaimHabits: settings?.ignoreReclaimHabits ?? false,
@@ -293,10 +295,9 @@ export async function eventTypesRoutes(app: FastifyInstance) {
           continue;
         }
 
-        const [startH, startM] = workingHours.start.split(":").map(Number);
-        const [endH, endM] = workingHours.end.split(":").map(Number);
-        const dayStart = new Date(date); dayStart.setUTCHours(startH, startM, 0, 0);
-        const dayEnd = new Date(date); dayEnd.setUTCHours(endH, endM, 0, 0);
+        // Wanduhrzeit des Gastgebers, wie in der Slot-Berechnung.
+        const dayStart = wallTimeToUtc(dateStr, workingHours.start, timezone);
+        const dayEnd = wallTimeToUtc(dateStr, workingHours.end, timezone);
 
         // Busy events
         const events = await prisma.event.findMany({
@@ -314,7 +315,7 @@ export async function eventTypesRoutes(app: FastifyInstance) {
         const busyBlocks = events
           .filter((e) => {
             const meta = e.providerMetadata as Record<string, unknown> | null;
-            if (isIgnoredForBooking(e.description, reclaimFilters)) return false;
+            if (isIgnoredForBooking(e, reclaimFilters)) return false;
             return meta?.showAs !== "free" && meta?.transparency !== "transparent" && meta?.eventType !== "workingLocation";
           })
           .map((e) => ({

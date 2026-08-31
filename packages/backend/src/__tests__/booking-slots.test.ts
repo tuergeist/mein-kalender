@@ -212,6 +212,49 @@ describe("computeSlots", () => {
     expect(slots).toHaveLength(0);
   });
 
+  describe("Zeitzone des Gastgebers", () => {
+    function regel() {
+      mockPrisma.availabilityRule.findFirst.mockResolvedValue({
+        id: "rule-1",
+        userId: "user-1",
+        eventTypeId: null,
+        dayOfWeek: 1,
+        startTime: "09:00",
+        endTime: "17:00",
+        enabled: true,
+      });
+      mockPrisma.event.findMany.mockResolvedValue([]);
+      mockPrisma.booking.findMany.mockResolvedValue([]);
+    }
+
+    it("legt 09:00 Berlin auf 07:00 UTC", async () => {
+      regel();
+      mockPrisma.user.findUnique.mockResolvedValue({
+        defaultBufferBeforeMinutes: 0,
+        defaultBufferAfterMinutes: 0,
+        applyBuffersToAllEvents: false,
+        timezone: "Europe/Berlin",
+      });
+
+      const slots = await computeSlotsForPreview("user-1", 60, "2026-04-13");
+      expect(slots[0]).toBe("2026-04-13T07:00:00.000Z");
+      expect(slots[slots.length - 1]).toBe("2026-04-13T14:00:00.000Z");
+    });
+
+    it("bleibt bei UTC-Konten unverändert", async () => {
+      regel();
+      mockPrisma.user.findUnique.mockResolvedValue({
+        defaultBufferBeforeMinutes: 0,
+        defaultBufferAfterMinutes: 0,
+        applyBuffersToAllEvents: false,
+        timezone: "UTC",
+      });
+
+      const slots = await computeSlotsForPreview("user-1", 60, "2026-04-13");
+      expect(slots[0]).toBe("2026-04-13T09:00:00.000Z");
+    });
+  });
+
   describe("Reclaim-Termine", () => {
     const HABIT =
       '<i>This AI-powered event was created by <a href="https://reclaim.ai/r/uf/DlnbX/877223">Reclaim</a></i>';
