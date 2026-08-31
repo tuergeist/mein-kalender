@@ -236,6 +236,13 @@ select:focus {
   @apply cursor-pointer rounded-md border-0 px-1.5 py-0.5 text-xs font-medium shadow-sm;
 }
 
+/* Auf Buchungsseiten übergangene Termine: nur Umriss, damit sie im Kalender
+   sichtbar bleiben, aber erkennbar keine Zeit sperren. */
+.fc .fc-event.mk-booking-ignored {
+  @apply border border-dashed bg-transparent shadow-none;
+  border-color: #DC2626;
+}
+
 .fc .fc-daygrid-event {
   @apply mx-1 mb-0.5;
 }

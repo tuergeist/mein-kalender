@@ -102,6 +102,7 @@ export function CalendarView({ initialDate, initialTime, initialView, conflictEv
             endTime: string;
             allDay: boolean;
             ignored: boolean;
+            bookingIgnored?: boolean;
             description: string | null;
             location: string | null;
             sourceEventId: string;
@@ -115,15 +116,20 @@ export function CalendarView({ initialDate, initialTime, initialView, conflictEv
             };
           }) => {
             const effectiveColor = e.calendarEntry.userColor ?? e.calendarEntry.color;
+            // Termine, die auf den Buchungsseiten übergangen werden, bekommen
+            // statt der Füllung nur einen roten gestrichelten Rahmen.
+            const bookingIgnored = e.bookingIgnored === true;
             return {
               id: e.id,
               title: e.title,
               start: e.startTime,
               end: e.endTime,
               allDay: e.allDay,
-              backgroundColor: effectiveColor,
-              borderColor: effectiveColor,
+              backgroundColor: bookingIgnored ? "transparent" : effectiveColor,
+              borderColor: bookingIgnored ? "#DC2626" : effectiveColor,
+              ...(bookingIgnored ? { textColor: "#44403C", classNames: ["mk-booking-ignored"] } : {}),
               extendedProps: {
+                bookingIgnored,
                 description: e.description,
                 location: e.location,
                 calendarEntryId: e.calendarEntry.id,

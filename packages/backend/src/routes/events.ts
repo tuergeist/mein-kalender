@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
 import { conflictQueue } from "../queues";
+import { isIgnoredForBooking } from "../lib/reclaim";
 
 interface AuthenticatedRequest {
   user: AuthUser;
@@ -30,17 +31,30 @@ export async function eventsRoutes(app: FastifyInstance) {
       where.calendarEntryId = calendarEntryId;
     }
 
-    const events = await prisma.event.findMany({
-      where,
-      include: {
-        calendarEntry: {
-          select: { id: true, name: true, color: true, userColor: true, readOnly: true, sourceId: true },
+    const [events, settings] = await Promise.all([
+      prisma.event.findMany({
+        where,
+        include: {
+          calendarEntry: {
+            select: { id: true, name: true, color: true, userColor: true, readOnly: true, sourceId: true },
+          },
         },
-      },
-      orderBy: { startTime: "asc" },
-    });
+        orderBy: { startTime: "asc" },
+      }),
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: { ignoreReclaimTasks: true, ignoreReclaimHabits: true },
+      }),
+    ]);
 
-    return events;
+    const reclaimFilters = {
+      ignoreReclaimTasks: settings?.ignoreReclaimTasks ?? false,
+      ignoreReclaimHabits: settings?.ignoreReclaimHabits ?? false,
+    };
+
+    // bookingIgnored sagt der Kalenderansicht, welche Termine auf den
+    // Buchungsseiten übergangen werden — dort werden sie nur umrandet gezeigt.
+    return events.map((e) => ({ ...e, bookingIgnored: isIgnoredForBooking(e, reclaimFilters) }));
   });
 
   // Update an event (propagates to source via sync engine)

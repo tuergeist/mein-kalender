@@ -1,19 +1,25 @@
 /**
  * Erkennt Termine, die Reclaim.ai in den Kalender schreibt.
  *
- * Reclaim hängt an jede Beschreibung einen Link auf die eigene Domain. Das ist
- * der einzige Bestandteil, den beide Bauformen gemeinsam haben, und damit die
- * Erkennung:
+ * Zwei Merkmale, weil keines allein reicht:
  *
- *   Eigenblöcke (Habits, Smart Meetings)
- *     "<i>This AI-powered event was created by <a href="https://reclaim.ai/r/...">Reclaim</a>"
- *   Aufgaben (aus Todoist, Asana, Jira oder direkt in Reclaim)
- *     "<p>~~~~~~~~~~</p><i>This event was created by <a href="https://reclaim.ai/r/...">…"
+ *  - Der Link auf reclaim.ai in der Beschreibung. Trägt fast jeder
+ *    Reclaim-Termin, aber nicht alle: Gewohnheiten wie "🍱 Lunch" kommen ohne
+ *    Beschreibung an.
+ *  - Das Emoji am Titelanfang. Reclaim stellt 🛡 (verteidigt) oder 🆓 (frei
+ *    verschiebbar) voran. Fängt die Gewohnheiten ohne Beschreibung, fehlt
+ *    aber bei einem Teil der eingeplanten Aufgaben.
  *
- * Die Unterscheidung hängt an "AI-powered": Reclaim setzt das nur bei den
- * selbst erzeugten Blöcken, nicht bei eingeplanten Aufgaben. Geprüft an 56
- * Terminen eines Produktionskontos (Stand 2026-08-31); Reclaims Formulierung
- * ist nicht dokumentiert und kann sich ändern.
+ * Bauformen der Beschreibung:
+ *   Eigenblöcke   "<i>This AI-powered event was created by <a href=".../reclaim.ai/...">…"
+ *   Aufgaben      "<p>~~~~~~~~~~</p><i>This event was created by <a href=".../reclaim.ai/...">…"
+ *
+ * Die Unterscheidung hängt an "AI-powered"; ohne Beschreibung entscheidet der
+ * Titel-Marker, und dann gilt der Termin als Eigenblock, weil eingeplante
+ * Aufgaben in den geprüften Daten immer eine Beschreibung tragen.
+ *
+ * Geprüft an 630 Terminen eines Produktionskontos (Stand 2026-08-31). Reclaims
+ * Formulierungen und Emojis sind nicht dokumentiert und können sich ändern.
  */
 
 export interface ReclaimBookingFilters {
@@ -21,28 +27,49 @@ export interface ReclaimBookingFilters {
   ignoreReclaimHabits: boolean;
 }
 
-export function isReclaimEvent(description: string | null | undefined): boolean {
+export interface ReclaimEventFields {
+  title?: string | null;
+  description?: string | null;
+}
+
+const SCHILD = 0x1f6e1; // 🛡
+const FREI = 0x1f193; // 🆓
+const VARIANTENWAHL = 0xfe0f; // die optionale Emoji-Variante hinter dem Schild
+
+function hatTitelMarker(title: string | null | undefined): boolean {
+  if (!title) return false;
+  const erstes = title.trim().codePointAt(0);
+  if (erstes === SCHILD || erstes === FREI) return true;
+  return erstes === VARIANTENWAHL;
+}
+
+function hatBeschreibungsMarker(description: string | null | undefined): boolean {
   return !!description && description.toLowerCase().includes("reclaim.ai");
 }
 
-/** Habits und Smart Meetings — von Reclaim selbst erzeugte Blöcke. */
-export function isReclaimHabit(description: string | null | undefined): boolean {
-  return isReclaimEvent(description) && description!.toLowerCase().includes("ai-powered");
+export function isReclaimEvent(event: ReclaimEventFields): boolean {
+  return hatBeschreibungsMarker(event.description) || hatTitelMarker(event.title);
+}
+
+/** Gewohnheiten und Smart Meetings — von Reclaim selbst erzeugte Blöcke. */
+export function isReclaimHabit(event: ReclaimEventFields): boolean {
+  if (!isReclaimEvent(event)) return false;
+  if (hatBeschreibungsMarker(event.description)) {
+    return event.description!.toLowerCase().includes("ai-powered");
+  }
+  return true;
 }
 
 /** Von Reclaim eingeplante Aufgaben. */
-export function isReclaimTask(description: string | null | undefined): boolean {
-  return isReclaimEvent(description) && !isReclaimHabit(description);
+export function isReclaimTask(event: ReclaimEventFields): boolean {
+  return isReclaimEvent(event) && !isReclaimHabit(event);
 }
 
 /**
  * Soll dieser Termin bei der Slot-Berechnung der Buchungsseiten übergangen
  * werden? Ohne gesetzte Schalter blockiert Reclaim wie jeder andere Termin.
  */
-export function isIgnoredForBooking(
-  description: string | null | undefined,
-  filters: ReclaimBookingFilters
-): boolean {
-  if (!isReclaimEvent(description)) return false;
-  return isReclaimHabit(description) ? filters.ignoreReclaimHabits : filters.ignoreReclaimTasks;
+export function isIgnoredForBooking(event: ReclaimEventFields, filters: ReclaimBookingFilters): boolean {
+  if (!isReclaimEvent(event)) return false;
+  return isReclaimHabit(event) ? filters.ignoreReclaimHabits : filters.ignoreReclaimTasks;
 }
