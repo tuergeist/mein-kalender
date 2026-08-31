@@ -3,6 +3,7 @@ import { randomBytes } from "crypto";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
 import { computeSlotsForPreview } from "./public-booking";
+import { isIgnoredForBooking } from "../lib/reclaim";
 
 async function generateShortHash(): Promise<string> {
   for (let i = 0; i < 10; i++) {
@@ -253,6 +254,18 @@ export async function eventTypesRoutes(app: FastifyInstance) {
       if (!eventType) return reply.code(404).send({ error: "Event type not found" });
 
       const calendarIds = eventType.calendars.map((c) => c.id);
+
+      // Dieselben Reclaim-Schalter wie in der Slot-Berechnung, sonst zeigt die
+      // Vorschau einen Balken über einer Zeit, die buchbar ist.
+      const settings = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { ignoreReclaimTasks: true, ignoreReclaimHabits: true },
+      });
+      const reclaimFilters = {
+        ignoreReclaimTasks: settings?.ignoreReclaimTasks ?? false,
+        ignoreReclaimHabits: settings?.ignoreReclaimHabits ?? false,
+      };
+
       const days = [];
 
       for (let i = 0; i < 7; i++) {
@@ -295,12 +308,13 @@ export async function eventTypesRoutes(app: FastifyInstance) {
               ...(calendarIds.length > 0 ? { id: { in: calendarIds } } : { enabled: true }),
             },
           },
-          select: { startTime: true, endTime: true, title: true, providerMetadata: true, calendarEntry: { select: { name: true, color: true } } },
+          select: { startTime: true, endTime: true, title: true, providerMetadata: true, description: true, calendarEntry: { select: { name: true, color: true } } },
         });
 
         const busyBlocks = events
           .filter((e) => {
             const meta = e.providerMetadata as Record<string, unknown> | null;
+            if (isIgnoredForBooking(e.description, reclaimFilters)) return false;
             return meta?.showAs !== "free" && meta?.transparency !== "transparent" && meta?.eventType !== "workingLocation";
           })
           .map((e) => ({

@@ -25,6 +25,8 @@ model User {
   defaultBufferBeforeMinutes Int      @default(0)
   defaultBufferAfterMinutes  Int      @default(0)
   applyBuffersToAllEvents    Boolean  @default(false)
+  ignoreReclaimTasks         Boolean  @default(false)
+  ignoreReclaimHabits        Boolean  @default(false)
   bookingCalendarEntryId String?
   mollieCustomerId       String?
   subscriptionId         String?

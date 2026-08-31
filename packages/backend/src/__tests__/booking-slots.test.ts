@@ -212,6 +212,103 @@ describe("computeSlots", () => {
     expect(slots).toHaveLength(0);
   });
 
+  describe("Reclaim-Termine", () => {
+    const HABIT =
+      '<i>This AI-powered event was created by <a href="https://reclaim.ai/r/uf/DlnbX/877223">Reclaim</a></i>';
+    const TASK =
+      '<p>~~~~~~~~~~</p><i>This event was created by <a href="https://reclaim.ai/r/uf/DlnbX/877223">Reclaim</a></i>';
+
+    function tagesregel() {
+      mockPrisma.availabilityRule.findFirst.mockResolvedValue({
+        id: "rule-1",
+        userId: "user-1",
+        eventTypeId: null,
+        dayOfWeek: 1,
+        startTime: "09:00",
+        endTime: "12:00",
+        enabled: true,
+      });
+      mockPrisma.booking.findMany.mockResolvedValue([]);
+      // Je ein belegter Reclaim-Block: Aufgabe 09:00-10:00, Eigenblock 10:00-11:00.
+      mockPrisma.event.findMany.mockResolvedValue([
+        {
+          startTime: new Date("2026-04-13T09:00:00Z"),
+          endTime: new Date("2026-04-13T10:00:00Z"),
+          allDay: false,
+          providerMetadata: null,
+          description: TASK,
+        },
+        {
+          startTime: new Date("2026-04-13T10:00:00Z"),
+          endTime: new Date("2026-04-13T11:00:00Z"),
+          allDay: false,
+          providerMetadata: null,
+          description: HABIT,
+        },
+      ]);
+    }
+
+    function schalter(tasks: boolean, habits: boolean) {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        defaultBufferBeforeMinutes: 0,
+        defaultBufferAfterMinutes: 0,
+        applyBuffersToAllEvents: false,
+        ignoreReclaimTasks: tasks,
+        ignoreReclaimHabits: habits,
+      });
+    }
+
+    it("blockiert wie jeder andere Termin, solange beide Schalter aus sind", async () => {
+      tagesregel();
+      schalter(false, false);
+
+      const slots = await computeSlotsForPreview("user-1", 60, "2026-04-13");
+      expect(slots).toEqual(["2026-04-13T11:00:00.000Z"]);
+    });
+
+    it("gibt bei eingeschalteten Aufgaben nur deren Zeit frei", async () => {
+      tagesregel();
+      schalter(true, false);
+
+      const slots = await computeSlotsForPreview("user-1", 60, "2026-04-13");
+      expect(slots).toEqual(["2026-04-13T09:00:00.000Z", "2026-04-13T11:00:00.000Z"]);
+    });
+
+    it("gibt bei eingeschalteten Eigenblöcken nur deren Zeit frei", async () => {
+      tagesregel();
+      schalter(false, true);
+
+      const slots = await computeSlotsForPreview("user-1", 60, "2026-04-13");
+      expect(slots).toEqual(["2026-04-13T10:00:00.000Z", "2026-04-13T11:00:00.000Z"]);
+    });
+
+    it("gibt mit beiden Schaltern den ganzen Tag frei", async () => {
+      tagesregel();
+      schalter(true, true);
+
+      const slots = await computeSlotsForPreview("user-1", 60, "2026-04-13");
+      expect(slots).toHaveLength(3);
+    });
+
+    it("lässt fremde Termine unangetastet, auch mit beiden Schaltern", async () => {
+      tagesregel();
+      schalter(true, true);
+      mockPrisma.event.findMany.mockResolvedValue([
+        {
+          startTime: new Date("2026-04-13T09:00:00Z"),
+          endTime: new Date("2026-04-13T10:00:00Z"),
+          allDay: false,
+          providerMetadata: null,
+          description: "Vorbereitung Angebot",
+        },
+      ]);
+
+      const slots = await computeSlotsForPreview("user-1", 60, "2026-04-13");
+      expect(slots).not.toContain("2026-04-13T09:00:00.000Z");
+      expect(slots).toHaveLength(2);
+    });
+  });
+
   it("uses per-event-type rule over user default", async () => {
     // Per-event-type rule found
     mockPrisma.availabilityRule.findUnique.mockResolvedValue({

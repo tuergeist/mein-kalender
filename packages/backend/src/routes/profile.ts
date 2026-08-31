@@ -22,6 +22,7 @@ export async function profileRoutes(app: FastifyInstance) {
         brandColor: true, accentColor: true, backgroundUrl: true, backgroundOpacity: true,
         bookingCalendarEntryId: true,
         defaultBufferBeforeMinutes: true, defaultBufferAfterMinutes: true, applyBuffersToAllEvents: true,
+        ignoreReclaimTasks: true, ignoreReclaimHabits: true,
       },
     });
 
@@ -164,11 +165,19 @@ export async function profileRoutes(app: FastifyInstance) {
   });
 
   // Update buffer settings
-  app.put<{ Body: { defaultBufferBeforeMinutes?: number; defaultBufferAfterMinutes?: number; applyBuffersToAllEvents?: boolean } }>(
+  app.put<{
+    Body: {
+      defaultBufferBeforeMinutes?: number;
+      defaultBufferAfterMinutes?: number;
+      applyBuffersToAllEvents?: boolean;
+      ignoreReclaimTasks?: boolean;
+      ignoreReclaimHabits?: boolean;
+    };
+  }>(
     "/api/profile/buffer-settings",
     async (request, reply) => {
       const { user } = request as unknown as AuthenticatedRequest;
-      const { defaultBufferBeforeMinutes, defaultBufferAfterMinutes, applyBuffersToAllEvents } = request.body;
+      const { defaultBufferBeforeMinutes, defaultBufferAfterMinutes, applyBuffersToAllEvents, ignoreReclaimTasks, ignoreReclaimHabits } = request.body;
 
       if (defaultBufferBeforeMinutes !== undefined && (!Number.isInteger(defaultBufferBeforeMinutes) || defaultBufferBeforeMinutes < 0)) {
         return reply.code(400).send({ error: "defaultBufferBeforeMinutes must be a non-negative integer" });
@@ -181,11 +190,19 @@ export async function profileRoutes(app: FastifyInstance) {
       if (defaultBufferBeforeMinutes !== undefined) data.defaultBufferBeforeMinutes = defaultBufferBeforeMinutes;
       if (defaultBufferAfterMinutes !== undefined) data.defaultBufferAfterMinutes = defaultBufferAfterMinutes;
       if (applyBuffersToAllEvents !== undefined) data.applyBuffersToAllEvents = applyBuffersToAllEvents;
+      if (ignoreReclaimTasks !== undefined) data.ignoreReclaimTasks = ignoreReclaimTasks;
+      if (ignoreReclaimHabits !== undefined) data.ignoreReclaimHabits = ignoreReclaimHabits;
 
       const updated = await prisma.user.update({
         where: { id: user.id },
         data,
-        select: { defaultBufferBeforeMinutes: true, defaultBufferAfterMinutes: true, applyBuffersToAllEvents: true },
+        select: {
+          defaultBufferBeforeMinutes: true,
+          defaultBufferAfterMinutes: true,
+          applyBuffersToAllEvents: true,
+          ignoreReclaimTasks: true,
+          ignoreReclaimHabits: true,
+        },
       });
 
       return updated;

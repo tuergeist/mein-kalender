@@ -7,6 +7,7 @@ import { TokenSet } from "../types";
 import { syncQueue, emailQueue } from "../queues";
 import { buildIcsInvitation } from "../lib/ics-invitation";
 import { bookingSchema, zodPreValidation } from "../lib/validators";
+import { isIgnoredForBooking } from "../lib/reclaim";
 
 interface SlotParams {
   username: string;
@@ -888,7 +889,13 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
   // Resolve buffer times: event type overrides user defaults (null = use default, 0 = explicit zero)
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { defaultBufferBeforeMinutes: true, defaultBufferAfterMinutes: true, applyBuffersToAllEvents: true },
+    select: {
+      defaultBufferBeforeMinutes: true,
+      defaultBufferAfterMinutes: true,
+      applyBuffersToAllEvents: true,
+      ignoreReclaimTasks: true,
+      ignoreReclaimHabits: true,
+    },
   });
 
   let bufferBefore = user?.defaultBufferBeforeMinutes ?? 0;
@@ -926,14 +933,20 @@ async function computeSlots(userId: string, durationMinutes: number, dateStr: st
           : { enabled: true }),
       },
     },
-    select: { startTime: true, endTime: true, allDay: true, providerMetadata: true },
+    select: { startTime: true, endTime: true, allDay: true, providerMetadata: true, description: true },
   });
+
+  const reclaimFilters = {
+    ignoreReclaimTasks: user?.ignoreReclaimTasks ?? false,
+    ignoreReclaimHabits: user?.ignoreReclaimHabits ?? false,
+  };
 
   // Filter to only busy events (not free/transparent)
   const busyEvents = events.filter((e) => {
     const meta = e.providerMetadata as Record<string, unknown> | null;
     if (meta?.showAs === "free" || meta?.transparency === "transparent") return false;
     if (meta?.eventType === "workingLocation") return false;
+    if (isIgnoredForBooking(e.description, reclaimFilters)) return false;
     return true;
   });
 

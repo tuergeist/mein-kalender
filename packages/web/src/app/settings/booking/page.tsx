@@ -60,6 +60,8 @@ export default function BookingSettingsPage() {
   const [bufferBefore, setBufferBefore] = useState("0");
   const [bufferAfter, setBufferAfter] = useState("0");
   const [applyBuffersToAll, setApplyBuffersToAll] = useState(false);
+  const [ignoreReclaimTasks, setIgnoreReclaimTasks] = useState(false);
+  const [ignoreReclaimHabits, setIgnoreReclaimHabits] = useState(false);
   const [bufferSaving, setBufferSaving] = useState(false);
 
   useEffect(() => {
@@ -76,6 +78,8 @@ export default function BookingSettingsPage() {
       setBufferBefore(String(data.defaultBufferBeforeMinutes ?? 0));
       setBufferAfter(String(data.defaultBufferAfterMinutes ?? 0));
       setApplyBuffersToAll(data.applyBuffersToAllEvents ?? false);
+      setIgnoreReclaimTasks(data.ignoreReclaimTasks ?? false);
+      setIgnoreReclaimHabits(data.ignoreReclaimHabits ?? false);
     }
   }
 
@@ -194,6 +198,8 @@ export default function BookingSettingsPage() {
         defaultBufferBeforeMinutes: parseInt(bufferBefore) || 0,
         defaultBufferAfterMinutes: parseInt(bufferAfter) || 0,
         applyBuffersToAllEvents: applyBuffersToAll,
+        ignoreReclaimTasks,
+        ignoreReclaimHabits,
       }),
     });
     setBufferSaving(false);
@@ -334,6 +340,39 @@ export default function BookingSettingsPage() {
                 <span className="text-sm font-medium">Puffer auf alle Kalendertermine anwenden</span>
               </div>
               <p className="mt-1 ml-10 text-xs text-default-400">Wenn aktiv, werden Pufferzeiten nicht nur für Buchungen, sondern für alle Termine in deinen Kalendern berücksichtigt.</p>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Reclaim.ai */}
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Termine von Reclaim.ai</h2>
+            <Button size="sm" color="primary" isLoading={bufferSaving} onPress={saveBufferSettings}>Speichern</Button>
+          </CardHeader>
+          <CardBody className="space-y-4">
+            <p className="text-sm text-default-500">
+              Reclaim trägt geplante Aufgaben und eigene Blöcke in deinen Kalender ein. Als &quot;belegt&quot;
+              markierte sperren Zeiten auf deinen Buchungsseiten. Hier kannst du sie je Art übergehen —
+              in deinem Kalender bleiben sie stehen.
+            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <Switch size="sm" isSelected={ignoreReclaimTasks} onValueChange={setIgnoreReclaimTasks} />
+                <span className="text-sm font-medium">Eingeplante Aufgaben übergehen</span>
+              </div>
+              <p className="mt-1 ml-10 text-xs text-default-500">
+                Zeitblöcke, die Reclaim für Aufgaben reserviert, etwa aus Todoist.
+              </p>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <Switch size="sm" isSelected={ignoreReclaimHabits} onValueChange={setIgnoreReclaimHabits} />
+                <span className="text-sm font-medium">Gewohnheiten und Smart Meetings übergehen</span>
+              </div>
+              <p className="mt-1 ml-10 text-xs text-default-500">
+                Von Reclaim selbst erzeugte Blöcke wie Fokuszeit, Mittagspause oder Sport.
+              </p>
             </div>
           </CardBody>
         </Card>
