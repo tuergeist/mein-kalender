@@ -177,6 +177,61 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       const managementToken = crypto.randomUUID();
       const manageUrl = `https://app.mein-kalender.link/book/manage/${managementToken}`;
 
+      // Management token expires 7 days after the event ends
+      const managementTokenExpiresAt = new Date(end.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      // The booking is stored before anything leaves the system. The calendar
+      // event and the confirmation mails carry the manage link; written first,
+      // any failure afterwards (SLOT_TAKEN, a database error) left them pointing
+      // at a booking that was never stored.
+      //
+      // Atomic booking creation with advisory lock to prevent double-booking.
+      // Two concurrent requests can pass the computeSlots check simultaneously,
+      // so we lock on user+slot, re-check for overlap, then insert.
+      let booking;
+      try {
+        booking = await prisma.$transaction(async (tx) => {
+          // Advisory lock scoped to this user + time slot (released on commit/rollback).
+          // $executeRaw, not $queryRaw: pg_advisory_xact_lock returns void, and
+          // $queryRaw tries to deserialize the result column, which fails with
+          // P2010 "Failed to deserialize column of type 'void'". $executeRaw
+          // reports a row count and never looks at the columns.
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${user.id} || ${start.toISOString()}))`;
+
+          // Final overlap check inside the lock
+          const overlap = await tx.booking.findFirst({
+            where: {
+              userId: user.id,
+              status: "confirmed",
+              startTime: { lt: end },
+              endTime: { gt: start },
+            },
+          });
+          if (overlap) {
+            throw new Error("SLOT_TAKEN");
+          }
+
+          return tx.booking.create({
+            data: {
+              eventTypeId: eventType.id,
+              userId: user.id,
+              guestName,
+              guestEmail,
+              notes: notes || null,
+              startTime: start,
+              endTime: end,
+              managementToken,
+              managementTokenExpiresAt,
+            },
+          });
+        });
+      } catch (err) {
+        if (err instanceof Error && err.message === "SLOT_TAKEN") {
+          return reply.code(409).send({ error: "This slot is no longer available" });
+        }
+        throw err;
+      }
+
       // Create calendar event on host's booking calendar (or target, or first writable)
       let providerEventId: string | null = null;
       let bookingSourceId: string | null = null;
@@ -287,56 +342,18 @@ export async function publicBookingRoutes(app: FastifyInstance) {
         console.error("[booking] Failed to create calendar event:", err);
       }
 
-      // Management token expires 7 days after the event ends
-      const managementTokenExpiresAt = new Date(end.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-      // Atomic booking creation with advisory lock to prevent double-booking.
-      // Two concurrent requests can pass the computeSlots check simultaneously,
-      // so we lock on user+slot, re-check for overlap, then insert.
-      let booking;
-      try {
-        booking = await prisma.$transaction(async (tx) => {
-          // Advisory lock scoped to this user + time slot (released on commit/rollback).
-          // $executeRaw, not $queryRaw: pg_advisory_xact_lock returns void, and
-          // $queryRaw tries to deserialize the result column, which fails with
-          // P2010 "Failed to deserialize column of type 'void'". $executeRaw
-          // reports a row count and never looks at the columns.
-          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${user.id} || ${start.toISOString()}))`;
-
-          // Final overlap check inside the lock
-          const overlap = await tx.booking.findFirst({
-            where: {
-              userId: user.id,
-              status: "confirmed",
-              startTime: { lt: end },
-              endTime: { gt: start },
-            },
+      // Link the calendar event to the booking, so cancel and reschedule can
+      // find it. A failure here must not turn a stored booking into an error
+      // for the guest — the booking and its manage link work without it.
+      if (providerEventId) {
+        try {
+          booking = await prisma.booking.update({
+            where: { id: booking.id },
+            data: { providerEventId, icsUid },
           });
-          if (overlap) {
-            throw new Error("SLOT_TAKEN");
-          }
-
-          return tx.booking.create({
-            data: {
-              eventTypeId: eventType.id,
-              userId: user.id,
-              guestName,
-              guestEmail,
-              notes: notes || null,
-              startTime: start,
-              endTime: end,
-              providerEventId,
-              managementToken,
-              managementTokenExpiresAt,
-              icsUid,
-            },
-          });
-        });
-      } catch (err) {
-        if (err instanceof Error && err.message === "SLOT_TAKEN") {
-          return reply.code(409).send({ error: "This slot is no longer available" });
+        } catch (err) {
+          console.error("[booking] Failed to link calendar event to booking:", booking.id, err);
         }
-        throw err;
       }
 
       // Trigger immediate sync so the booking event appears in the calendar view
