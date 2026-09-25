@@ -9,6 +9,10 @@ import { buildIcsInvitation } from "../lib/ics-invitation";
 import { bookingSchema, zodPreValidation } from "../lib/validators";
 import { isIgnoredForBooking } from "../lib/reclaim";
 import { wallTimeToUtc } from "../lib/timezone";
+import { findBookingCalendarEntry as findBookingCalendarEntryIn } from "../lib/booking-calendar";
+
+const findBookingCalendarEntry = (userId: string, eventTypeId: string) =>
+  findBookingCalendarEntryIn(prisma, userId, eventTypeId);
 
 interface SlotParams {
   username: string;
@@ -237,35 +241,7 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       let bookingSourceId: string | null = null;
       let icsUid: string | null = null;
       try {
-        let bookingEntry = null;
-
-        // 1. Try event-type-specific booking calendar
-        if (eventType.bookingCalendarEntryId) {
-          bookingEntry = await prisma.calendarEntry.findFirst({
-            where: { id: eventType.bookingCalendarEntryId, source: { userId: user.id } },
-            include: { source: true },
-          });
-        }
-
-        // 2. Try user's global booking calendar
-        if (!bookingEntry && user.bookingCalendarEntryId) {
-          bookingEntry = await prisma.calendarEntry.findFirst({
-            where: { id: user.bookingCalendarEntryId, source: { userId: user.id } },
-            include: { source: true },
-          });
-        }
-
-        // 3. Fall back to target calendar, then first writable
-        if (!bookingEntry) {
-          bookingEntry = await prisma.calendarEntry.findFirst({
-            where: {
-              source: { userId: user.id },
-              OR: [{ isTarget: true }, { readOnly: false }],
-            },
-            include: { source: true },
-            orderBy: { isTarget: "desc" },
-          });
-        }
+        const bookingEntry = await findBookingCalendarEntry(user.id, eventType.id);
 
         const descriptionLines = [
           `Guest: ${guestName} <${guestEmail}>`,
@@ -828,45 +804,6 @@ export async function publicBookingRoutes(app: FastifyInstance) {
       };
     }
   );
-}
-
-/** Find the calendar entry used for booking events for a given user/event type */
-async function findBookingCalendarEntry(userId: string, eventTypeId: string) {
-  // 1. Try event-type-specific booking calendar
-  const eventType = await prisma.eventType.findUnique({
-    where: { id: eventTypeId },
-    select: { bookingCalendarEntryId: true },
-  });
-  if (eventType?.bookingCalendarEntryId) {
-    const entry = await prisma.calendarEntry.findFirst({
-      where: { id: eventType.bookingCalendarEntryId, source: { userId } },
-      include: { source: true },
-    });
-    if (entry) return entry;
-  }
-
-  // 2. Try user's global booking calendar
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { bookingCalendarEntryId: true },
-  });
-  if (user?.bookingCalendarEntryId) {
-    const entry = await prisma.calendarEntry.findFirst({
-      where: { id: user.bookingCalendarEntryId, source: { userId } },
-      include: { source: true },
-    });
-    if (entry) return entry;
-  }
-
-  // 3. Fall back to target calendar, then first writable
-  return prisma.calendarEntry.findFirst({
-    where: {
-      source: { userId },
-      OR: [{ isTarget: true }, { readOnly: false }],
-    },
-    include: { source: true },
-    orderBy: { isTarget: "desc" },
-  });
 }
 
 export async function computeSlotsForPreview(userId: string, durationMinutes: number, dateStr: string, calendarIds: string[] = [], eventTypeId?: string): Promise<string[]> {

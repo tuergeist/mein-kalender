@@ -7,6 +7,7 @@ import {
 } from "./types";
 import { ProviderError, ProviderErrorCode } from "./errors";
 import { getProvider } from "./providers";
+import { findBookingCalendarEntry } from "./lib/booking-calendar";
 import { conflictQueue, targetSyncQueue } from "./queues";
 
 // Adaptive backoff parameters: pause a source for `baseDelay * 2^consecutiveErrors`
@@ -1028,7 +1029,7 @@ function logSyncHealth(
   });
 }
 
-async function reconcileBookings(prisma: PrismaClient, userId: string): Promise<void> {
+export async function reconcileBookings(prisma: PrismaClient, userId: string): Promise<void> {
   // Find confirmed future bookings that have a provider event ID
   const bookings = await prisma.booking.findMany({
     where: {
@@ -1072,18 +1073,11 @@ async function reconcileBookings(prisma: PrismaClient, userId: string): Promise<
       providerEventId: { not: null },
       startTime: { gt: new Date() },
     },
-    include: { eventType: { select: { id: true, bookingCalendarEntryId: true } } },
   });
 
   for (const booking of failedDeletes) {
     try {
-      const bookingEntryId = booking.eventType.bookingCalendarEntryId;
-      if (!bookingEntryId) continue;
-
-      const entry = await prisma.calendarEntry.findFirst({
-        where: { id: bookingEntryId, source: { userId } },
-        include: { source: true },
-      });
+      const entry = await findBookingCalendarEntry(prisma, userId, booking.eventTypeId);
       if (!entry || entry.source.emailForInvitations) continue;
 
       const provider = getProvider(entry.source.provider);

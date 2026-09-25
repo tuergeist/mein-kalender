@@ -4,6 +4,7 @@ import { authenticate, AuthUser } from "../lib/auth";
 import { decrypt } from "../encryption";
 import { getProvider } from "../providers";
 import { TokenSet } from "../types";
+import { findBookingCalendarEntry } from "../lib/booking-calendar";
 
 interface AuthenticatedRequest {
   user: AuthUser;
@@ -41,24 +42,25 @@ export async function bookingsRoutes(app: FastifyInstance) {
       }
 
       // Delete provider event if future booking
+      let providerEventDeleted = false;
       if (booking.providerEventId && booking.startTime > new Date()) {
         try {
-          const targetEntry = await prisma.calendarEntry.findFirst({
-            where: { isTarget: true, source: { userId: user.id } },
-            include: { source: true },
-          });
+          const bookingEntry = await findBookingCalendarEntry(prisma, user.id, booking.eventTypeId);
 
-          if (targetEntry) {
-            const provider = getProvider(targetEntry.source.provider);
+          // ICS sources have no API to delete through; the event stays until
+          // the host removes it.
+          if (bookingEntry && !bookingEntry.source.emailForInvitations) {
+            const provider = getProvider(bookingEntry.source.provider);
             const creds = JSON.parse(
-              decrypt(targetEntry.source.credentials, process.env.ENCRYPTION_SECRET!)
+              decrypt(bookingEntry.source.credentials, process.env.ENCRYPTION_SECRET!)
             );
             const token: TokenSet = {
               accessToken: creds.accessToken || "",
               refreshToken: creds.refreshToken || null,
               expiresAt: creds.expiresAt ? new Date(creds.expiresAt) : null,
             };
-            await provider.deleteEvent(token, targetEntry.providerCalendarId, booking.providerEventId);
+            await provider.deleteEvent(token, bookingEntry.providerCalendarId, booking.providerEventId);
+            providerEventDeleted = true;
           }
         } catch (err) {
           console.error(`[bookings] Failed to delete provider event for booking ${id}:`, err);
@@ -67,7 +69,11 @@ export async function bookingsRoutes(app: FastifyInstance) {
 
       await prisma.booking.update({
         where: { id },
-        data: { status: "cancelled" },
+        data: {
+          status: "cancelled",
+          // Keep providerEventId when deletion failed, so reconcileBookings retries it.
+          ...(providerEventDeleted && { providerEventId: null }),
+        },
       });
 
       return { success: true };
