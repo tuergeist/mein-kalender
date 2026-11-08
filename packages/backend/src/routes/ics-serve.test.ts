@@ -196,10 +196,46 @@ describe("ICS feed conformance", () => {
     ]);
   });
 
+  it("adds ORGANIZER, ATTENDEE with PARTSTAT and TRANSP where the provider delivered them", async () => {
+    mockPrisma.event.findMany.mockResolvedValue([
+      {
+        ...events[1],
+        providerMetadata: {
+          responseStatus: "tentative",
+          transparency: "transparent",
+          organizerEmail: "anne@example.org",
+          selfEmail: "me@example.org",
+        },
+      },
+      { ...events[0], providerMetadata: { responseStatus: "needsAction", transparency: "opaque" } },
+    ] as never);
+    const lines = unfold(await fetchFeed());
+    expect(lines).toContain("ORGANIZER:mailto:anne@example.org");
+    expect(lines).toContain("ATTENDEE;PARTSTAT=TENTATIVE:mailto:me@example.org");
+    expect(lines.filter((l) => l === "TRANSP:TRANSPARENT")).toHaveLength(1);
+    expect(lines.filter((l) => l === "TRANSP:OPAQUE")).toHaveLength(1);
+    // The second event has no addresses stored yet (older row): nothing is invented.
+    expect(lines.filter((l) => l.startsWith("ORGANIZER:"))).toHaveLength(1);
+    expect(lines.filter((l) => l.startsWith("ATTENDEE"))).toHaveLength(1);
+  });
+
+  it("keeps one copy per UID and prefers the accepted one over a bare invitation", async () => {
+    const meeting = { ...events[1], sourceEventId: "shared1", title: "Freiburg" };
+    mockPrisma.event.findMany.mockResolvedValue([
+      { ...meeting, providerMetadata: { responseStatus: "needsAction" }, calendarEntry: { name: "mail@ch-becker.de" } },
+      { ...meeting, providerMetadata: { responseStatus: "accepted" }, calendarEntry: { name: "Anne PDR" } },
+      events[0],
+    ] as never);
+    const lines = unfold(await fetchFeed());
+    expect(lines.filter((l) => l === "UID:shared1@mein-kalender")).toHaveLength(1);
+    expect(lines.filter((l) => l.startsWith("CATEGORIES:"))).toEqual(["CATEGORIES:Anne PDR", "CATEGORIES:Christoph privat"]);
+  });
+
   it("hides details in freebusy mode", async () => {
     mockPrisma.icsFeed.findUnique.mockResolvedValue({ ...feed, mode: "freebusy" } as never);
     const lines = unfold(await fetchFeed());
     expect(lines.some((l) => l.includes("Christoph privat"))).toBe(false);
+    expect(lines.some((l) => l.startsWith("ORGANIZER") || l.startsWith("ATTENDEE"))).toBe(false);
     expect(lines.some((l) => l.startsWith("CATEGORIES:") || l.startsWith("X-MEINKALENDER-CALENDAR:"))).toBe(false);
     expect(lines.some((l) => l.includes("Max Ergo"))).toBe(false);
     expect(lines.filter((l) => l === "SUMMARY:Busy")).toHaveLength(events.length);

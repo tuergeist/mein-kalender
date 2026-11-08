@@ -344,9 +344,14 @@ export class GoogleCalendarProvider implements CalendarProviderInterface {
     if (item.transparency) metadata.transparency = item.transparency; // "transparent" = free, "opaque" = busy
 
     // Normalize responseStatus from self attendee
-    const attendees = item.attendees as Array<{ self?: boolean; responseStatus?: string }> | undefined;
+    const attendees = item.attendees as Array<{ self?: boolean; email?: string; responseStatus?: string }> | undefined;
     const selfAttendee = attendees?.find((a) => a.self);
     metadata.responseStatus = selfAttendee?.responseStatus ?? "accepted";
+    // Who organised the event and under which address the user is invited; the
+    // outgoing ICS feed turns these into ORGANIZER and ATTENDEE.
+    const organizerEmail = (item.organizer as { email?: string } | undefined)?.email;
+    if (organizerEmail) metadata.organizerEmail = organizerEmail;
+    if (selfAttendee?.email) metadata.selfEmail = selfAttendee.email;
 
     // Normalize showAs from transparency
     metadata.showAs = item.transparency === "transparent" ? "free" : "busy";

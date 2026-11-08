@@ -2,6 +2,49 @@ import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
 import { formatIcsDate, escapeIcs, foldLine } from "../lib/ics-utils";
 
+type EventMeta = {
+  responseStatus?: string;
+  transparency?: string;
+  organizerEmail?: string;
+  selfEmail?: string;
+} | null;
+
+// RFC 5545 PARTSTAT values for the response status the providers normalise to.
+const PARTSTAT: Record<string, string> = {
+  accepted: "ACCEPTED",
+  declined: "DECLINED",
+  tentative: "TENTATIVE",
+  needsAction: "NEEDS-ACTION",
+};
+
+// Lower is better. A copy the user has accepted beats a bare invitation.
+const RESPONSE_RANK: Record<string, number> = { accepted: 0, tentative: 1, needsAction: 2, declined: 3 };
+
+function responseRank(meta: EventMeta): number {
+  return RESPONSE_RANK[meta?.responseStatus ?? "accepted"] ?? 0;
+}
+
+/**
+ * The same meeting sits in several calendars: the organiser's own and, for
+ * everyone invited, a copy per invitee. All copies share one event id, so they
+ * would share one UID, and a subscribing client keeps an arbitrary one of them.
+ * Keep exactly one per UID, the copy with the best response status, and leave
+ * the order of the feed untouched.
+ */
+function onePerUid<T extends { sourceEventId: string; providerMetadata: unknown }>(events: T[]): T[] {
+  const best = new Map<string, number>();
+  events.forEach((ev, i) => {
+    const current = best.get(ev.sourceEventId);
+    if (
+      current === undefined ||
+      responseRank(ev.providerMetadata as EventMeta) < responseRank(events[current].providerMetadata as EventMeta)
+    ) {
+      best.set(ev.sourceEventId, i);
+    }
+  });
+  return events.filter((ev, i) => best.get(ev.sourceEventId) === i);
+}
+
 export async function icsServeRoutes(app: FastifyInstance) {
   // NO auth middleware — token-based access
 
@@ -48,6 +91,7 @@ export async function icsServeRoutes(app: FastifyInstance) {
           endTime: true,
           allDay: true,
           updatedAt: true,
+          providerMetadata: true,
           calendarEntry: { select: { name: true } },
         },
         orderBy: { startTime: "asc" },
@@ -64,7 +108,7 @@ export async function icsServeRoutes(app: FastifyInstance) {
         `X-WR-CALNAME:${escapeIcs(feed.name)}`,
       ];
 
-      for (const event of events) {
+      for (const event of onePerUid(events)) {
         lines.push("BEGIN:VEVENT");
         lines.push(foldLine(`UID:${event.sourceEventId}@mein-kalender`));
         // DTSTAMP is required (RFC 5545 §3.6.1). Derived from the row's last
@@ -95,6 +139,13 @@ export async function icsServeRoutes(app: FastifyInstance) {
           }
           // Which of the user's calendars the event comes from. Left out in
           // freebusy mode: calendar names are details that mode promises to hide.
+          const meta = event.providerMetadata as EventMeta;
+          if (meta?.organizerEmail) lines.push(foldLine(`ORGANIZER:mailto:${meta.organizerEmail}`));
+          if (meta?.selfEmail) {
+            const partstat = PARTSTAT[meta.responseStatus ?? "accepted"];
+            lines.push(foldLine(`ATTENDEE${partstat ? `;PARTSTAT=${partstat}` : ""}:mailto:${meta.selfEmail}`));
+          }
+          lines.push(`TRANSP:${meta?.transparency === "transparent" ? "TRANSPARENT" : "OPAQUE"}`);
           const calendarName = event.calendarEntry.name;
           if (calendarName) {
             lines.push(foldLine(`CATEGORIES:${escapeIcs(calendarName)}`));
