@@ -34,6 +34,7 @@ const events = [
     endTime: new Date("2026-08-20T13:45:00.000Z"),
     allDay: false,
     updatedAt: new Date("2026-08-18T09:30:00.000Z"),
+    calendarEntry: { name: "Christoph privat" },
   },
   {
     sourceEventId: "def456",
@@ -44,6 +45,7 @@ const events = [
     endTime: new Date("2026-08-22T00:00:00.000Z"),
     allDay: true,
     updatedAt: new Date("2026-08-19T07:00:00.000Z"),
+    calendarEntry: { name: "ACB, privat" },
   },
 ];
 
@@ -182,9 +184,23 @@ describe("ICS feed conformance", () => {
     expect(description).toContain("\\nZweite Zeile.");
   });
 
+  it("names the source calendar in CATEGORIES and X-MEINKALENDER-CALENDAR", async () => {
+    const lines = unfold(await fetchFeed());
+    expect(lines.filter((l) => l.startsWith("CATEGORIES:"))).toEqual([
+      "CATEGORIES:Christoph privat",
+      "CATEGORIES:ACB\\, privat",
+    ]);
+    expect(lines.filter((l) => l.startsWith("X-MEINKALENDER-CALENDAR:"))).toEqual([
+      "X-MEINKALENDER-CALENDAR:Christoph privat",
+      "X-MEINKALENDER-CALENDAR:ACB\\, privat",
+    ]);
+  });
+
   it("hides details in freebusy mode", async () => {
     mockPrisma.icsFeed.findUnique.mockResolvedValue({ ...feed, mode: "freebusy" } as never);
     const lines = unfold(await fetchFeed());
+    expect(lines.some((l) => l.includes("Christoph privat"))).toBe(false);
+    expect(lines.some((l) => l.startsWith("CATEGORIES:") || l.startsWith("X-MEINKALENDER-CALENDAR:"))).toBe(false);
     expect(lines.some((l) => l.includes("Max Ergo"))).toBe(false);
     expect(lines.filter((l) => l === "SUMMARY:Busy")).toHaveLength(events.length);
   });

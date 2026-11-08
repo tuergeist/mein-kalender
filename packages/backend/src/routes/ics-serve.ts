@@ -48,6 +48,7 @@ export async function icsServeRoutes(app: FastifyInstance) {
           endTime: true,
           allDay: true,
           updatedAt: true,
+          calendarEntry: { select: { name: true } },
         },
         orderBy: { startTime: "asc" },
       });
@@ -91,6 +92,13 @@ export async function icsServeRoutes(app: FastifyInstance) {
           }
           if (event.location) {
             lines.push(foldLine(`LOCATION:${escapeIcs(event.location)}`));
+          }
+          // Which of the user's calendars the event comes from. Left out in
+          // freebusy mode: calendar names are details that mode promises to hide.
+          const calendarName = event.calendarEntry.name;
+          if (calendarName) {
+            lines.push(foldLine(`CATEGORIES:${escapeIcs(calendarName)}`));
+            lines.push(foldLine(`X-MEINKALENDER-CALENDAR:${escapeIcs(calendarName)}`));
           }
         }
 
