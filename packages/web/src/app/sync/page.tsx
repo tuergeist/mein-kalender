@@ -88,6 +88,8 @@ export default function SyncPage() {
   const [feedDays, setFeedDays] = useState("30");
   const [feedCalendarIds, setFeedCalendarIds] = useState<string[]>([]);
   const [feedCreating, setFeedCreating] = useState(false);
+  // Set while an existing feed is edited; the form then saves with PUT and keeps the feed's token (and so its URL).
+  const [editingFeedId, setEditingFeedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (accessToken) loadData();
@@ -220,24 +222,44 @@ export default function SyncPage() {
     loadData();
   }
 
-  async function createFeed() {
-    if (!accessToken || !feedName.trim()) return;
-    setFeedCreating(true);
-    await apiAuthFetch("/api/ics-feeds", accessToken, {
-      method: "POST",
-      body: JSON.stringify({
-        name: feedName,
-        mode: feedMode,
-        daysInAdvance: parseInt(feedDays) || 30,
-        calendarEntryIds: feedCalendarIds,
-      }),
-    });
+  function resetFeedForm() {
     setShowFeedForm(false);
+    setEditingFeedId(null);
     setFeedName("");
     setFeedMode("full");
     setFeedDays("30");
     setFeedCalendarIds([]);
+  }
+
+  function startEditFeed(feed: IcsFeedItem) {
+    setEditingFeedId(feed.id);
+    setFeedName(feed.name);
+    setFeedMode(feed.mode);
+    setFeedDays(String(feed.daysInAdvance));
+    setFeedCalendarIds(feed.calendars.map((c) => c.id));
+    setShowFeedForm(true);
+  }
+
+  async function saveFeed() {
+    if (!accessToken || !feedName.trim()) return;
+    setFeedCreating(true);
+    const res = await apiAuthFetch(
+      editingFeedId ? `/api/ics-feeds/${editingFeedId}` : "/api/ics-feeds",
+      accessToken,
+      {
+        method: editingFeedId ? "PUT" : "POST",
+        body: JSON.stringify({
+          name: feedName,
+          mode: feedMode,
+          daysInAdvance: parseInt(feedDays) || 30,
+          calendarEntryIds: feedCalendarIds,
+        }),
+      }
+    );
     setFeedCreating(false);
+    // Keep the form open on failure so the edits are not lost.
+    if (!res.ok) return;
+    resetFeedForm();
     loadData();
   }
 
@@ -532,7 +554,7 @@ export default function SyncPage() {
             {/* Inline new feed form */}
             {showFeedForm && (
               <div className="mb-4 space-y-4 rounded-lg border border-primary-200 bg-primary-50/30 p-4">
-                <p className="text-sm font-semibold">Neuer Feed</p>
+                <p className="text-sm font-semibold">{editingFeedId ? "Feed bearbeiten" : "Neuer Feed"}</p>
                 <Input label="Name" isRequired value={feedName} onValueChange={setFeedName} placeholder="z.B. Arbeitskalender" size="sm" />
                 <div className="flex gap-3">
                   <Select
@@ -591,8 +613,8 @@ export default function SyncPage() {
                   </CheckboxGroup>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="light" onPress={() => { setShowFeedForm(false); setFeedName(""); setFeedMode("full"); setFeedDays("30"); setFeedCalendarIds([]); }}>Abbrechen</Button>
-                  <Button size="sm" color="primary" isLoading={feedCreating} isDisabled={!feedName.trim()} onPress={createFeed}>Erstellen</Button>
+                  <Button size="sm" variant="light" onPress={resetFeedForm}>Abbrechen</Button>
+                  <Button size="sm" color="primary" isLoading={feedCreating} isDisabled={!feedName.trim()} onPress={saveFeed}>{editingFeedId ? "Speichern" : "Erstellen"}</Button>
                 </div>
               </div>
             )}
@@ -610,9 +632,14 @@ export default function SyncPage() {
                           {feed.mode === "freebusy" ? "Nur frei/belegt" : "Vollständig"} &bull; {feed.daysInAdvance} Tage
                         </span>
                       </div>
-                      <Button size="sm" color="danger" variant="light" onPress={() => deleteFeed(feed.id)}>
-                        Löschen
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="light" onPress={() => startEditFeed(feed)}>
+                          Bearbeiten
+                        </Button>
+                        <Button size="sm" color="danger" variant="light" onPress={() => deleteFeed(feed.id)}>
+                          Löschen
+                        </Button>
+                      </div>
                     </div>
                     <div className="mt-2 flex items-center gap-1.5">
                       <code className="flex-1 rounded bg-default-100 px-2 py-1 text-xs text-default-600 truncate">
