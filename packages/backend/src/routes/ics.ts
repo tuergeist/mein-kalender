@@ -2,74 +2,10 @@ import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthUser } from "../lib/auth";
 import { encrypt } from "../encryption";
+import { parseIcs } from "../lib/ics-parse";
 
 interface AuthenticatedRequest {
   user: AuthUser;
-}
-
-interface VEvent {
-  uid: string;
-  summary: string;
-  description: string | null;
-  location: string | null;
-  dtStart: Date;
-  dtEnd: Date;
-  allDay: boolean;
-}
-
-function unfoldICS(icsData: string): string {
-  // ICS line folding: lines starting with space/tab are continuations
-  return icsData.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "");
-}
-
-function unescapeICS(value: string): string {
-  return value
-    .replace(/\\n/gi, "\n")
-    .replace(/\\,/g, ",")
-    .replace(/\\;/g, ";")
-    .replace(/\\\\/g, "\\");
-}
-
-function parseICS(icsData: string): VEvent[] {
-  const events: VEvent[] = [];
-  const unfolded = unfoldICS(icsData);
-  const eventBlocks = unfolded.split("BEGIN:VEVENT");
-
-  for (let i = 1; i < eventBlocks.length; i++) {
-    const block = eventBlocks[i].split("END:VEVENT")[0];
-    const uid = block.match(/UID:(.*)/)?.[1]?.trim();
-    const summary = block.match(/SUMMARY:(.*)/)?.[1]?.trim();
-    const dtStartRaw = block.match(/DTSTART[^:]*:(.*)/)?.[1]?.trim();
-    const dtEndRaw = block.match(/DTEND[^:]*:(.*)/)?.[1]?.trim();
-    const description = block.match(/DESCRIPTION:(.*)/)?.[1]?.trim();
-    const location = block.match(/LOCATION:(.*)/)?.[1]?.trim();
-
-    if (!uid || !dtStartRaw) continue;
-
-    const allDay = dtStartRaw.length === 8;
-    const dtStart = parseICSDate(dtStartRaw);
-    const dtEnd = dtEndRaw ? parseICSDate(dtEndRaw) : dtStart;
-
-    events.push({
-      uid,
-      summary: unescapeICS(summary || "(No title)"),
-      description: description ? unescapeICS(description) : null,
-      location: location ? unescapeICS(location) : null,
-      dtStart,
-      dtEnd,
-      allDay,
-    });
-  }
-
-  return events;
-}
-
-function parseICSDate(dateStr: string): Date {
-  if (dateStr.length === 8) {
-    return new Date(`${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`);
-  }
-  const formatted = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}T${dateStr.slice(9, 11)}:${dateStr.slice(11, 13)}:${dateStr.slice(13, 15)}Z`;
-  return new Date(formatted);
 }
 
 function validateICS(data: string): boolean {
@@ -90,7 +26,7 @@ export async function icsRoutes(app: FastifyInstance) {
         return reply.code(400).send({ error: "Invalid iCalendar format" });
       }
 
-      const events = parseICS(icsData);
+      const events = parseIcs(icsData);
 
       // Create or update the ICS source
       const source = await prisma.calendarSource.create({
@@ -165,7 +101,7 @@ export async function icsRoutes(app: FastifyInstance) {
         return reply.code(404).send({ error: "Not found" });
       }
 
-      const events = parseICS(icsData);
+      const events = parseIcs(icsData);
 
       // Delete all existing events for this source's entries
       for (const entry of source.calendarEntries) {
@@ -215,7 +151,7 @@ export async function icsRoutes(app: FastifyInstance) {
         return reply.code(400).send({ error: "URL does not return valid iCalendar data" });
       }
 
-      const events = parseICS(icsData);
+      const events = parseIcs(icsData);
 
       const source = await prisma.calendarSource.create({
         data: {

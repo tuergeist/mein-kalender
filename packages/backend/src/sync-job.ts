@@ -8,6 +8,7 @@ import {
 import { ProviderError, ProviderErrorCode } from "./errors";
 import { getProvider } from "./providers";
 import { findBookingCalendarEntry } from "./lib/booking-calendar";
+import { parseIcs } from "./lib/ics-parse";
 import { conflictQueue, targetSyncQueue } from "./queues";
 
 // Adaptive backoff parameters: pause a source for `baseDelay * 2^consecutiveErrors`
@@ -859,33 +860,15 @@ async function syncIcsSource(
     throw new Error("URL does not return valid iCalendar data");
   }
 
-  // Simple ICS parser (same logic as ics.ts route)
-  const unfolded = icsData.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "");
-  const eventBlocks = unfolded.split("BEGIN:VEVENT");
-  const events: { uid: string; title: string; description: string | null; location: string | null; startTime: Date; endTime: Date; allDay: boolean }[] = [];
-
-  for (let i = 1; i < eventBlocks.length; i++) {
-    const block = eventBlocks[i].split("END:VEVENT")[0];
-    const uid = block.match(/UID:(.*)/)?.[1]?.trim();
-    const summary = block.match(/SUMMARY:(.*)/)?.[1]?.trim();
-    const dtStartRaw = block.match(/DTSTART[^:]*:(.*)/)?.[1]?.trim();
-    const dtEndRaw = block.match(/DTEND[^:]*:(.*)/)?.[1]?.trim();
-    const description = block.match(/DESCRIPTION:(.*)/)?.[1]?.trim();
-    const location = block.match(/LOCATION:(.*)/)?.[1]?.trim();
-
-    if (!uid || !dtStartRaw) continue;
-
-    const allDay = dtStartRaw.length === 8;
-    events.push({
-      uid,
-      title: summary || "(No title)",
-      description: description || null,
-      location: location || null,
-      startTime: parseIcsDate(dtStartRaw),
-      endTime: dtEndRaw ? parseIcsDate(dtEndRaw) : parseIcsDate(dtStartRaw),
-      allDay,
-    });
-  }
+  const events = parseIcs(icsData).map((ev) => ({
+    uid: ev.uid,
+    title: ev.summary,
+    description: ev.description,
+    location: ev.location,
+    startTime: ev.dtStart,
+    endTime: ev.dtEnd,
+    allDay: ev.allDay,
+  }));
 
   for (const entry of source.calendarEntries) {
     for (const ev of events) {
@@ -1101,12 +1084,3 @@ export async function reconcileBookings(prisma: PrismaClient, userId: string): P
     }
   }
 }
-
-function parseIcsDate(dateStr: string): Date {
-  if (dateStr.length === 8) {
-    return new Date(`${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`);
-  }
-  const formatted = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}T${dateStr.slice(9, 11)}:${dateStr.slice(11, 13)}:${dateStr.slice(13, 15)}Z`;
-  return new Date(formatted);
-}
-
