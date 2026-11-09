@@ -8,7 +8,7 @@ import {
 import { ProviderError, ProviderErrorCode } from "./errors";
 import { getProvider } from "./providers";
 import { findBookingCalendarEntry } from "./lib/booking-calendar";
-import { parseIcs } from "./lib/ics-parse";
+import { parseIcs, staleIcsEvents } from "./lib/ics-parse";
 import { conflictQueue, targetSyncQueue } from "./queues";
 
 // Adaptive backoff parameters: pause a source for `baseDelay * 2^consecutiveErrors`
@@ -901,7 +901,50 @@ async function syncIcsSource(
     }
   }
 
+  // A subscribed feed is the full truth: what it no longer lists was deleted at
+  // the origin (this path only ever upserted, so deleted events stayed forever).
+  const feedUids = new Set(events.map((e) => e.uid));
+  for (const entry of source.calendarEntries) {
+    const stored = await prisma.event.findMany({
+      where: { calendarEntryId: entry.id },
+      select: { id: true, sourceEventId: true, title: true },
+    });
+    const stale = staleIcsEvents(stored, feedUids, events.length, icsData);
+    if (stale.length > 0) {
+      console.log(`[sync] ICS source ${source.id}: removing ${stale.length} events the feed no longer lists (${stale.map((e) => e.title).join(", ")})`);
+      await removeEventsWithTargetCopies(prisma, stale.map((e) => e.id));
+    }
+  }
+
   console.log(`[sync] ICS source ${source.id}: synced ${events.length} events`);
+}
+
+/** Deletes events, and first their cloned copies in the target calendars. */
+async function removeEventsWithTargetCopies(prisma: PrismaClient, eventIds: string[]): Promise<void> {
+  const mappings = await prisma.targetEventMapping.findMany({
+    where: { sourceEventId: { in: eventIds } },
+    include: { targetCalendar: { include: { source: true } } },
+  });
+
+  for (const mapping of mappings) {
+    try {
+      const targetProvider = getProvider(mapping.targetCalendar.source.provider);
+      const targetCreds = JSON.parse(
+        decrypt(mapping.targetCalendar.source.credentials, process.env.ENCRYPTION_SECRET!)
+      );
+      const targetToken: TokenSet = {
+        accessToken: targetCreds.accessToken || "",
+        refreshToken: targetCreds.refreshToken || null,
+        expiresAt: targetCreds.expiresAt ? new Date(targetCreds.expiresAt) : null,
+      };
+      await targetProvider.deleteEvent(targetToken, mapping.targetCalendar.providerCalendarId, mapping.targetEventId);
+    } catch (err) {
+      console.error(`[sync] Failed to delete target event ${mapping.targetEventId}:`, err);
+    }
+  }
+
+  await prisma.targetEventMapping.deleteMany({ where: { sourceEventId: { in: eventIds } } });
+  await prisma.event.deleteMany({ where: { id: { in: eventIds } } });
 }
 
 // Windowed orphan cleanup: every 6h, fetch all event IDs in the next 7 days

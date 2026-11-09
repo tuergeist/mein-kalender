@@ -176,3 +176,20 @@ function buildEvent(props: ContentLine[]): ParsedVEvent | null {
     allDay: start.params.VALUE === "DATE" || start.value.trim().length === 8,
   };
 }
+
+/**
+ * Stored events that a subscribed feed no longer lists. Returns nothing when the
+ * feed looks unreliable: no events at all (an empty or broken response must not
+ * wipe a calendar) or fewer parsed events than the feed declares (an event our
+ * parser skipped would otherwise look deleted).
+ */
+export function staleIcsEvents<T extends { sourceEventId: string }>(
+  stored: T[],
+  feedUids: Set<string>,
+  parsedCount: number,
+  icsData: string
+): T[] {
+  const declared = (icsData.match(/^BEGIN:VEVENT/gm) ?? []).length;
+  if (parsedCount === 0 || parsedCount < declared) return [];
+  return stored.filter((ev) => !feedUids.has(ev.sourceEventId));
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseIcs, parseIcsDateValue } from "./ics-parse";
+import { parseIcs, parseIcsDateValue, staleIcsEvents } from "./ics-parse";
 
 function vcal(...events: string[]): string {
   return ["BEGIN:VCALENDAR", "VERSION:2.0", ...events, "END:VCALENDAR"].join("\r\n");
@@ -109,5 +109,29 @@ describe("parseIcs", () => {
     expect(events).toHaveLength(1);
     expect(events[0].summary).toBe("(No title)");
     expect(events[0].dtEnd).toEqual(events[0].dtStart);
+  });
+});
+
+describe("staleIcsEvents", () => {
+  const stored = [{ sourceEventId: "a" }, { sourceEventId: "gone" }, { sourceEventId: "b" }];
+  const feed = (...uids: string[]) =>
+    vcal(...uids.map((u) => ["BEGIN:VEVENT", `UID:${u}`, "DTSTART:20261106T100000Z", "END:VEVENT"].join("\r\n")));
+
+  it("returns events the feed no longer lists", () => {
+    const ics = feed("a", "b");
+    expect(staleIcsEvents(stored, new Set(["a", "b"]), 2, ics)).toEqual([{ sourceEventId: "gone" }]);
+  });
+
+  it("returns nothing when the feed lists everything", () => {
+    expect(staleIcsEvents(stored, new Set(["a", "gone", "b"]), 3, feed("a", "gone", "b"))).toEqual([]);
+  });
+
+  it("never wipes a calendar from an empty feed", () => {
+    expect(staleIcsEvents(stored, new Set(), 0, vcal())).toEqual([]);
+  });
+
+  it("holds back when the parser skipped an event the feed declares", () => {
+    const ics = feed("a", "b") + "\r\nBEGIN:VEVENT\r\nSUMMARY:ohne UID\r\nEND:VEVENT";
+    expect(staleIcsEvents(stored, new Set(["a", "b"]), 2, ics)).toEqual([]);
   });
 });
